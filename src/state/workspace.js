@@ -23,7 +23,7 @@ import { globalUrlTracker } from '../core/utils/file-io.js';
  */
 
 /**
- * @typedef {'organize'|'split'|'watermark'|'numbering'|'convert'|'metadata'|'forms'|'optimize'} ToolTabId
+ * @typedef {'organize'|'split'|'watermark'|'numbering'|'convert'|'resize'|'nup'|'spreads'|'filters'|'redact'|'sign'|'compare'|'extract-text'|'extract-images'|'attachments'|'bookmarks'|'cbz'|'metadata'|'forms'|'optimize'} ToolTabId
  */
 
 const DESKTOP_MEMORY_WARN_BYTES = 250 * 1024 * 1024;
@@ -62,11 +62,19 @@ function createDefaultToolConfig() {
   return {
     organize: {
       mergeMode: 'sequential',
+      autoBookmarks: false,
       blankSize: 'a4',
+      blankEveryN: 1,
       cropTop: 0,
       cropRight: 0,
       cropBottom: 0,
-      cropLeft: 0
+      cropLeft: 0,
+      autoCropModalOpen: false,
+      autoCropPadding: 12,
+      autoCropUnit: 'pt',
+      autoCropThreshold: 245,
+      autoCropMode: 'uniform',
+      autoCropScope: 'all'
     },
     split: {
       mode: 'ranges',
@@ -92,6 +100,7 @@ function createDefaultToolConfig() {
       margin: 36
     },
     numbering: {
+      mode: 'single',
       enabled: false,
       template: 'Page {n} of {total}',
       startNumber: 1,
@@ -103,7 +112,16 @@ function createDefaultToolConfig() {
       fontSize: 11,
       fontFamily: 'Helvetica',
       color: '#3a3a3a',
-      opacity: 0.85
+      opacity: 0.85,
+      batesQueue: [],
+      batesPrefix: 'CASE-',
+      batesSuffix: '',
+      batesPadding: 5,
+      batesStart: 1,
+      batesTemplate: '{prefix}{counter:pad}{suffix}',
+      batesPlacement: 'bottom',
+      batesAlignment: 'right',
+      batesIncludeCsv: true
     },
     convert: {
       pageFit: 'a4',
@@ -124,7 +142,15 @@ function createDefaultToolConfig() {
       creationDate: '',
       modificationDate: '',
       stripAll: false,
-      applyOnExport: false
+      applyOnExport: false,
+      audit: null,
+      auditLoading: false,
+      scrubOptions: {
+        scrubInfo: true,
+        purgeXmp: true,
+        removeThumbnails: true,
+        stripScriptsAndActions: true
+      }
     },
     forms: {
       targetFileId: '',
@@ -134,9 +160,159 @@ function createDefaultToolConfig() {
       loading: false
     },
     optimize: {
+      preset: 'lossless',
       useObjectStreams: true,
       rebuildCleanCopy: true,
-      stripMetadata: false
+      stripMetadata: false,
+      targetDpi: 150,
+      jpegQuality: 0.75,
+      lastStats: null
+    },
+    resize: {
+      preset: 'a4',
+      customWidth: 210,
+      customHeight: 297,
+      customUnit: 'mm',
+      orientation: 'auto',
+      fitMode: 'fit',
+      marginPt: 0
+    },
+    nup: {
+      mode: 'nup',
+      nUp: 2,
+      nUpOrder: 'ltr',
+      sheetPreset: 'a4',
+      sheetOrientation: 'landscape',
+      outerMarginPt: 18,
+      gutterPt: 10,
+      drawBorders: false,
+      bindingEdge: 'left',
+      flipBackSide: false
+    },
+    spreads: {
+      axis: 'vertical',
+      splitRatio: 0.5,
+      readingOrder: 'ltr',
+      skipFirstPage: false,
+      skipLastPage: false,
+      landscapeOnly: false,
+      previewPageIndex: 0,
+      previewUrl: null,
+      previewLoading: false,
+      previewKey: ''
+    },
+    filters: {
+      preset: 'grayscale',
+      invertVariant: 'slate',
+      contrast: 1.2,
+      threshold: 185,
+      autoOtsu: true,
+      binarize: false,
+      dpi: 150,
+      jpegQuality: 0.84,
+      previewPageIndex: 0,
+      previewOriginalUrl: null,
+      previewFilteredUrl: null,
+      previewLoading: false,
+      previewOtsuThreshold: null
+    },
+    redact: {
+      targetFileId: '',
+      activePageIndex: 0,
+      marks: [],
+      dpi: 220,
+      fillColor: '#000000',
+      paranoidMode: false,
+      searchMode: 'keyword',
+      searchQuery: '',
+      caseSensitive: false,
+      modalOpen: false,
+      previewUrl: null,
+      previewPageIndex: -1,
+      previewLoading: false,
+      previewWidth: 0,
+      previewHeight: 0
+    },
+    sign: {
+      targetFileId: '',
+      activePageIndex: 0,
+      activeKind: 'signature',
+      sigMode: 'draw',
+      typedText: 'Jane Doe',
+      typedStyle: 'script',
+      color: '#0a0a0a',
+      strokeWidth: 2.5,
+      opacity: 1,
+      fontSize: 16,
+      textValue: 'Approved',
+      activeSigBytes: null,
+      activeSigPreviewUrl: null,
+      activeSigAspect: 2.5,
+      overlays: [],
+      selectedOverlayId: null,
+      modalOpen: false,
+      previewUrl: null,
+      previewPageIndex: -1,
+      previewLoading: false,
+      previewWidth: 0,
+      previewHeight: 0
+    },
+    compare: {
+      fileA: null,
+      fileB: null,
+      viewMode: 'side-by-side',
+      sensitivity: 24,
+      changedOnly: false,
+      activePageIndex: 0,
+      splitPercent: 50,
+      results: null,
+      modalOpen: false
+    },
+    extractText: {
+      targetFileId: '',
+      format: 'txt',
+      rangeExpression: 'all',
+      includePageMarkers: true,
+      resultText: '',
+      totalChars: 0,
+      pagesExtracted: 0,
+      likelyScanned: false
+    },
+    extractImages: {
+      targetFileId: '',
+      minSize: 32,
+      items: [],
+      skippedSmall: 0,
+      skippedUnsupported: 0
+    },
+    attachments: {
+      targetFileId: '',
+      items: [],
+      pendingAdd: [],
+      pendingRemove: [],
+      loaded: false
+    },
+    bookmarks: {
+      targetFileId: '',
+      tree: [],
+      pageCount: 0,
+      selectedNodeId: null,
+      modalOpen: false,
+      previewPageIndex: 0,
+      previewUrl: null,
+      previewLoadedIdx: -1,
+      previewLoading: false
+    },
+    cbz: {
+      mode: 'cbz-to-pdf',
+      targetFileId: '',
+      cbzFile: null,
+      cbzEntries: [],
+      uniformWidth: false,
+      pdfScale: 2.0,
+      imageFormat: 'webp',
+      quality: 0.88,
+      modalOpen: false
     }
   };
 }
@@ -152,16 +328,20 @@ class WorkspaceStore {
     this.pages = [];
     /** @type {VirtualPage[][]} */
     this.undoStack = [];
+    /** @type {VirtualPage[][]} */
+    this.redoStack = [];
     /** @type {ToolTabId} */
     this.activeTool = 'organize';
     this.tools = createDefaultToolConfig();
 
-    /** @type {{ active: boolean, requestId: string|null, percent: number, stage: string }} */
+    /** @type {{ active: boolean, requestId: string|null, percent: number, stage: string, current?: number, total?: number }} */
     this.job = {
       active: false,
       requestId: null,
       percent: 0,
-      stage: ''
+      stage: '',
+      current: 0,
+      total: 0
     };
 
     /** @type {{ pageId: string|null, loading: boolean, imageUrl: string|null }} */
@@ -226,6 +406,7 @@ class WorkspaceStore {
     if (this.undoStack.length > MAX_HISTORY_STEPS) {
       this.undoStack.shift();
     }
+    this.redoStack = [];
   }
 
   /**
@@ -234,7 +415,20 @@ class WorkspaceStore {
    */
   undo() {
     if (this.undoStack.length === 0) return false;
+    this.redoStack.push(cloneVirtualPages(this.pages));
     this.pages = this.undoStack.pop();
+    this.emit('pages');
+    return true;
+  }
+
+  /**
+   * Re-applies the most recently undone virtual page layout.
+   * @returns {boolean}
+   */
+  redo() {
+    if (this.redoStack.length === 0) return false;
+    this.undoStack.push(cloneVirtualPages(this.pages));
+    this.pages = this.redoStack.pop();
     this.emit('pages');
     return true;
   }
@@ -291,14 +485,39 @@ class WorkspaceStore {
 
     this.pages.push(...newPages);
 
-    // Initialize metadata/forms target if none selected yet
+    // Initialize metadata/forms/Bates/redact/sign targets if PDF
     if (entry.type === 'pdf') {
       if (!this.tools.metadata.targetFileId) {
         this.tools.metadata.targetFileId = entry.id;
         this.hydrateMetadataFields(entry.metadata);
+        this.tools.metadata.audit = entry.audit || null;
       }
       if (!this.tools.forms.targetFileId) {
         this.tools.forms.targetFileId = entry.id;
+      }
+      if (!this.tools.redact.targetFileId) {
+        this.tools.redact.targetFileId = entry.id;
+      }
+      if (!this.tools.sign.targetFileId) {
+        this.tools.sign.targetFileId = entry.id;
+      }
+      if (!this.tools.extractText.targetFileId) {
+        this.tools.extractText.targetFileId = entry.id;
+      }
+      if (!this.tools.extractImages.targetFileId) {
+        this.tools.extractImages.targetFileId = entry.id;
+      }
+      if (!this.tools.attachments.targetFileId) {
+        this.tools.attachments.targetFileId = entry.id;
+      }
+      if (!this.tools.bookmarks.targetFileId) {
+        this.tools.bookmarks.targetFileId = entry.id;
+      }
+      if (!this.tools.cbz.targetFileId) {
+        this.tools.cbz.targetFileId = entry.id;
+      }
+      if (!this.tools.numbering.batesQueue.includes(entry.id)) {
+        this.tools.numbering.batesQueue.push(entry.id);
       }
     }
 
@@ -340,9 +559,14 @@ class WorkspaceStore {
       hook(sourceFileId);
     }
 
+    this.tools.numbering.batesQueue = this.tools.numbering.batesQueue.filter(
+      (id) => id !== sourceFileId
+    );
+
     if (this.tools.metadata.targetFileId === sourceFileId) {
       const nextPdf = [...this.sourceFiles.values()].find((s) => s.type === 'pdf');
       this.tools.metadata.targetFileId = nextPdf ? nextPdf.id : '';
+      this.tools.metadata.audit = nextPdf?.audit || null;
       if (nextPdf) this.hydrateMetadataFields(nextPdf.metadata);
     }
     if (this.tools.forms.targetFileId === sourceFileId) {
@@ -350,6 +574,43 @@ class WorkspaceStore {
       this.tools.forms.targetFileId = nextPdf ? nextPdf.id : '';
       this.tools.forms.fields = [];
       this.tools.forms.values = {};
+    }
+    if (this.tools.redact.targetFileId === sourceFileId) {
+      const nextPdf = [...this.sourceFiles.values()].find((s) => s.type === 'pdf');
+      this.tools.redact.targetFileId = nextPdf ? nextPdf.id : '';
+      this.tools.redact.marks = [];
+      this.tools.redact.activePageIndex = 0;
+    }
+    if (this.tools.sign.targetFileId === sourceFileId) {
+      const nextPdf = [...this.sourceFiles.values()].find((s) => s.type === 'pdf');
+      this.tools.sign.targetFileId = nextPdf ? nextPdf.id : '';
+      this.tools.sign.overlays = [];
+      this.tools.sign.selectedOverlayId = null;
+      this.tools.sign.activePageIndex = 0;
+    }
+    const nextPdfId = [...this.sourceFiles.values()].find((s) => s.type === 'pdf')?.id || '';
+    if (this.tools.extractText.targetFileId === sourceFileId) {
+      this.tools.extractText.targetFileId = nextPdfId;
+      this.tools.extractText.resultText = '';
+    }
+    if (this.tools.extractImages.targetFileId === sourceFileId) {
+      this.tools.extractImages.targetFileId = nextPdfId;
+      this.tools.extractImages.items = [];
+    }
+    if (this.tools.attachments.targetFileId === sourceFileId) {
+      this.tools.attachments.targetFileId = nextPdfId;
+      this.tools.attachments.items = [];
+      this.tools.attachments.pendingAdd = [];
+      this.tools.attachments.pendingRemove = [];
+      this.tools.attachments.loaded = false;
+    }
+    if (this.tools.bookmarks.targetFileId === sourceFileId) {
+      this.tools.bookmarks.targetFileId = nextPdfId;
+      this.tools.bookmarks.tree = [];
+      this.tools.bookmarks.selectedNodeId = null;
+    }
+    if (this.tools.cbz.targetFileId === sourceFileId) {
+      this.tools.cbz.targetFileId = nextPdfId;
     }
 
     this.emit('files');
@@ -368,6 +629,7 @@ class WorkspaceStore {
     this.sourceFiles.clear();
     this.pages = [];
     this.undoStack = [];
+    this.redoStack = [];
     this.tools.watermark.imageBytes = null;
     this.tools = createDefaultToolConfig();
     this.closePreview();
@@ -522,15 +784,13 @@ class WorkspaceStore {
   }
 
   /**
-   * Inserts a blank virtual page at the given index (or end of workspace).
+   * Builds a fresh blank VirtualPage descriptor.
    * @param {'a4'|'letter'|'legal'|'match'} preset
-   * @param {number} [insertIndex=this.pages.length]
+   * @param {'prev'|'next'} [matchHint='prev']
+   * @returns {VirtualPage}
    */
-  insertBlankPage(preset = 'a4', insertIndex = this.pages.length) {
-    this.pushUndoSnapshot();
-    const safeIdx = Math.max(0, Math.min(insertIndex, this.pages.length));
-    /** @type {VirtualPage} */
-    const blankPage = {
+  _createBlankPageDescriptor(preset = 'a4', matchHint = 'prev') {
+    return {
       id: createUuid(),
       sourceFileId: '__blank__',
       sourcePageIndex: 0,
@@ -538,11 +798,159 @@ class WorkspaceStore {
       selected: false,
       cropMargins: null,
       blankSpec: {
-        preset: preset === 'match' ? 'a4' : preset
+        preset: preset || 'a4',
+        matchHint
       }
     };
-    this.pages.splice(safeIdx, 0, blankPage);
+  }
+
+  /**
+   * Inserts a blank virtual page at the given index (or end of workspace).
+   * @param {'a4'|'letter'|'legal'|'match'} preset
+   * @param {number} [insertIndex=this.pages.length]
+   */
+  insertBlankPage(preset = 'a4', insertIndex = this.pages.length) {
+    this.pushUndoSnapshot();
+    const safeIdx = Math.max(0, Math.min(insertIndex, this.pages.length));
+    this.pages.splice(safeIdx, 0, this._createBlankPageDescriptor(preset, 'prev'));
     this.emit('pages');
+  }
+
+  /**
+   * Inserts a blank page before each selected page (or at index 0 if none selected).
+   * @param {'a4'|'letter'|'legal'|'match'} [preset='match']
+   */
+  insertBlankBeforeSelected(preset = 'match') {
+    this.pushUndoSnapshot();
+    const hasSelected = this.pages.some((p) => p.selected);
+    if (!hasSelected) {
+      this.pages.unshift(this._createBlankPageDescriptor(preset, 'next'));
+    } else {
+      /** @type {VirtualPage[]} */
+      const next = [];
+      for (const page of this.pages) {
+        if (page.selected) {
+          next.push(this._createBlankPageDescriptor(preset, 'next'));
+        }
+        next.push(page);
+      }
+      this.pages = next;
+    }
+    this.emit('pages');
+  }
+
+  /**
+   * Inserts a blank page after each selected page (or at the end if none selected).
+   * @param {'a4'|'letter'|'legal'|'match'} [preset='match']
+   */
+  insertBlankAfterSelected(preset = 'match') {
+    this.pushUndoSnapshot();
+    const hasSelected = this.pages.some((p) => p.selected);
+    if (!hasSelected) {
+      this.pages.push(this._createBlankPageDescriptor(preset, 'prev'));
+    } else {
+      /** @type {VirtualPage[]} */
+      const next = [];
+      for (const page of this.pages) {
+        next.push(page);
+        if (page.selected) {
+          next.push(this._createBlankPageDescriptor(preset, 'prev'));
+        }
+      }
+      this.pages = next;
+    }
+    this.emit('pages');
+  }
+
+  /**
+   * Inserts a blank page after every N pages across the current workspace.
+   * @param {number} everyN
+   * @param {'a4'|'letter'|'legal'|'match'} [preset='match']
+   */
+  insertBlankEveryN(everyN = 1, preset = 'match') {
+    if (this.pages.length === 0) return;
+    const step = Math.max(1, Math.floor(Number(everyN) || 1));
+    this.pushUndoSnapshot();
+    /** @type {VirtualPage[]} */
+    const next = [];
+    for (let i = 0; i < this.pages.length; i += 1) {
+      next.push(this.pages[i]);
+      if ((i + 1) % step === 0) {
+        next.push(this._createBlankPageDescriptor(preset, 'prev'));
+      }
+    }
+    this.pages = next;
+    this.emit('pages');
+  }
+
+  /**
+   * Pads the workspace with one trailing blank page if total page count is odd.
+   * @param {'a4'|'letter'|'legal'|'match'} [preset='match']
+   */
+  padToEvenPageCount(preset = 'match') {
+    if (this.pages.length === 0 || this.pages.length % 2 === 0) return;
+    this.pushUndoSnapshot();
+    this.pages.push(this._createBlankPageDescriptor(preset, 'prev'));
+    this.emit('pages');
+  }
+
+  /**
+   * Applies computed auto-crop margins per page ID in a single undoable step.
+   * @param {Record<string, { top: number, right: number, bottom: number, left: number }|null>} marginsByPageId
+   */
+  applyAutoCropResult(marginsByPageId) {
+    if (!marginsByPageId) return;
+    this.pushUndoSnapshot();
+    for (const page of this.pages) {
+      if (page.id in marginsByPageId) {
+        const m = marginsByPageId[page.id];
+        const hasNonZero = m && (m.top > 0 || m.right > 0 || m.bottom > 0 || m.left > 0);
+        page.cropMargins = hasNonZero ? { ...m } : null;
+      }
+    }
+    this.emit('pages');
+  }
+
+  /**
+   * Reorders an entry in the Batch Bates PDF queue.
+   * @param {number} fromIdx
+   * @param {number} toIdx
+   */
+  moveBatesQueueItem(fromIdx, toIdx) {
+    const q = this.tools.numbering.batesQueue;
+    if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || fromIdx >= q.length || toIdx >= q.length) {
+      return;
+    }
+    const [moved] = q.splice(fromIdx, 1);
+    q.splice(toIdx, 0, moved);
+    this.emit('tool');
+  }
+
+  /**
+   * Removes an entry from the Batch Bates PDF queue (without deleting the source file).
+   * @param {string} sourceFileId
+   */
+  removeBatesQueueItem(sourceFileId) {
+    this.tools.numbering.batesQueue = this.tools.numbering.batesQueue.filter(
+      (id) => id !== sourceFileId
+    );
+    this.emit('tool');
+  }
+
+  /**
+   * Syncs any loaded PDF files back into the Bates queue.
+   */
+  syncBatesQueueWithSources() {
+    const pdfIds = [...this.sourceFiles.values()]
+      .filter((s) => s.type === 'pdf')
+      .map((s) => s.id);
+    const existing = new Set(this.tools.numbering.batesQueue);
+    for (const id of pdfIds) {
+      if (!existing.has(id)) {
+        this.tools.numbering.batesQueue.push(id);
+      }
+    }
+    this.emit('tool');
   }
 
   /**

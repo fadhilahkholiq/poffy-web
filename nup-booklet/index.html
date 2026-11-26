@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="nup-booklet">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>PDF N-Up Grid &amp; Booklet Maker Offline — Saddle-Stitch | Poffy</title>
+    <meta name="description" content="Combine 2, 4, 6, or 9 PDF pages per sheet or impose saddle-stitch folded booklets with automatic 4-page blank padding and duplex flip offline." />
+    <meta name="keywords" content="pdf booklet maker offline, n-up pdf grid, 2-up pdf print, saddle stitch pdf imposition, duplex pdf flip" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#fffaf0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy — Offline PDF Studio" />
+    <meta property="og:title" content="PDF N-Up Grid &amp; Booklet Maker Offline — Saddle-Stitch | Poffy" />
+    <meta property="og:description" content="Combine 2, 4, 6, or 9 PDF pages per sheet or impose saddle-stitch folded booklets with automatic 4-page blank padding and duplex flip offline." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="N-Up &amp; Booklet — Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PDF N-Up Grid &amp; Booklet Maker Offline — Saddle-Stitch | Poffy" />
+    <meta name="twitter:description" content="Combine 2, 4, 6, or 9 PDF pages per sheet or impose saddle-stitch folded booklets with automatic 4-page blank padding and duplex flip offline." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="N-Up &amp; Booklet — Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"PDF N-Up Grid & Booklet Maker Offline — Saddle-Stitch","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Combine 2, 4, 6, or 9 PDF pages per sheet or impose saddle-stitch folded booklets with automatic 4-page blank padding and duplex flip offline.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Vector 2-up, 4-up, 6-up, and 9-up sheets with LTR, RTL, or TTB order","Saddle-stitch booklet padding & [N, 1], [2, N-1] spread imposition","Duplex 180° back-side flip toggle and live visual sheet diagram"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What happens if my PDF page count is not a multiple of 4 in Booklet mode?","acceptedAnswer":{"@type":"Answer","text":"Poffy automatically pads trailing blank pages so sheets align cleanly—for example, a 5-page PDF imposes onto 4 folded landscape spreads."}},{"@type":"Question","name":"Does it support right-to-left (RTL) manga or book binding?","acceptedAnswer":{"@type":"Answer","text":"Yes. Choose Right-Edge Binding in Booklet mode or Right-to-Left order in N-Up mode."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Create N-Up grids and saddle-stitch booklets offline.</h1>
+        <p>Lay out 2-up to 9-up study sheets or fold-ready saddle-stitch booklets with automatic multiple-of-4 blank padding and live sheet diagrams.</p>
+        <ul>
+          <li>Vector 2-up, 4-up, 6-up, and 9-up sheets with LTR, RTL, or TTB order</li>
+          <li>Saddle-stitch booklet padding &amp; [N, 1], [2, N-1] spread imposition</li>
+          <li>Duplex 180° back-side flip toggle and live visual sheet diagram</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use N-Up &amp; Booklet offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

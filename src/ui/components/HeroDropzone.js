@@ -158,7 +158,35 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
                   },
                   'Start with Blank Page'
                 )
-              : null
+              : activeFeature.tool === 'compare'
+                ? el(
+                    'button',
+                    {
+                      type: 'button',
+                      id: 'hero-compare-studio-btn',
+                      className: 'btn-secondary',
+                      onClick: () => {
+                        workspace.tools.compare.modalOpen = true;
+                        workspace.emit('tool');
+                      }
+                    },
+                    'Open Dual Compare Studio'
+                  )
+                : activeFeature.tool === 'cbz'
+                  ? el(
+                      'button',
+                      {
+                        type: 'button',
+                        id: 'hero-cbz-studio-btn',
+                        className: 'btn-secondary',
+                        onClick: () => {
+                          workspace.tools.cbz.modalOpen = true;
+                          workspace.emit('tool');
+                        }
+                      },
+                      'Open CBZ ↔ PDF Converter'
+                    )
+                  : null
           )
         ),
         el('div', { className: 'lg:col-span-6' }, dropzone)
@@ -261,54 +289,82 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
     el(
       'section',
       { className: 'space-y-5' },
-      el(
-        'div',
-        { className: 'flex items-baseline justify-between gap-4' },
-        el(
+      (() => {
+        const cardsGrid = el(
           'div',
-          {},
-          el('p', { className: 'type-caption-upper text-[#6a6a6a]' }, 'Offline Studio Toolkit'),
-          el(
-            'h2',
-            { className: 'type-display-sm text-[#0a0a0a] mt-1' },
-            'Dedicated tools, zero server roundtrips'
-          )
-        )
-      ),
-      el(
-        'div',
-        { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4' },
-        FEATURE_PAGES.map((card) =>
-          el(
-            'a',
-            {
-              href: card.path,
-              className:
-                'block no-underline text-left rounded-[24px] p-5 transition-transform duration-150 hover:-translate-y-0.5 cursor-pointer border border-black/5',
-              style: { backgroundColor: card.accent, color: card.accentText }
-            },
+          { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4' },
+          FEATURE_PAGES.map((card) =>
             el(
-              'span',
+              'a',
               {
+                href: card.path,
+                dataset: {
+                  toolSearch: `${card.shortName} ${card.badge} ${card.highlights.join(' ')} ${card.keywords}`.toLowerCase()
+                },
                 className:
-                  'inline-block text-[11px] uppercase tracking-[1.4px] font-semibold px-2.5 py-1 rounded-full mb-3',
-                style: { backgroundColor: 'rgba(255,255,255,0.22)', color: card.accentText }
+                  'block no-underline text-left rounded-[24px] p-5 transition-transform duration-150 hover:-translate-y-0.5 cursor-pointer border border-black/5',
+                style: { backgroundColor: card.accent, color: card.accentText }
               },
-              card.shortName
-            ),
-            el(
-              'h3',
-              { className: 'type-title-sm mb-1.5', style: { color: card.accentText } },
-              card.badge
-            ),
-            el(
-              'p',
-              { className: 'text-[13px] leading-[1.45] opacity-90', style: { color: card.accentText } },
-              card.highlights[0]
+              el(
+                'span',
+                {
+                  className:
+                    'inline-block text-[11px] uppercase tracking-[1.4px] font-semibold px-2.5 py-1 rounded-full mb-3',
+                  style: { backgroundColor: 'rgba(255,255,255,0.22)', color: card.accentText }
+                },
+                card.shortName
+              ),
+              el(
+                'h3',
+                { className: 'type-title-sm mb-1.5', style: { color: card.accentText } },
+                card.badge
+              ),
+              el(
+                'p',
+                { className: 'text-[13px] leading-[1.45] opacity-90', style: { color: card.accentText } },
+                card.highlights[0]
+              )
             )
           )
-        )
-      )
+        );
+
+        const searchInput = /** @type {HTMLInputElement} */ (
+          el('input', {
+            id: 'toolkit-search-input',
+            type: 'search',
+            placeholder: `Search all ${FEATURE_PAGES.length} offline tools`,
+            className: 'input-clay !h-10 sm:!w-64',
+            onInput: (e) => {
+              const q = /** @type {HTMLInputElement} */ (e.target).value.trim().toLowerCase();
+              for (const node of cardsGrid.children) {
+                const hay = /** @type {HTMLElement} */ (node).dataset.toolSearch || '';
+                /** @type {HTMLElement} */ (node).style.display = !q || hay.includes(q) ? '' : 'none';
+              }
+            }
+          })
+        );
+
+        return el(
+          'div',
+          { className: 'space-y-5' },
+          el(
+            'div',
+            { className: 'flex flex-col sm:flex-row sm:items-end justify-between gap-4' },
+            el(
+              'div',
+              {},
+              el('p', { className: 'type-caption-upper text-[#6a6a6a]' }, `Offline Studio Toolkit (${FEATURE_PAGES.length} Tools)`),
+              el(
+                'h2',
+                { className: 'type-display-sm text-[#0a0a0a] mt-1' },
+                'Dedicated tools, zero server roundtrips'
+              )
+            ),
+            searchInput
+          ),
+          cardsGrid
+        );
+      })()
     )
   );
 

@@ -88,9 +88,10 @@ export async function ingestFiles(fileList) {
           metadata: {}
         };
         await pdfOpsClient.registerSource(entry);
-        // Extract metadata safely (also validates pdf-lib non-encrypted parse)
-        const metaRes = await pdfOpsClient.run('INSPECT_META', { sourceFileId: id });
-        entry.metadata = metaRes.data || {};
+        // Run deep privacy audit (also extracts standard Info fields + validates pdf-lib parse)
+        const auditRes = await pdfOpsClient.run('INSPECT_PRIVACY_AUDIT', { sourceFileId: id });
+        entry.audit = auditRes.data || null;
+        entry.metadata = auditRes.data?.info || {};
         workspace.addSourceFile(entry);
       } else {
         /** @type {import('../../state/workspace.js').SourceFileEntry} */

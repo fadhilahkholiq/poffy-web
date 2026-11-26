@@ -1,32 +1,81 @@
-import { readFileAsArrayBuffer } from '../../core/utils/file-io.js';
+import { formatBytes, readFileAsArrayBuffer } from '../../core/utils/file-io.js';
+import { formatBatesLabel } from '../../core/utils/bates-format.js';
 import { isWinAnsiCompatible } from '../../core/utils/winansi.js';
+import { PAPER_PRESETS, fromPoints, toPoints } from '../../core/pdf/geometry.js';
+import { computeImpositionPlan } from '../../core/pdf/imposition-plan.js';
 import { workspace } from '../../state/workspace.js';
 import {
   exportWorkspacePdf,
   inspectFormsForTarget,
+  loadSpreadsPreview,
+  requestColorFilterPreview,
+  runBatchBatesJob,
+  runBatchExtractTextZipJob,
+  runCbzToPdfJob,
+  runColorFiltersJob,
+  runComparePdfJob,
+  runDownloadAllExtractedImagesZipJob,
+  runExtractImagesJob,
+  runExtractTextJob,
+  runFindRedactionMatchesJob,
   runFormsJob,
   runImagesToPdfJob,
+  runImpositionJob,
+  runInspectAttachmentsJob,
   runMetadataJob,
   runOptimizeJob,
+  runPackageAttachmentsZipJob,
+  runPdfToCbzJob,
   runPdfToImagesJob,
-  runSplitJob
+  runPrivacyAuditForTarget,
+  runReadOutlinesJob,
+  runRedactPdfJob,
+  runResizePdfJob,
+  runSignAnnotateJob,
+  runSplitJob,
+  runSplitSpreadsJob,
+  runUpdateAttachmentsJob,
+  runWriteOutlinesJob,
+  downloadExtractedTextFile,
+  downloadSingleAttachment,
+  downloadSingleExtractedImage,
+  loadCbzArchiveFile,
+  setCompareFile,
+  useWorkspacePdfForCompare
 } from '../actions/export-runner.js';
-import { el, mount } from '../utils/dom.js';
+import { el, mount, sanitizeImageSrc } from '../utils/dom.js';
+import { createClaySelect } from './ClaySelect.js';
 
 /**
  * Tool tab metadata matching DESIGN.md accent palette.
- * @type {{ id: import('../../state/workspace.js').ToolTabId, label: string, accent: string, accentText: string }[]}
+ * @type {{ id: import('../../state/workspace.js').ToolTabId, label: string, group: 'pages'|'edit'|'convert'|'docs', accent: string, accentText: string }[]}
  */
 const TOOL_TABS = [
-  { id: 'organize', label: 'Organize', accent: '#ff4d8b', accentText: '#ffffff' },
-  { id: 'split', label: 'Split', accent: '#1a3a3a', accentText: '#ffffff' },
-  { id: 'watermark', label: 'Watermark', accent: '#b8a4ed', accentText: '#0a0a0a' },
-  { id: 'numbering', label: 'Numbers', accent: '#ffb084', accentText: '#0a0a0a' },
-  { id: 'convert', label: 'Images ↔ PDF', accent: '#e8b94a', accentText: '#0a0a0a' },
-  { id: 'metadata', label: 'Metadata', accent: '#a4d4c5', accentText: '#0a0a0a' },
-  { id: 'forms', label: 'Forms', accent: '#ff6b5a', accentText: '#0a0a0a' },
-  { id: 'optimize', label: 'Optimize', accent: '#f5f0e0', accentText: '#0a0a0a' }
+  { id: 'organize', label: 'Organize', group: 'pages', accent: '#ff4d8b', accentText: '#ffffff' },
+  { id: 'split', label: 'Split', group: 'pages', accent: '#1a3a3a', accentText: '#ffffff' },
+  { id: 'watermark', label: 'Watermark', group: 'edit', accent: '#b8a4ed', accentText: '#0a0a0a' },
+  { id: 'numbering', label: 'Numbers', group: 'edit', accent: '#ffb084', accentText: '#0a0a0a' },
+  { id: 'convert', label: 'Images ↔ PDF', group: 'convert', accent: '#e8b94a', accentText: '#0a0a0a' },
+  { id: 'resize', label: 'Resize', group: 'pages', accent: '#e8b94a', accentText: '#0a0a0a' },
+  { id: 'nup', label: 'N-Up/Booklet', group: 'pages', accent: '#b8a4ed', accentText: '#0a0a0a' },
+  { id: 'spreads', label: 'Split Spreads', group: 'pages', accent: '#1a3a3a', accentText: '#ffffff' },
+  { id: 'filters', label: 'Color Filters', group: 'edit', accent: '#a4d4c5', accentText: '#0a0a0a' },
+  { id: 'redact', label: 'Redact', group: 'edit', accent: '#1a3a3a', accentText: '#ffffff' },
+  { id: 'sign', label: 'Sign & Annotate', group: 'edit', accent: '#ff4d8b', accentText: '#ffffff' },
+  { id: 'compare', label: 'Compare', group: 'docs', accent: '#b8a4ed', accentText: '#0a0a0a' },
+  { id: 'extract-text', label: 'Extract Text', group: 'convert', accent: '#a4d4c5', accentText: '#0a0a0a' },
+  { id: 'extract-images', label: 'Extract Images', group: 'convert', accent: '#e8b94a', accentText: '#0a0a0a' },
+  { id: 'attachments', label: 'Attachments', group: 'docs', accent: '#ff6b5a', accentText: '#0a0a0a' },
+  { id: 'bookmarks', label: 'Bookmarks', group: 'docs', accent: '#ffb084', accentText: '#0a0a0a' },
+  { id: 'cbz', label: 'CBZ ↔ PDF', group: 'convert', accent: '#b8a4ed', accentText: '#0a0a0a' },
+  { id: 'metadata', label: 'Metadata', group: 'docs', accent: '#a4d4c5', accentText: '#0a0a0a' },
+  { id: 'forms', label: 'Forms', group: 'docs', accent: '#ff6b5a', accentText: '#0a0a0a' },
+  { id: 'optimize', label: 'Optimize', group: 'docs', accent: '#f5f0e0', accentText: '#0a0a0a' }
 ];
+
+/** @type {'all'|'pages'|'edit'|'convert'|'docs'} */
+let inspectorToolGroup = 'all';
+let inspectorSearchQuery = '';
 
 /**
  * Helper to create a labeled input or select control safely.
@@ -40,30 +89,22 @@ function labeledField(labelText, controlEl, labelClass = 'text-[12px] text-[#6a6
 }
 
 /**
- * Helper to create a select dropdown safely from [value, label] pairs.
+ * Helper to create a crafted Clay dropdown from [value, label] pairs.
  * @param {string} id
  * @param {string} className
  * @param {string|number} currentValue
  * @param {[string|number, string][]} options
  * @param {(val: string) => void} onChange
- * @returns {HTMLSelectElement}
+ * @returns {HTMLElement}
  */
 function selectControl(id, className, currentValue, options, onChange) {
-  const sel = /** @type {HTMLSelectElement} */ (
-    el(
-      'select',
-      {
-        id,
-        className,
-        onChange: (e) => onChange(/** @type {HTMLSelectElement} */ (e.target).value)
-      },
-      options.map(([val, label]) =>
-        el('option', { value: String(val), selected: String(val) === String(currentValue) }, label)
-      )
-    )
-  );
-  sel.value = String(currentValue);
-  return sel;
+  return createClaySelect({
+    id,
+    className,
+    currentValue,
+    options,
+    onChange
+  });
 }
 
 /**
@@ -98,37 +139,201 @@ function buildPdfSourceSelect(selectId, currentFileId, onChange) {
 }
 
 /**
+ * Mounts the live side-by-side Original vs Filtered comparison card into a target container.
+ * @param {HTMLElement} slot
+ */
+function mountFilterPreviewInto(slot) {
+  const flt = workspace.tools.filters;
+  const origSrc = sanitizeImageSrc(flt.previewOriginalUrl);
+  const filtSrc = sanitizeImageSrc(flt.previewFilteredUrl);
+
+  const renderBox = (label, imgSrc, emptyText) =>
+    el(
+      'div',
+      { className: 'space-y-1' },
+      el('p', { className: 'text-[11px] font-medium text-[#6a6a6a] text-center' }, label),
+      el(
+        'div',
+        {
+          className:
+            'rounded-[8px] border border-[#e5e5e5] bg-white overflow-hidden min-h-[120px] flex items-center justify-center p-1'
+        },
+        imgSrc
+          ? el('img', {
+              src: imgSrc,
+              alt: `${label} page preview`,
+              className: 'w-full h-auto max-h-40 object-contain block'
+            })
+          : el('span', { className: 'text-[11px] text-[#6a6a6a] text-center px-2' }, emptyText)
+      )
+    );
+
+  mount(
+    slot,
+    el(
+      'div',
+      { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+      el(
+        'div',
+        { className: 'flex items-center justify-between gap-2' },
+        el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Live Preview'),
+        el(
+          'div',
+          { className: 'flex items-center gap-1.5' },
+          flt.previewOtsuThreshold !== null
+            ? el(
+                'span',
+                { className: 'px-2 py-0.5 rounded-full bg-white border border-[#e5e5e5] text-[10px] font-medium' },
+                `Otsu T=${flt.previewOtsuThreshold}`
+              )
+            : null,
+          flt.previewLoading
+            ? el('span', { className: 'text-[11px] text-[#6a6a6a]' }, 'Updating...')
+            : null
+        )
+      ),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        renderBox('Original', origSrc, 'Waiting...'),
+        renderBox('Filtered', filtSrc, flt.previewLoading ? 'Filtering...' : 'Pending')
+      )
+    )
+  );
+}
+
+/**
+ * Updates only the filter preview DOM slot without rebuilding slider controls.
+ */
+export function updateFilterPreviewDom() {
+  const slot = document.getElementById('filter-preview-slot');
+  if (slot) {
+    mountFilterPreviewInto(slot);
+  }
+}
+
+/**
  * Renders the contextual Tool Inspector panel using safe DOM APIs only.
  * @param {HTMLElement} container
  */
 export function renderToolInspector(container) {
   const activeTab = TOOL_TABS.find((t) => t.id === workspace.activeTool) || TOOL_TABS[0];
 
+  const GROUP_FILTERS = /** @type {const} */ ([
+    { id: 'all', label: `All (${TOOL_TABS.length})` },
+    { id: 'pages', label: 'Pages' },
+    { id: 'edit', label: 'Edit' },
+    { id: 'convert', label: 'Convert' },
+    { id: 'docs', label: 'Inspect' }
+  ]);
+
   const tabList = el(
     'div',
-    { className: 'flex flex-wrap gap-1.5 pb-3 border-b border-[#e5e5e5]', role: 'tablist' },
-    TOOL_TABS.map((tab) =>
-      el(
+    { className: 'flex flex-wrap gap-1.5 pt-1', role: 'tablist', 'aria-label': 'Editor PDF tools' },
+    TOOL_TABS.map((tab) => {
+      const isActive = tab.id === activeTab.id;
+      return el(
         'button',
         {
           type: 'button',
           role: 'tab',
-          'aria-selected': String(tab.id === activeTab.id),
-          className: `category-tab ${tab.id === activeTab.id ? 'is-active' : ''}`,
+          dataset: { tabLabel: tab.label.toLowerCase(), tabGroup: tab.group },
+          'aria-selected': String(isActive),
+          className: `inspector-tool-tab ${isActive ? 'is-active' : ''}`,
           onClick: () =>
             workspace.setActiveTool(
               /** @type {import('../../state/workspace.js').ToolTabId} */ (tab.id)
             )
         },
+        el('span', {
+          className: `w-2 h-2 rounded-full shrink-0 ${
+            isActive ? 'ring-1 ring-white/50' : 'border border-black/15'
+          }`,
+          style: { backgroundColor: tab.accent },
+          'aria-hidden': 'true'
+        }),
         tab.label
+      );
+    })
+  );
+
+  const visibleCountEl = el(
+    'span',
+    { className: 'text-[11px] font-medium text-[#6a6a6a] shrink-0 px-2' },
+    `${TOOL_TABS.length} tools`
+  );
+
+  const groupRow = el('div', { className: 'flex flex-wrap items-center gap-1' });
+
+  const applyTabFilters = () => {
+    const q = inspectorSearchQuery.trim().toLowerCase();
+    let visibleCount = 0;
+    for (const btn of tabList.children) {
+      const node = /** @type {HTMLElement} */ (btn);
+      const lbl = node.dataset.tabLabel || '';
+      const grp = node.dataset.tabGroup || '';
+      const isSel = node.getAttribute('aria-selected') === 'true';
+      const matchesGroup = inspectorToolGroup === 'all' || grp === inspectorToolGroup;
+      const matchesQuery = !q || lbl.includes(q);
+      const show = (matchesGroup && matchesQuery) || (isSel && !q);
+      node.style.display = show ? '' : 'none';
+      if (show) visibleCount++;
+    }
+    visibleCountEl.textContent = `${visibleCount} shown`;
+
+    for (const pill of groupRow.children) {
+      const btn = /** @type {HTMLButtonElement} */ (pill);
+      const active = btn.dataset.group === inspectorToolGroup;
+      btn.className = `inspector-group-pill ${active ? 'is-active' : ''}`;
+      btn.setAttribute('aria-pressed', String(active));
+    }
+  };
+
+  for (const g of GROUP_FILTERS) {
+    groupRow.append(
+      el(
+        'button',
+        {
+          type: 'button',
+          dataset: { group: g.id },
+          'aria-pressed': String(g.id === inspectorToolGroup),
+          className: `inspector-group-pill ${g.id === inspectorToolGroup ? 'is-active' : ''}`,
+          onClick: () => {
+            inspectorToolGroup = g.id;
+            applyTabFilters();
+          }
+        },
+        g.label
       )
-    )
+    );
+  }
+
+  const tabFilterInput = el('input', {
+    id: 'inspector-tool-search',
+    type: 'search',
+    value: inspectorSearchQuery,
+    placeholder: `Search ${TOOL_TABS.length} studio tools`,
+    className: 'input-clay !h-8 !rounded-full !px-3.5 text-[12px] flex-1 min-w-0',
+    onInput: (e) => {
+      inspectorSearchQuery = /** @type {HTMLInputElement} */ (e.target).value;
+      applyTabFilters();
+    }
+  });
+
+  applyTabFilters();
+
+  const toolsTray = el(
+    'div',
+    { className: 'inspector-tools-tray space-y-2' },
+    el('div', { className: 'flex items-center gap-1.5' }, tabFilterInput, visibleCountEl),
+    groupRow,
+    tabList
   );
 
   const headerCard = el(
     'div',
     {
-      className: 'rounded-[16px] px-4 py-3 flex items-center justify-between gap-2',
+      className: 'rounded-[16px] px-4 py-3 flex items-center justify-between gap-2 border border-black/5',
       style: { backgroundColor: activeTab.accent, color: activeTab.accentText }
     },
     el(
@@ -143,8 +348,8 @@ export function renderToolInspector(container) {
 
   const aside = el(
     'aside',
-    { className: 'clay-card p-5 space-y-5 lg:sticky lg:top-[74px]' },
-    tabList,
+    { className: 'clay-card p-4 sm:p-5 space-y-4 lg:sticky lg:top-[74px] lg:max-h-[calc(100vh-92px)] lg:overflow-y-auto' },
+    toolsTray,
     headerCard,
     body
   );
@@ -243,6 +448,20 @@ function buildToolBody(tabId) {
           )
         ),
         el(
+          'label',
+          { className: 'inline-flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer pt-1' },
+          el('input', {
+            id: 'org-auto-bookmarks',
+            type: 'checkbox',
+            checked: Boolean(o.autoBookmarks),
+            className: 'w-4 h-4 accent-[#0a0a0a]',
+            onChange: (e) => {
+              o.autoBookmarks = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          }),
+          'Generate bookmarks from filenames (Auto-TOC)'
+        ),
+        el(
           'p',
           { className: 'type-caption text-[#6a6a6a]' },
           'Drag any page card in the grid to reorder, or interleave pages 1-by-1 across uploaded PDFs.'
@@ -251,8 +470,24 @@ function buildToolBody(tabId) {
       el('hr', { className: 'border-[#e5e5e5]' }),
       el(
         'div',
-        { className: 'space-y-2' },
-        el('label', { for: 'org-blank-size', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Insert Blank Page'),
+        { className: 'space-y-2.5' },
+        el(
+          'div',
+          { className: 'flex items-center justify-between gap-2' },
+          el('label', { for: 'org-blank-size', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Insert Blank Pages'),
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn-secondary !h-8 !px-2.5 !text-[12px] shrink-0',
+              onClick: () => {
+                o.autoCropModalOpen = true;
+                workspace.emit('tool');
+              }
+            },
+            'Auto-Crop Whitespace...'
+          )
+        ),
         el(
           'div',
           { className: 'flex gap-2' },
@@ -261,6 +496,7 @@ function buildToolBody(tabId) {
             'input-clay !h-10 flex-1',
             o.blankSize,
             [
+              ['match', 'Match Adjacent Page Size'],
               ['a4', 'A4 (595 × 842 pt)'],
               ['letter', 'Letter (612 × 792 pt)'],
               ['legal', 'Legal (612 × 1008 pt)']
@@ -273,10 +509,68 @@ function buildToolBody(tabId) {
             'button',
             {
               type: 'button',
-              className: 'btn-secondary !h-10 !px-3.5 shrink-0',
+              className: 'btn-secondary !h-10 !px-3 shrink-0',
+              title: 'Append blank page at end',
               onClick: () => workspace.insertBlankPage(o.blankSize)
             },
-            '+ Insert'
+            '+ Append'
+          )
+        ),
+        el(
+          'div',
+          { className: 'grid grid-cols-2 gap-1.5' },
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn-secondary !h-8 !px-2.5 !text-[12px]',
+              onClick: () => workspace.insertBlankBeforeSelected(o.blankSize)
+            },
+            'Before Selected'
+          ),
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn-secondary !h-8 !px-2.5 !text-[12px]',
+              onClick: () => workspace.insertBlankAfterSelected(o.blankSize)
+            },
+            'After Selected'
+          )
+        ),
+        el(
+          'div',
+          { className: 'flex items-center gap-1.5' },
+          el('span', { className: 'text-[12px] text-[#6a6a6a] shrink-0' }, 'Every'),
+          el('input', {
+            id: 'org-blank-every-n',
+            type: 'number',
+            min: '1',
+            max: '100',
+            value: String(o.blankEveryN || 1),
+            className: 'input-clay !h-8 !w-14 !px-2 text-center text-[12px]',
+            onInput: (e) => {
+              o.blankEveryN = Math.max(1, Number(/** @type {HTMLInputElement} */ (e.target).value) || 1);
+            }
+          }),
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn-secondary !h-8 !px-2.5 !text-[12px] flex-1',
+              onClick: () => workspace.insertBlankEveryN(o.blankEveryN || 1, o.blankSize)
+            },
+            'Insert Every N'
+          ),
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn-secondary !h-8 !px-2.5 !text-[12px] shrink-0',
+              title: 'Append 1 blank page if total count is odd',
+              onClick: () => workspace.padToEvenPageCount(o.blankSize)
+            },
+            'Pad Even'
           )
         )
       ),
@@ -382,7 +676,7 @@ function buildToolBody(tabId) {
           s.mode,
           [
             ['ranges', 'Custom Page Ranges (ZIP)'],
-            ['extract', 'Extract Selected / Range (Single PDF)'],
+            ['extract', 'Extract Selected/Range (Single PDF)'],
             ['every_n', 'Split Every N Pages (ZIP)'],
             ['burst', 'Burst Every Page (ZIP)']
           ],
@@ -450,7 +744,7 @@ function buildToolBody(tabId) {
           unicodeNeeded ? 'bg-[#b8a4ed] text-[#0a0a0a]' : 'bg-[#f5f0e0] text-[#6a6a6a]'
         }`
       },
-      unicodeNeeded ? 'Unicode TTF Active' : 'WinAnsi / Standard'
+      unicodeNeeded ? 'Unicode TTF Active' : 'WinAnsi/Standard'
     );
 
     const textInput = /** @type {HTMLInputElement} */ (
@@ -465,7 +759,7 @@ function buildToolBody(tabId) {
           w.enabled = true;
           enabledCheck.checked = true;
           const needsUni = !isWinAnsiCompatible(w.text);
-          unicodeBadge.textContent = needsUni ? 'Unicode TTF Active' : 'WinAnsi / Standard';
+          unicodeBadge.textContent = needsUni ? 'Unicode TTF Active' : 'WinAnsi/Standard';
           unicodeBadge.className = `text-[11px] font-medium px-2 py-0.5 rounded-full ${
             needsUni ? 'bg-[#b8a4ed] text-[#0a0a0a]' : 'bg-[#f5f0e0] text-[#6a6a6a]'
           }`;
@@ -625,7 +919,7 @@ function buildToolBody(tabId) {
             el(
               'div',
               { className: 'space-y-1.5' },
-              el('label', { className: 'text-[13px] font-medium block' }, 'Upload PNG / JPG Stamp'),
+              el('label', { className: 'text-[13px] font-medium block' }, 'Upload PNG/JPG Stamp'),
               el('input', {
                 type: 'file',
                 accept: 'image/png,image/jpeg',
@@ -727,6 +1021,344 @@ function buildToolBody(tabId) {
 
   if (tabId === 'numbering') {
     const n = t.numbering;
+    const isBates = n.mode === 'bates';
+
+    const modeTabs = el(
+      'div',
+      { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5]' },
+      el(
+        'button',
+        {
+          type: 'button',
+          className: `h-8 rounded-[9px] text-[12px] font-medium transition-colors ${
+            !isBates ? 'bg-[#0a0a0a] text-white' : 'text-[#555] hover:text-[#0a0a0a]'
+          }`,
+          onClick: () => {
+            n.mode = 'single';
+            workspace.emit('tool');
+          }
+        },
+        'Single File'
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          className: `h-8 rounded-[9px] text-[12px] font-medium transition-colors ${
+            isBates ? 'bg-[#0a0a0a] text-white' : 'text-[#555] hover:text-[#0a0a0a]'
+          }`,
+          onClick: () => {
+            n.mode = 'bates';
+            workspace.syncBatesQueueWithSources();
+          }
+        },
+        'Batch Bates (ZIP)'
+      )
+    );
+
+    if (isBates) {
+      const validQueue = n.batesQueue.filter((id) => workspace.sourceFiles.get(id)?.type === 'pdf');
+      const firstEntry = validQueue.length > 0 ? workspace.sourceFiles.get(validQueue[0]) : null;
+      const previewEl = el('code', {
+        className: 'text-[13px] font-semibold text-[#0a0a0a] break-all'
+      });
+
+      const updateLivePreview = () => {
+        const sampleFile = firstEntry ? firstEntry.name.replace(/\.pdf$/i, '') : 'Exhibit_A';
+        const sampleTotal = firstEntry?.pageCount || 12;
+        const sample = formatBatesLabel(n.batesTemplate, {
+          prefix: n.batesPrefix,
+          suffix: n.batesSuffix,
+          counter: n.batesStart,
+          padding: n.batesPadding,
+          filename: sampleFile,
+          n: 1,
+          total: sampleTotal
+        });
+        const sampleNext = formatBatesLabel(n.batesTemplate, {
+          prefix: n.batesPrefix,
+          suffix: n.batesSuffix,
+          counter: (Number(n.batesStart) || 1) + 1,
+          padding: n.batesPadding,
+          filename: sampleFile,
+          n: 2,
+          total: sampleTotal
+        });
+        previewEl.textContent = `${sample}  →  ${sampleNext}`;
+      };
+      updateLivePreview();
+
+      const prefixInput = /** @type {HTMLInputElement} */ (
+        el('input', {
+          id: 'bates-prefix',
+          type: 'text',
+          value: n.batesPrefix,
+          className: 'input-clay !h-9 mt-1',
+          onInput: (e) => {
+            n.batesPrefix = /** @type {HTMLInputElement} */ (e.target).value;
+            updateLivePreview();
+          }
+        })
+      );
+      prefixInput.value = n.batesPrefix;
+
+      const suffixInput = /** @type {HTMLInputElement} */ (
+        el('input', {
+          id: 'bates-suffix',
+          type: 'text',
+          value: n.batesSuffix,
+          className: 'input-clay !h-9 mt-1',
+          onInput: (e) => {
+            n.batesSuffix = /** @type {HTMLInputElement} */ (e.target).value;
+            updateLivePreview();
+          }
+        })
+      );
+      suffixInput.value = n.batesSuffix;
+
+      const batesTmplInput = /** @type {HTMLInputElement} */ (
+        el('input', {
+          id: 'bates-template',
+          type: 'text',
+          value: n.batesTemplate,
+          className: 'input-clay !h-9 mt-1',
+          onInput: (e) => {
+            n.batesTemplate = /** @type {HTMLInputElement} */ (e.target).value;
+            updateLivePreview();
+          }
+        })
+      );
+      batesTmplInput.value = n.batesTemplate;
+
+      const queueContainer = el('div', { className: 'space-y-1.5 max-h-44 overflow-y-auto pr-0.5' });
+      if (validQueue.length === 0) {
+        queueContainer.appendChild(
+          el(
+            'div',
+            { className: 'p-3 rounded-[10px] border border-dashed border-[#d4d0c5] text-[12px] text-[#6a6a6a]' },
+            'No PDFs in the Batch Bates queue. Upload PDFs or click Sync Loaded PDFs.'
+          )
+        );
+      } else {
+        let runningCounter = Number(n.batesStart) || 1;
+        validQueue.forEach((id, idx) => {
+          const src = workspace.sourceFiles.get(id);
+          if (!src) return;
+          const pagesInFile = src.pageCount || 1;
+          const startLabel = formatBatesLabel(n.batesTemplate, {
+            prefix: n.batesPrefix,
+            suffix: n.batesSuffix,
+            counter: runningCounter,
+            padding: n.batesPadding,
+            filename: src.name.replace(/\.pdf$/i, ''),
+            n: 1,
+            total: pagesInFile
+          });
+          runningCounter += pagesInFile;
+
+          queueContainer.appendChild(
+            el(
+              'div',
+              {
+                className:
+                  'flex items-center justify-between gap-2 px-2.5 py-2 rounded-[10px] bg-white border border-[#e5e5e5]'
+              },
+              el(
+                'div',
+                { className: 'min-w-0 flex-1' },
+                el('p', { className: 'text-[12px] font-medium text-[#0a0a0a] truncate' }, `${idx + 1}. ${src.name}`),
+                el('p', { className: 'text-[11px] text-[#6a6a6a] truncate' }, `${pagesInFile}p • starts at ${startLabel}`)
+              ),
+              el(
+                'div',
+                { className: 'flex items-center gap-1 shrink-0' },
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'w-6 h-6 rounded border border-[#e5e5e5] text-[11px] hover:bg-[#faf5e8] disabled:opacity-40',
+                    disabled: idx === 0,
+                    title: 'Move up',
+                    onClick: () => workspace.moveBatesQueueItem(idx, idx - 1)
+                  },
+                  '↑'
+                ),
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'w-6 h-6 rounded border border-[#e5e5e5] text-[11px] hover:bg-[#faf5e8] disabled:opacity-40',
+                    disabled: idx === validQueue.length - 1,
+                    title: 'Move down',
+                    onClick: () => workspace.moveBatesQueueItem(idx, idx + 1)
+                  },
+                  '↓'
+                ),
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'w-6 h-6 rounded border border-[#e5e5e5] text-[11px] text-[#ef4444] hover:bg-red-50',
+                    title: 'Remove from queue',
+                    onClick: () => workspace.removeBatesQueueItem(id)
+                  },
+                  '×'
+                )
+              )
+            )
+          );
+        });
+      }
+
+      return el(
+        'div',
+        { className: 'space-y-3' },
+        modeTabs,
+        el(
+          'div',
+          { className: 'space-y-1.5' },
+          el(
+            'div',
+            { className: 'flex items-center justify-between gap-2' },
+            el('span', { className: 'text-[12px] font-medium text-[#1a1a1a]' }, `PDF Queue (${validQueue.length})`),
+            el(
+              'div',
+              { className: 'flex items-center gap-1.5' },
+              el(
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn-secondary !h-7 !px-2 !text-[11px]',
+                  onClick: () => workspace.syncBatesQueueWithSources()
+                },
+                '+ Sync PDFs'
+              ),
+              el(
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn-secondary !h-7 !px-2 !text-[11px]',
+                  onClick: () => {
+                    /** @type {HTMLInputElement|null} */ (
+                      document.querySelector('#global-file-input, input[type="file"][accept*="pdf"]')
+                    )?.click();
+                  }
+                },
+                '+ Upload'
+              )
+            )
+          ),
+          queueContainer
+        ),
+        el(
+          'div',
+          { className: 'p-2.5 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-1' },
+          el('p', { className: 'text-[11px] font-medium text-[#6a6a6a]' }, 'Live Formatted Preview'),
+          previewEl
+        ),
+        el(
+          'div',
+          { className: 'grid grid-cols-2 gap-2' },
+          labeledField('Prefix', prefixInput),
+          labeledField('Suffix', suffixInput)
+        ),
+        el(
+          'div',
+          { className: 'grid grid-cols-2 gap-2' },
+          labeledField(
+            'Start Counter',
+            el('input', {
+              type: 'number',
+              min: '0',
+              value: String(n.batesStart),
+              className: 'input-clay !h-9 mt-1',
+              onInput: (e) => {
+                n.batesStart = Math.max(0, Number(/** @type {HTMLInputElement} */ (e.target).value) || 0);
+                updateLivePreview();
+              }
+            })
+          ),
+          labeledField(
+            'Zero-Pad Digits',
+            el('input', {
+              type: 'number',
+              min: '1',
+              max: '12',
+              value: String(n.batesPadding),
+              className: 'input-clay !h-9 mt-1',
+              onInput: (e) => {
+                n.batesPadding = Math.max(1, Math.min(12, Number(/** @type {HTMLInputElement} */ (e.target).value) || 5));
+                updateLivePreview();
+              }
+            })
+          )
+        ),
+        el(
+          'div',
+          { className: 'space-y-1' },
+          labeledField('Template ({prefix}, {counter:pad}, {suffix}, {filename}, {n}, {total}, {date})', batesTmplInput)
+        ),
+        el(
+          'div',
+          { className: 'grid grid-cols-2 gap-2' },
+          labeledField(
+            'Placement',
+            selectControl(
+              'bates-placement',
+              'input-clay !h-9 mt-1',
+              n.batesPlacement,
+              [
+                ['bottom', 'Footer (Bottom)'],
+                ['top', 'Header (Top)']
+              ],
+              (val) => {
+                n.batesPlacement = val;
+              }
+            )
+          ),
+          labeledField(
+            'Alignment',
+            selectControl(
+              'bates-align',
+              'input-clay !h-9 mt-1',
+              n.batesAlignment,
+              [
+                ['left', 'Left'],
+                ['center', 'Center'],
+                ['right', 'Right']
+              ],
+              (val) => {
+                n.batesAlignment = val;
+              }
+            )
+          )
+        ),
+        el(
+          'label',
+          { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+          el('input', {
+            type: 'checkbox',
+            checked: n.batesIncludeCsv,
+            className: 'w-4 h-4 accent-[#0a0a0a]',
+            onChange: (e) => {
+              n.batesIncludeCsv = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          }),
+          'Include CSV Manifest (bates_manifest.csv)'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className: 'btn-primary w-full',
+            disabled: validQueue.length === 0,
+            onClick: runBatchBatesJob
+          },
+          'Stamp Bates & Export ZIP'
+        )
+      );
+    }
+
     const tmplInput = /** @type {HTMLInputElement} */ (
       el('input', {
         id: 'num-template',
@@ -743,6 +1375,7 @@ function buildToolBody(tabId) {
     return el(
       'div',
       { className: 'space-y-3.5' },
+      modeTabs,
       el(
         'label',
         {
@@ -1009,6 +1642,9 @@ function buildToolBody(tabId) {
 
   if (tabId === 'metadata') {
     const m = t.metadata;
+    const selectedEntry = m.targetFileId ? workspace.sourceFiles.get(m.targetFileId) : null;
+    const audit = m.audit || selectedEntry?.audit || null;
+
     const makeMetaInput = (label, key, heightClass = '!h-10') => {
       const inp = /** @type {HTMLInputElement} */ (
         el('input', {
@@ -1024,15 +1660,128 @@ function buildToolBody(tabId) {
       return labeledField(label, inp);
     };
 
+    const makeAuditRow = (label, valueText, flagged) =>
+      el(
+        'div',
+        { className: 'flex items-center justify-between text-[12px]' },
+        el('span', { className: 'text-[#6a6a6a]' }, label),
+        el(
+          'span',
+          {
+            className: flagged
+              ? 'font-semibold text-[#b91c1c]'
+              : 'font-medium text-[#15803d]'
+          },
+          valueText
+        )
+      );
+
+    const makeScrubToggle = (key, labelText) =>
+      el(
+        'label',
+        { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+        el('input', {
+          type: 'checkbox',
+          checked: Boolean(m.scrubOptions?.[key]),
+          className: 'w-4 h-4 accent-[#0a0a0a]',
+          onChange: (e) => {
+            if (!m.scrubOptions) {
+              m.scrubOptions = {
+                scrubInfo: true,
+                purgeXmp: true,
+                removeThumbnails: true,
+                stripScriptsAndActions: true
+              };
+            }
+            m.scrubOptions[key] = /** @type {HTMLInputElement} */ (e.target).checked;
+          }
+        }),
+        labelText
+      );
+
     return el(
       'div',
       { className: 'space-y-3' },
       buildPdfSourceSelect('meta-target-select', m.targetFileId, (id) => {
         m.targetFileId = id;
         const entry = workspace.sourceFiles.get(id);
-        if (entry) workspace.hydrateMetadataFields(entry.metadata);
+        if (entry) {
+          workspace.hydrateMetadataFields(entry.metadata);
+          m.audit = entry.audit || null;
+          if (!entry.audit) {
+            runPrivacyAuditForTarget();
+          }
+        }
         workspace.emit('tool');
       }),
+      el(
+        'div',
+        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        el(
+          'div',
+          { className: 'flex items-center justify-between gap-2' },
+          el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Pre-Scrub Privacy Audit'),
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn-secondary !h-7 !px-2 !text-[11px]',
+              disabled: !m.targetFileId || m.auditLoading,
+              onClick: runPrivacyAuditForTarget
+            },
+            m.auditLoading ? 'Scanning...' : 'Re-scan Audit'
+          )
+        ),
+        audit
+          ? el(
+              'div',
+              { className: 'space-y-1 pt-0.5' },
+              makeAuditRow('Info Fields', `${audit.infoFieldCount} populated`, audit.infoFieldCount > 0),
+              makeAuditRow(
+                'XMP Stream (/Metadata)',
+                audit.xmpSizeBytes > 0 ? formatBytes(audit.xmpSizeBytes) : 'Clean (0 B)',
+                audit.xmpSizeBytes > 0
+              ),
+              makeAuditRow(
+                'Embedded Thumbs (/Thumb)',
+                audit.thumbnailCount > 0 ? `${audit.thumbnailCount} found` : 'None',
+                audit.thumbnailCount > 0
+              ),
+              makeAuditRow(
+                'OpenAction',
+                audit.openActionPresent ? 'Present' : 'None',
+                audit.openActionPresent
+              ),
+              makeAuditRow(
+                'Additional Actions (/AA)',
+                audit.additionalActionsCount > 0 ? `${audit.additionalActionsCount} found` : 'None',
+                audit.additionalActionsCount > 0
+              ),
+              makeAuditRow(
+                'JavaScript (/Names)',
+                audit.javascriptCount > 0 ? `${audit.javascriptCount} found` : 'None',
+                audit.javascriptCount > 0
+              )
+            )
+          : el(
+              'p',
+              { className: 'text-[11px] text-[#6a6a6a]' },
+              m.targetFileId
+                ? m.auditLoading
+                  ? 'Inspecting catalog metadata, XMP, thumbnails & scripts...'
+                  : 'Click Re-scan Audit to inspect hidden privacy traces.'
+                : 'Select or upload a PDF to run the privacy audit.'
+            )
+      ),
+      el(
+        'div',
+        { className: 'p-3 rounded-[12px] bg-white border border-[#e5e5e5] space-y-2' },
+        el('p', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Granular Scrub Targets'),
+        makeScrubToggle('scrubInfo', 'Strip Info Dictionary (Title, Author, Dates)'),
+        makeScrubToggle('purgeXmp', 'Purge Catalog XMP XML Stream (/Metadata)'),
+        makeScrubToggle('removeThumbnails', 'Remove Embedded Page Thumbnails (/Thumb)'),
+        makeScrubToggle('stripScriptsAndActions', 'Delete /OpenAction, /AA & /JavaScript')
+      ),
       el(
         'div',
         { className: 'space-y-2' },
@@ -1077,11 +1826,21 @@ function buildToolBody(tabId) {
           'button',
           {
             type: 'button',
+            className: 'btn-secondary w-full',
+            disabled: !m.targetFileId,
+            onClick: () => runMetadataJob('scrub-selected')
+          },
+          'Run Selected Privacy Scrub'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
             className: 'btn-secondary w-full !border-[#ef4444] !text-[#ef4444]',
             disabled: !m.targetFileId,
-            onClick: () => runMetadataJob(true)
+            onClick: () => runMetadataJob('scrub-all')
           },
-          'Strip All Metadata (Privacy Scrub)'
+          'Scrub All Traces (One-Click)'
         )
       )
     );
@@ -1193,48 +1952,1984 @@ function buildToolBody(tabId) {
     );
   }
 
+  if (tabId === 'resize') {
+    const r = t.resize;
+    const isCustom = r.preset === 'custom';
+    const currentPreset = PAPER_PRESETS[r.preset] || PAPER_PRESETS.a4;
+    const summaryW = isCustom ? toPoints(r.customWidth, r.customUnit) : currentPreset.width;
+    const summaryH = isCustom ? toPoints(r.customHeight, r.customUnit) : currentPreset.height;
+
+    const widthInput = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'resize-custom-w',
+        type: 'number',
+        step: '0.1',
+        min: '1',
+        value: String(r.customWidth),
+        className: 'input-clay !h-9 mt-1',
+        onInput: (e) => {
+          r.customWidth = Number(/** @type {HTMLInputElement} */ (e.target).value) || 1;
+        }
+      })
+    );
+    widthInput.value = String(r.customWidth);
+
+    const heightInput = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'resize-custom-h',
+        type: 'number',
+        step: '0.1',
+        min: '1',
+        value: String(r.customHeight),
+        className: 'input-clay !h-9 mt-1',
+        onInput: (e) => {
+          r.customHeight = Number(/** @type {HTMLInputElement} */ (e.target).value) || 1;
+        }
+      })
+    );
+    heightInput.value = String(r.customHeight);
+
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      el(
+        'p',
+        { className: 'type-body-sm' },
+        'Standardize mixed page sizes onto uniform dimensions using vector embedPage() without rasterizing text.'
+      ),
+      el(
+        'div',
+        { className: 'space-y-1.5' },
+        el('label', { for: 'resize-preset', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Target Paper Size'),
+        selectControl(
+          'resize-preset',
+          'input-clay !h-10',
+          r.preset,
+          [
+            ['a4', PAPER_PRESETS.a4.label],
+            ['a3', PAPER_PRESETS.a3.label],
+            ['a5', PAPER_PRESETS.a5.label],
+            ['letter', PAPER_PRESETS.letter.label],
+            ['legal', PAPER_PRESETS.legal.label],
+            ['f4_id', PAPER_PRESETS.f4_id.label],
+            ['f4_us', PAPER_PRESETS.f4_us.label],
+            ['custom', 'Custom Dimensions...']
+          ],
+          (val) => {
+            r.preset = val;
+            workspace.emit('tool');
+          }
+        )
+      ),
+      isCustom
+        ? el(
+            'div',
+            { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2.5' },
+            el(
+              'div',
+              { className: 'grid grid-cols-3 gap-2' },
+              labeledField('Width', widthInput),
+              labeledField('Height', heightInput),
+              labeledField(
+                'Unit',
+                selectControl(
+                  'resize-unit',
+                  'input-clay !h-9 mt-1',
+                  r.customUnit,
+                  [
+                    ['mm', 'mm'],
+                    ['cm', 'cm'],
+                    ['in', 'in'],
+                    ['pt', 'pt']
+                  ],
+                  (nextUnit) => {
+                    const prevUnit = r.customUnit;
+                    const wPt = toPoints(r.customWidth, prevUnit);
+                    const hPt = toPoints(r.customHeight, prevUnit);
+                    r.customUnit = /** @type {'pt'|'mm'|'cm'|'in'} */ (nextUnit);
+                    r.customWidth = Math.round(fromPoints(wPt, r.customUnit) * 100) / 100;
+                    r.customHeight = Math.round(fromPoints(hPt, r.customUnit) * 100) / 100;
+                    workspace.emit('tool');
+                  }
+                )
+              )
+            ),
+            el(
+              'p',
+              { className: 'text-[11px] text-[#6a6a6a]' },
+              `PDF Points: ${Math.round(summaryW * 10) / 10} × ${Math.round(summaryH * 10) / 10} pt`
+            )
+          )
+        : null,
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Fit Mode',
+          selectControl(
+            'resize-fit-mode',
+            'input-clay !h-10 mt-1',
+            r.fitMode,
+            [
+              ['fit', 'Fit (Preserve Aspect)'],
+              ['fill', 'Fill (Cover & Clip)'],
+              ['original', 'Original Center']
+            ],
+            (val) => {
+              r.fitMode = val;
+              workspace.emit('tool');
+            }
+          )
+        ),
+        labeledField(
+          'Orientation',
+          selectControl(
+            'resize-orientation',
+            'input-clay !h-10 mt-1',
+            r.orientation,
+            [
+              ['auto', 'Auto (Match Source)'],
+              ['portrait', 'Force Portrait'],
+              ['landscape', 'Force Landscape']
+            ],
+            (val) => {
+              r.orientation = val;
+            }
+          )
+        )
+      ),
+      r.fitMode === 'fit'
+        ? labeledField(
+            'Inner Padding Margin (pt)',
+            el('input', {
+              id: 'resize-margin',
+              type: 'number',
+              min: '0',
+              max: '180',
+              value: String(r.marginPt ?? 0),
+              className: 'input-clay !h-9 mt-1',
+              onInput: (e) => {
+                r.marginPt = Math.max(0, Number(/** @type {HTMLInputElement} */ (e.target).value) || 0);
+              }
+            })
+          )
+        : null,
+      el(
+        'button',
+        {
+          type: 'button',
+          className: 'btn-primary w-full',
+          onClick: runResizePdfJob
+        },
+        'Resize & Download PDF'
+      )
+    );
+  }
+
+  if (tabId === 'nup') {
+    const nup = t.nup;
+    const isBooklet = nup.mode === 'booklet';
+    const totalPages = workspace.pages.length;
+    const plan = computeImpositionPlan(totalPages, nup);
+    const previewSheets = plan.sheets.slice(0, 6);
+    const blankPadCount = Math.max(0, plan.paddedPageCount - totalPages);
+
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5]' },
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `h-8 rounded-[9px] text-[12px] font-medium transition-colors ${
+              !isBooklet ? 'bg-[#0a0a0a] text-white' : 'text-[#555] hover:text-[#0a0a0a]'
+            }`,
+            onClick: () => {
+              nup.mode = 'nup';
+              workspace.emit('tool');
+            }
+          },
+          'N-Up Grid'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `h-8 rounded-[9px] text-[12px] font-medium transition-colors ${
+              isBooklet ? 'bg-[#0a0a0a] text-white' : 'text-[#555] hover:text-[#0a0a0a]'
+            }`,
+            onClick: () => {
+              nup.mode = 'booklet';
+              nup.sheetOrientation = 'landscape';
+              workspace.emit('tool');
+            }
+          },
+          'Booklet Maker'
+        )
+      ),
+      el(
+        'div',
+        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        el(
+          'div',
+          { className: 'flex items-center justify-between gap-2' },
+          el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Sheet Imposition Diagram'),
+          el(
+            'span',
+            { className: 'text-[11px] text-[#6a6a6a]' },
+            isBooklet
+              ? `${totalPages}p${blankPadCount > 0 ? ` (+${blankPadCount} blank)` : ''} → ${plan.sheets.length} sheets`
+              : `${totalPages}p → ${plan.sheets.length} sheet${plan.sheets.length === 1 ? '' : 's'}`
+          )
+        ),
+        el(
+          'div',
+          { className: 'grid grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-0.5' },
+          previewSheets.map((sheet) => {
+            const cellGrid = el('div', {
+              className: 'grid gap-1',
+              style: {
+                gridTemplateColumns: `repeat(${plan.cols}, minmax(0, 1fr))`
+              }
+            });
+            const orderedSlots = [...sheet.slots].sort((a, b) =>
+              a.row !== b.row ? a.row - b.row : a.col - b.col
+            );
+            for (const slot of orderedSlots) {
+              cellGrid.appendChild(
+                el(
+                  'div',
+                  {
+                    className: `h-8 rounded-[6px] border text-[11px] font-medium flex items-center justify-center ${
+                      slot.pageNumber === null
+                        ? 'bg-[#f5f0e0] border-dashed border-[#c7c2b4] text-[#6a6a6a]'
+                        : 'bg-white border-[#0a0a0a]/20 text-[#0a0a0a]'
+                    }`
+                  },
+                  slot.pageNumber === null
+                    ? 'Blank'
+                    : `${slot.pageNumber}${slot.extraRotation ? '↻' : ''}`
+                )
+              );
+            }
+            return el(
+              'div',
+              { className: 'p-2 rounded-[10px] bg-white/80 border border-[#e5e5e5] space-y-1' },
+              el(
+                'div',
+                { className: 'flex items-center justify-between text-[10px] text-[#6a6a6a]' },
+                el(
+                  'span',
+                  {},
+                  isBooklet
+                    ? `S${Math.ceil(sheet.sheetIndex / 2)} ${sheet.side === 'front' ? 'Front' : 'Back'}`
+                    : `Sheet ${sheet.sheetIndex}`
+                ),
+                sheet.flipped180 ? el('span', { className: 'font-semibold text-[#0a0a0a]' }, '180°') : null
+              ),
+              cellGrid
+            );
+          })
+        ),
+        plan.sheets.length > 6
+          ? el(
+              'p',
+              { className: 'text-[11px] text-[#6a6a6a]' },
+              `Showing first 6 of ${plan.sheets.length} imposed sheets.`
+            )
+          : null
+      ),
+      !isBooklet
+        ? el(
+            'div',
+            { className: 'grid grid-cols-2 gap-2' },
+            labeledField(
+              'Pages per Sheet',
+              selectControl(
+                'nup-count',
+                'input-clay !h-9 mt-1',
+                nup.nUp,
+                [
+                  [2, '2-Up'],
+                  [4, '4-Up (2×2)'],
+                  [6, '6-Up'],
+                  [9, '9-Up (3×3)']
+                ],
+                (val) => {
+                  nup.nUp = /** @type {2|4|6|9} */ (Number(val) || 2);
+                  workspace.emit('tool');
+                }
+              )
+            ),
+            labeledField(
+              'Reading Order',
+              selectControl(
+                'nup-order',
+                'input-clay !h-9 mt-1',
+                nup.nUpOrder,
+                [
+                  ['ltr', 'Left → Right'],
+                  ['rtl', 'Right → Left'],
+                  ['ttb', 'Top → Bottom']
+                ],
+                (val) => {
+                  nup.nUpOrder = val;
+                  workspace.emit('tool');
+                }
+              )
+            )
+          )
+        : el(
+            'div',
+            { className: 'space-y-2' },
+            labeledField(
+              'Binding Edge/Direction',
+              selectControl(
+                'booklet-binding',
+                'input-clay !h-9 mt-1',
+                nup.bindingEdge,
+                [
+                  ['left', 'Left Binding (Standard LTR)'],
+                  ['right', 'Right Binding (Manga/RTL)']
+                ],
+                (val) => {
+                  nup.bindingEdge = val;
+                  workspace.emit('tool');
+                }
+              )
+            ),
+            el(
+              'label',
+              { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+              el('input', {
+                type: 'checkbox',
+                checked: Boolean(nup.flipBackSide),
+                className: 'w-4 h-4 accent-[#0a0a0a]',
+                onChange: (e) => {
+                  nup.flipBackSide = /** @type {HTMLInputElement} */ (e.target).checked;
+                  workspace.emit('tool');
+                }
+              }),
+              'Flip back-side sheets 180° (Duplex flip)'
+            )
+          ),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Target Sheet',
+          selectControl(
+            'nup-sheet-preset',
+            'input-clay !h-9 mt-1',
+            nup.sheetPreset,
+            [
+              ['a4', 'A4'],
+              ['a3', 'A3'],
+              ['a5', 'A5'],
+              ['letter', 'US Letter'],
+              ['legal', 'US Legal'],
+              ['f4_id', 'F4 (210×330mm)']
+            ],
+            (val) => {
+              nup.sheetPreset = val;
+              workspace.emit('tool');
+            }
+          )
+        ),
+        !isBooklet
+          ? labeledField(
+              'Orientation',
+              selectControl(
+                'nup-orientation',
+                'input-clay !h-9 mt-1',
+                nup.sheetOrientation,
+                [
+                  ['landscape', 'Landscape'],
+                  ['portrait', 'Portrait']
+                ],
+                (val) => {
+                  nup.sheetOrientation = val;
+                  workspace.emit('tool');
+                }
+              )
+            )
+          : labeledField(
+              'Sheet Layout',
+              el('input', {
+                type: 'text',
+                value: 'Landscape (Folded)',
+                disabled: true,
+                className: 'input-clay !h-9 mt-1 opacity-75'
+              })
+            )
+      ),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Outer Margin (pt)',
+          el('input', {
+            type: 'number',
+            min: '0',
+            max: '120',
+            value: String(nup.outerMarginPt),
+            className: 'input-clay !h-9 mt-1',
+            onInput: (e) => {
+              nup.outerMarginPt = Math.max(0, Number(/** @type {HTMLInputElement} */ (e.target).value) || 0);
+            }
+          })
+        ),
+        labeledField(
+          isBooklet ? 'Spine Gutter (pt)' : 'Cell Gutter (pt)',
+          el('input', {
+            type: 'number',
+            min: '0',
+            max: '100',
+            value: String(nup.gutterPt),
+            className: 'input-clay !h-9 mt-1',
+            onInput: (e) => {
+              nup.gutterPt = Math.max(0, Number(/** @type {HTMLInputElement} */ (e.target).value) || 0);
+            }
+          })
+        )
+      ),
+      el(
+        'label',
+        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+        el('input', {
+          type: 'checkbox',
+          checked: Boolean(nup.drawBorders),
+          className: 'w-4 h-4 accent-[#0a0a0a]',
+          onChange: (e) => {
+            nup.drawBorders = /** @type {HTMLInputElement} */ (e.target).checked;
+          }
+        }),
+        'Draw subtle cut/cell border lines'
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          className: 'btn-primary w-full',
+          onClick: runImpositionJob
+        },
+        isBooklet ? 'Impose Booklet PDF' : `Create ${nup.nUp}-Up PDF`
+      )
+    );
+  }
+
+  if (tabId === 'spreads') {
+    const sp = t.spreads;
+    const pages = workspace.pages;
+    const safeIdx = Math.max(0, Math.min(Math.max(0, pages.length - 1), Number(sp.previewPageIndex) || 0));
+    const currentPage = pages[safeIdx];
+    const desiredKey = currentPage ? `${currentPage.id}:${currentPage.rotation}` : '';
+    if (currentPage && sp.previewKey !== desiredKey && !sp.previewLoading) {
+      queueMicrotask(() => {
+        loadSpreadsPreview();
+      });
+    }
+
+    const pct = Math.round((Number(sp.splitRatio) || 0.5) * 100);
+    const ratioBadge = el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, `${pct}% / ${100 - pct}%`);
+    const rangeSlider = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'spread-ratio-slider',
+        type: 'range',
+        min: '15',
+        max: '85',
+        step: '1',
+        value: String(pct),
+        className: 'w-full accent-[#0a0a0a] cursor-pointer'
+      })
+    );
+    rangeSlider.value = String(pct);
+
+    const dividerLine = el(
+      'div',
+      {
+        className:
+          sp.axis === 'horizontal'
+            ? 'absolute left-0 right-0 h-0.5 bg-[#ff4d8b] shadow-[0_0_0_2px_rgba(255,255,255,0.85)] cursor-ns-resize'
+            : 'absolute top-0 bottom-0 w-0.5 bg-[#ff4d8b] shadow-[0_0_0_2px_rgba(255,255,255,0.85)] cursor-ew-resize',
+        style:
+          sp.axis === 'horizontal'
+            ? { top: `${pct}%`, transform: 'translateY(-50%)' }
+            : { left: `${pct}%`, transform: 'translateX(-50%)' }
+      },
+      el(
+        'span',
+        {
+          className:
+            'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-[#ff4d8b] text-white text-[10px] font-semibold whitespace-nowrap shadow'
+        },
+        `${pct}%`
+      )
+    );
+
+    const applyRatioVisual = (nextRatio) => {
+      const clamped = Math.max(0.15, Math.min(0.85, nextRatio));
+      sp.splitRatio = Math.round(clamped * 1000) / 1000;
+      const p = Math.round(sp.splitRatio * 100);
+      ratioBadge.textContent = `${p}% / ${100 - p}%`;
+      rangeSlider.value = String(p);
+      const pill = dividerLine.querySelector('span');
+      if (pill) pill.textContent = `${p}%`;
+      if (sp.axis === 'horizontal') {
+        dividerLine.style.top = `${p}%`;
+      } else {
+        dividerLine.style.left = `${p}%`;
+      }
+    };
+
+    rangeSlider.addEventListener('input', () => {
+      applyRatioVisual((Number(rangeSlider.value) || 50) / 100);
+    });
+
+    const previewFrame = el(
+      'div',
+      {
+        className:
+          'relative select-none touch-none rounded-[10px] border border-[#e5e5e5] bg-white overflow-hidden flex items-center justify-center min-h-[160px]',
+        onPointerdown: (e) => {
+          const boxEl = /** @type {HTMLElement} */ (e.currentTarget);
+          boxEl.setPointerCapture?.(e.pointerId);
+          const updateFromEvent = (ev) => {
+            const rect = boxEl.getBoundingClientRect();
+            const frac =
+              sp.axis === 'horizontal'
+                ? (ev.clientY - rect.top) / Math.max(1, rect.height)
+                : (ev.clientX - rect.left) / Math.max(1, rect.width);
+            applyRatioVisual(frac);
+          };
+          updateFromEvent(e);
+          const onMove = (ev) => updateFromEvent(ev);
+          const onUp = () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+          };
+          window.addEventListener('pointermove', onMove);
+          window.addEventListener('pointerup', onUp);
+        }
+      },
+      sp.previewLoading
+        ? el('p', { className: 'text-[12px] text-[#6a6a6a] p-6' }, 'Rendering spread preview...')
+        : sanitizeImageSrc(sp.previewUrl)
+          ? el('img', {
+              src: sanitizeImageSrc(sp.previewUrl),
+              alt: 'Spread split divider preview',
+              draggable: false,
+              className: 'w-full h-auto max-h-56 object-contain pointer-events-none block'
+            })
+          : el('p', { className: 'text-[12px] text-[#6a6a6a] p-6' }, 'Blank or pending page'),
+      dividerLine
+    );
+
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      el(
+        'div',
+        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        el(
+          'div',
+          { className: 'flex items-center justify-between gap-2' },
+          el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Drag Split Divider'),
+          ratioBadge
+        ),
+        previewFrame,
+        rangeSlider,
+        pages.length > 1
+          ? selectControl(
+              'spread-preview-page',
+              'input-clay !h-8 text-[12px]',
+              safeIdx,
+              pages.map((_, idx) => [idx, `Preview Page ${idx + 1} of ${pages.length}`]),
+              (val) => {
+                sp.previewPageIndex = Number(val) || 0;
+                loadSpreadsPreview();
+              }
+            )
+          : null
+      ),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Split Axis',
+          selectControl(
+            'spread-axis',
+            'input-clay !h-9 mt-1',
+            sp.axis,
+            [
+              ['vertical', 'Vertical (Left | Right)'],
+              ['horizontal', 'Horizontal (Top/Bottom)']
+            ],
+            (val) => {
+              sp.axis = val;
+              workspace.emit('tool');
+            }
+          )
+        ),
+        labeledField(
+          'Reading Order',
+          selectControl(
+            'spread-reading-order',
+            'input-clay !h-9 mt-1',
+            sp.readingOrder,
+            [
+              ['ltr', 'Left → Right (LTR)'],
+              ['rtl', 'Right → Left (RTL)']
+            ],
+            (val) => {
+              sp.readingOrder = val;
+            }
+          )
+        )
+      ),
+      el(
+        'div',
+        { className: 'space-y-1.5' },
+        el(
+          'label',
+          { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+          el('input', {
+            type: 'checkbox',
+            checked: Boolean(sp.skipFirstPage),
+            className: 'w-4 h-4 accent-[#0a0a0a]',
+            onChange: (e) => {
+              sp.skipFirstPage = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          }),
+          'Skip first page (keep front cover intact)'
+        ),
+        el(
+          'label',
+          { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+          el('input', {
+            type: 'checkbox',
+            checked: Boolean(sp.skipLastPage),
+            className: 'w-4 h-4 accent-[#0a0a0a]',
+            onChange: (e) => {
+              sp.skipLastPage = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          }),
+          'Skip last page (keep back cover intact)'
+        ),
+        el(
+          'label',
+          { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+          el('input', {
+            type: 'checkbox',
+            checked: Boolean(sp.landscapeOnly),
+            className: 'w-4 h-4 accent-[#0a0a0a]',
+            onChange: (e) => {
+              sp.landscapeOnly = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          }),
+          'Split landscape pages only'
+        )
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          className: 'btn-primary w-full',
+          onClick: runSplitSpreadsJob
+        },
+        'Split Spreads & Download PDF'
+      )
+    );
+  }
+
+  if (tabId === 'filters') {
+    const flt = t.filters;
+    const pages = workspace.pages;
+    const safeIdx = Math.max(0, Math.min(Math.max(0, pages.length - 1), Number(flt.previewPageIndex) || 0));
+    flt.previewPageIndex = safeIdx;
+
+    if (pages.length > 0 && !flt.previewFilteredUrl && !flt.previewLoading) {
+      queueMicrotask(() => {
+        requestColorFilterPreview();
+      });
+    }
+
+    let debounceTimer = null;
+    const schedulePreview = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        requestColorFilterPreview();
+      }, 90);
+    };
+
+    const contrastLabel = el(
+      'span',
+      { className: 'text-[12px] font-medium text-[#0a0a0a]' },
+      `${Number(flt.contrast ?? 1.2).toFixed(2)}×`
+    );
+    const thresholdLabel = el(
+      'span',
+      { className: 'text-[12px] font-medium text-[#0a0a0a]' },
+      String(flt.threshold ?? 185)
+    );
+
+    const previewSlot = el('div', { id: 'filter-preview-slot' });
+    mountFilterPreviewInto(previewSlot);
+
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      el(
+        'div',
+        { className: 'grid grid-cols-3 gap-1.5' },
+        ...[
+          ['grayscale', 'Grayscale'],
+          ['invert', 'Dark Mode'],
+          ['cleanup', 'Scan Clean']
+        ].map(([id, label]) =>
+          el(
+            'button',
+            {
+              type: 'button',
+              className: `h-9 rounded-[10px] text-[12px] font-medium border transition-colors ${
+                flt.preset === id
+                  ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
+                  : 'bg-white text-[#1a1a1a] border-[#e5e5e5] hover:border-[#0a0a0a]/40'
+              }`,
+              onClick: () => {
+                flt.preset = /** @type {'grayscale'|'invert'|'cleanup'} */ (id);
+                workspace.emit('tool');
+                requestColorFilterPreview();
+              }
+            },
+            label
+          )
+        )
+      ),
+      flt.preset === 'invert'
+        ? labeledField(
+            'Dark Mode Tone',
+            selectControl(
+              'filter-invert-variant',
+              'input-clay !h-9 mt-1',
+              flt.invertVariant,
+              [
+                ['slate', 'Soft Dark Slate (#161B22)'],
+                ['sepia', 'Warm Dark Sepia'],
+                ['pure', 'Pure RGB Invert (255 - C)']
+              ],
+              (val) => {
+                flt.invertVariant = val;
+                requestColorFilterPreview();
+              }
+            )
+          )
+        : null,
+      flt.preset === 'cleanup'
+        ? el(
+            'div',
+            { className: 'space-y-2' },
+            el(
+              'label',
+              { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+              el('input', {
+                type: 'checkbox',
+                checked: Boolean(flt.binarize),
+                className: 'w-4 h-4 accent-[#0a0a0a]',
+                onChange: (e) => {
+                  flt.binarize = /** @type {HTMLInputElement} */ (e.target).checked;
+                  workspace.emit('tool');
+                  requestColorFilterPreview();
+                }
+              }),
+              'B&W Binarization (crisp 2-tone PNG output)'
+            ),
+            flt.binarize
+              ? el(
+                  'label',
+                  { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+                  el('input', {
+                    type: 'checkbox',
+                    checked: flt.autoOtsu !== false,
+                    className: 'w-4 h-4 accent-[#0a0a0a]',
+                    onChange: (e) => {
+                      flt.autoOtsu = /** @type {HTMLInputElement} */ (e.target).checked;
+                      workspace.emit('tool');
+                      requestColorFilterPreview();
+                    }
+                  }),
+                  'Use Automatic Otsu Threshold'
+                )
+              : null
+          )
+        : null,
+      el(
+        'div',
+        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2.5' },
+        el(
+          'div',
+          { className: 'space-y-1' },
+          el(
+            'div',
+            { className: 'flex items-center justify-between' },
+            el('label', { for: 'filter-contrast', className: 'text-[12px] font-medium text-[#1a1a1a]' }, 'Contrast Boost'),
+            contrastLabel
+          ),
+          el('input', {
+            id: 'filter-contrast',
+            type: 'range',
+            min: '0.5',
+            max: '2.5',
+            step: '0.05',
+            value: String(flt.contrast ?? 1.2),
+            className: 'w-full accent-[#0a0a0a] cursor-pointer',
+            onInput: (e) => {
+              const val = Number(/** @type {HTMLInputElement} */ (e.target).value) || 1.2;
+              flt.contrast = val;
+              contrastLabel.textContent = `${val.toFixed(2)}×`;
+              schedulePreview();
+            }
+          })
+        ),
+        flt.preset === 'cleanup' && !(flt.binarize && flt.autoOtsu !== false)
+          ? el(
+              'div',
+              { className: 'space-y-1' },
+              el(
+                'div',
+                { className: 'flex items-center justify-between' },
+                el(
+                  'label',
+                  { for: 'filter-threshold', className: 'text-[12px] font-medium text-[#1a1a1a]' },
+                  flt.binarize ? 'B&W Threshold' : 'Background Whiten Cutoff'
+                ),
+                thresholdLabel
+              ),
+              el('input', {
+                id: 'filter-threshold',
+                type: 'range',
+                min: '80',
+                max: '248',
+                step: '2',
+                value: String(flt.threshold ?? 185),
+                className: 'w-full accent-[#0a0a0a] cursor-pointer',
+                onInput: (e) => {
+                  const val = Number(/** @type {HTMLInputElement} */ (e.target).value) || 185;
+                  flt.threshold = val;
+                  thresholdLabel.textContent = String(val);
+                  schedulePreview();
+                }
+              })
+            )
+          : null
+      ),
+      el(
+        'div',
+        { className: 'space-y-1.5' },
+        el('span', { className: 'text-[12px] font-medium text-[#1a1a1a] block' }, 'Export Resolution (DPI)'),
+        el(
+          'div',
+          { className: 'grid grid-cols-3 gap-1.5' },
+          ...[150, 200, 300].map((dpi) =>
+            el(
+              'button',
+              {
+                type: 'button',
+                className: `h-8 rounded-[9px] text-[12px] font-medium border transition-colors ${
+                  Number(flt.dpi) === dpi
+                    ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
+                    : 'bg-white text-[#1a1a1a] border-[#e5e5e5] hover:border-[#0a0a0a]/40'
+                }`,
+                onClick: () => {
+                  flt.dpi = dpi;
+                  workspace.emit('tool');
+                }
+              },
+              `${dpi} DPI`
+            )
+          )
+        )
+      ),
+      pages.length > 1
+        ? selectControl(
+            'filter-preview-page',
+            'input-clay !h-8 text-[12px]',
+            safeIdx,
+            pages.map((_, idx) => [idx, `Preview Page ${idx + 1} of ${pages.length}`]),
+            (val) => {
+              flt.previewPageIndex = Number(val) || 0;
+              requestColorFilterPreview();
+            }
+          )
+        : null,
+      previewSlot,
+      el(
+        'button',
+        {
+          type: 'button',
+          className: 'btn-primary w-full',
+          onClick: runColorFiltersJob
+        },
+        `Apply ${flt.preset === 'invert' ? 'Dark Mode' : flt.preset === 'cleanup' ? 'Scan Cleanup' : 'Grayscale'} & Download`
+      )
+    );
+  }
+
+  if (tabId === 'redact') {
+    const r = t.redact;
+    const queryInput = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'redact-query-input',
+        type: 'text',
+        placeholder: r.searchMode === 'regex' ? 'Regex e.g. \\b\\d{4}\\b' : 'Keyword to redact...',
+        value: r.searchQuery,
+        className: 'input-clay !h-9',
+        onInput: (e) => {
+          r.searchQuery = /** @type {HTMLInputElement} */ (e.target).value;
+        }
+      })
+    );
+    queryInput.value = r.searchQuery;
+
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      buildPdfSourceSelect('redact-target-select', r.targetFileId, (id) => {
+        r.targetFileId = id;
+        r.activePageIndex = 0;
+        r.previewPageIndex = -1;
+        r.marks = [];
+        workspace.emit('tool');
+      }),
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'open-redact-studio-btn',
+          className: 'btn-secondary w-full !border-[#1a3a3a] !text-[#1a3a3a]',
+          disabled: !r.targetFileId,
+          onClick: () => {
+            r.modalOpen = true;
+            workspace.emit('tool');
+          }
+        },
+        `Open Interactive Redaction Studio (${r.marks.length} marks)`
+      ),
+      el(
+        'div',
+        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        el('p', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Search & Auto-Mark Text'),
+        selectControl(
+          'redact-search-mode',
+          'input-clay !h-9',
+          r.searchMode,
+          [
+            ['keyword', 'Keyword Match'],
+            ['regex', 'Regular Expression'],
+            ['email', 'Emails Preset'],
+            ['phone', 'Phone Numbers Preset'],
+            ['ssn', 'SSN/ID Preset']
+          ],
+          (val) => {
+            r.searchMode = val;
+            workspace.emit('tool');
+          }
+        ),
+        r.searchMode === 'keyword' || r.searchMode === 'regex' ? queryInput : null,
+        el(
+          'button',
+          {
+            type: 'button',
+            className: 'btn-secondary w-full !h-9 !text-[12px]',
+            disabled: !r.targetFileId,
+            onClick: runFindRedactionMatchesJob
+          },
+          'Find & Mark Matches Across PDF'
+        )
+      ),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Burn DPI',
+          selectControl(
+            'redact-dpi',
+            'input-clay !h-9 mt-1',
+            r.dpi,
+            [
+              [200, '200 DPI'],
+              [250, '250 DPI'],
+              [300, '300 DPI']
+            ],
+            (val) => {
+              r.dpi = Number(val) || 220;
+            }
+          )
+        ),
+        labeledField(
+          'Mask Color',
+          el('input', {
+            type: 'color',
+            value: r.fillColor,
+            className: 'input-clay !h-9 !p-1 mt-1 cursor-pointer',
+            onInput: (e) => {
+              r.fillColor = /** @type {HTMLInputElement} */ (e.target).value;
+            }
+          })
+        )
+      ),
+      el(
+        'label',
+        { className: 'flex items-start gap-2 p-2.5 rounded-[12px] bg-[#fef2f2] border border-[#ef4444]/30 cursor-pointer text-[12px]' },
+        el('input', {
+          type: 'checkbox',
+          checked: Boolean(r.paranoidMode),
+          className: 'w-4 h-4 accent-[#ef4444] mt-0.5',
+          onChange: (e) => {
+            r.paranoidMode = /** @type {HTMLInputElement} */ (e.target).checked;
+          }
+        }),
+        el(
+          'span',
+          {},
+          el('strong', { className: 'block text-[#991b1b]' }, 'Paranoid Mode'),
+          el('span', { className: 'text-[#7f1d1d]' }, 'Raster-burn every page & strip XMP/Info/scripts.')
+        )
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          className: 'btn-primary w-full',
+          disabled: !r.targetFileId,
+          onClick: runRedactPdfJob
+        },
+        'Burn Redactions & Download PDF'
+      )
+    );
+  }
+
+  if (tabId === 'sign') {
+    const s = t.sign;
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      buildPdfSourceSelect('sign-target-select', s.targetFileId, (id) => {
+        s.targetFileId = id;
+        s.activePageIndex = 0;
+        s.previewPageIndex = -1;
+        s.overlays = [];
+        s.selectedOverlayId = null;
+        workspace.emit('tool');
+      }),
+      el(
+        'p',
+        { className: 'type-body-sm' },
+        'Draw, type, or upload transparent signatures and place native pdf-lib highlights, shapes, arrows, and callouts.'
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'open-sign-studio-btn',
+          className: 'btn-secondary w-full !border-[#ff4d8b] !text-[#0a0a0a]',
+          disabled: !s.targetFileId,
+          onClick: () => {
+            s.modalOpen = true;
+            workspace.emit('tool');
+          }
+        },
+        `Open Signature & Annotator Studio (${s.overlays.length} placed)`
+      ),
+      s.overlays.length > 0
+        ? el(
+            'div',
+            { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-1.5 max-h-40 overflow-y-auto' },
+            s.overlays.map((ov, idx) =>
+              el(
+                'div',
+                { className: 'flex items-center justify-between gap-2 px-2 py-1 rounded bg-white border border-[#e5e5e5] text-[12px]' },
+                el('span', { className: 'truncate' }, `${idx + 1}. P${ov.pageIndex + 1} • ${ov.kind}`),
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'text-[#ef4444] font-bold',
+                    onClick: () => {
+                      s.overlays = s.overlays.filter((item) => item.id !== ov.id);
+                      workspace.emit('tool');
+                    }
+                  },
+                  '×'
+                )
+              )
+            )
+          )
+        : null,
+      el(
+        'button',
+        {
+          type: 'button',
+          className: 'btn-primary w-full',
+          disabled: !s.targetFileId || s.overlays.length === 0,
+          onClick: runSignAnnotateJob
+        },
+        'Apply Overlays & Download PDF'
+      )
+    );
+  }
+
+  if (tabId === 'compare') {
+    const cmp = t.compare;
+    const pdfSources = [...workspace.sourceFiles.values()].filter((s) => s.type === 'pdf');
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      el(
+        'p',
+        { className: 'type-body-sm' },
+        'Compare two PDF revisions side by side with OffscreenCanvas pixel diffing and Myers word/line diff.'
+      ),
+      el(
+        'div',
+        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        el('p', { className: 'text-[12px] font-semibold' }, `v1: ${cmp.fileA ? cmp.fileA.name : 'Not selected'}`),
+        el(
+          'div',
+          { className: 'flex flex-wrap gap-1.5' },
+          el(
+            'label',
+            { className: 'btn-secondary !h-8 !px-2.5 !text-[11px] cursor-pointer inline-flex items-center' },
+            'Upload v1',
+            el('input', {
+              type: 'file',
+              accept: '.pdf,application/pdf',
+              className: 'hidden',
+              onChange: async (e) => {
+                const f = /** @type {HTMLInputElement} */ (e.target).files?.[0];
+                if (f) await setCompareFile('A', f);
+              }
+            })
+          ),
+          pdfSources[0]
+            ? el(
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn-compact !h-8',
+                  onClick: () => useWorkspacePdfForCompare('A', pdfSources[0].id)
+                },
+                `Use ${pdfSources[0].name.slice(0, 14)}`
+              )
+            : null
+        )
+      ),
+      el(
+        'div',
+        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        el('p', { className: 'text-[12px] font-semibold' }, `v2: ${cmp.fileB ? cmp.fileB.name : 'Not selected'}`),
+        el(
+          'div',
+          { className: 'flex flex-wrap gap-1.5' },
+          el(
+            'label',
+            { className: 'btn-secondary !h-8 !px-2.5 !text-[11px] cursor-pointer inline-flex items-center' },
+            'Upload v2',
+            el('input', {
+              type: 'file',
+              accept: '.pdf,application/pdf',
+              className: 'hidden',
+              onChange: async (e) => {
+                const f = /** @type {HTMLInputElement} */ (e.target).files?.[0];
+                if (f) await setCompareFile('B', f);
+              }
+            })
+          ),
+          pdfSources.length > 1
+            ? el(
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn-compact !h-8',
+                  onClick: () => useWorkspacePdfForCompare('B', pdfSources[1].id)
+                },
+                `Use ${pdfSources[1].name.slice(0, 14)}`
+              )
+            : null
+        )
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'open-compare-studio-btn',
+          className: 'btn-secondary w-full',
+          onClick: () => {
+            cmp.modalOpen = true;
+            workspace.emit('tool');
+          }
+        },
+        'Open Visual & Text Diff Studio'
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          className: 'btn-primary w-full',
+          disabled: !cmp.fileA || !cmp.fileB,
+          onClick: async () => {
+            cmp.modalOpen = true;
+            await runComparePdfJob();
+          }
+        },
+        'Compare PDFs Now'
+      )
+    );
+  }
+
+  if (tabId === 'extract-text') {
+    const et = t.extractText;
+    const pdfCount = [...workspace.sourceFiles.values()].filter((s) => s.type === 'pdf').length;
+    const rangeInp = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'extract-text-range',
+        type: 'text',
+        value: et.rangeExpression,
+        placeholder: 'all or e.g. 1-3, 5',
+        className: 'input-clay !h-9 mt-1',
+        onInput: (e) => {
+          et.rangeExpression = /** @type {HTMLInputElement} */ (e.target).value;
+        }
+      })
+    );
+    rangeInp.value = et.rangeExpression;
+
+    return el(
+      'div',
+      { className: 'space-y-3' },
+      buildPdfSourceSelect('extract-text-target', et.targetFileId, (id) => {
+        et.targetFileId = id;
+        et.resultText = '';
+        workspace.emit('tool');
+      }),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Output Format',
+          selectControl(
+            'extract-text-format',
+            'input-clay !h-9 mt-1',
+            et.format,
+            [
+              ['txt', 'Plain Text (.txt)'],
+              ['md', 'Markdown (.md)'],
+              ['json', 'Structured (.json)']
+            ],
+            (val) => {
+              et.format = val;
+            }
+          )
+        ),
+        labeledField('Page Range', rangeInp)
+      ),
+      el(
+        'label',
+        { className: 'inline-flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+        el('input', {
+          type: 'checkbox',
+          checked: Boolean(et.includePageMarkers),
+          className: 'w-4 h-4 accent-[#0a0a0a]',
+          onChange: (e) => {
+            et.includePageMarkers = /** @type {HTMLInputElement} */ (e.target).checked;
+          }
+        }),
+        'Include page markers'
+      ),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        el(
+          'button',
+          {
+            type: 'button',
+            id: 'extract-text-run-btn',
+            className: 'btn-primary !h-9 !text-[12px]',
+            disabled: !et.targetFileId,
+            onClick: runExtractTextJob
+          },
+          'Extract Text'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className: 'btn-secondary !h-9 !text-[12px]',
+            disabled: pdfCount < 1,
+            onClick: runBatchExtractTextZipJob
+          },
+          `Batch ZIP (${pdfCount})`
+        )
+      ),
+      et.likelyScanned && et.resultText !== undefined
+        ? el(
+            'div',
+            { className: 'p-2.5 rounded-[10px] bg-[#fffbeb] border border-[#f59e0b]/40 text-[11px] text-[#92400e]' },
+            'Warning: Scanned/image-only PDF detected — no embedded vector text layer found.'
+          )
+        : null,
+      et.resultText
+        ? el(
+            'div',
+            { className: 'space-y-2' },
+            el(
+              'div',
+              { className: 'flex items-center justify-between gap-2' },
+              el('span', { className: 'text-[11px] font-medium text-[#6a6a6a]' }, `${et.totalChars} chars (${et.pagesExtracted}p)`),
+              el(
+                'div',
+                { className: 'flex gap-1.5' },
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'btn-compact !h-7',
+                    onClick: async () => {
+                      await navigator.clipboard?.writeText(et.resultText);
+                      workspace.showNotice('success', 'Copied', 'Extracted text copied to clipboard.');
+                    }
+                  },
+                  'Copy'
+                ),
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'btn-compact !h-7',
+                    onClick: downloadExtractedTextFile
+                  },
+                  'Download'
+                )
+              )
+            ),
+            el(
+              'pre',
+              {
+                className:
+                  'p-2.5 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5] max-h-48 overflow-auto text-[11px] font-mono whitespace-pre-wrap break-words'
+              },
+              et.resultText.slice(0, 6000)
+            )
+          )
+        : null
+    );
+  }
+
+  if (tabId === 'extract-images') {
+    const ei = t.extractImages;
+    return el(
+      'div',
+      { className: 'space-y-3' },
+      buildPdfSourceSelect('extract-img-target', ei.targetFileId, (id) => {
+        ei.targetFileId = id;
+        ei.items = [];
+        workspace.emit('tool');
+      }),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2 items-end' },
+        labeledField(
+          'Min Dimension (px)',
+          el('input', {
+            id: 'extract-img-minsize',
+            type: 'number',
+            min: '1',
+            max: '1024',
+            value: String(ei.minSize || 32),
+            className: 'input-clay !h-9 mt-1',
+            onInput: (e) => {
+              ei.minSize = Math.max(1, Number(/** @type {HTMLInputElement} */ (e.target).value) || 32);
+            }
+          })
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            id: 'extract-img-scan-btn',
+            className: 'btn-primary !h-9 !text-[12px]',
+            disabled: !ei.targetFileId,
+            onClick: runExtractImagesJob
+          },
+          'Scan Images'
+        )
+      ),
+      ei.items.length > 0
+        ? el(
+            'div',
+            { className: 'space-y-2' },
+            el(
+              'div',
+              { className: 'flex items-center justify-between text-[11px] text-[#6a6a6a]' },
+              el('span', {}, `${ei.items.length} asset(s) • skipped ${ei.skippedSmall} small`),
+              el(
+                'button',
+                {
+                  type: 'button',
+                  id: 'extract-img-zip-btn',
+                  className: 'btn-compact !h-7',
+                  onClick: runDownloadAllExtractedImagesZipJob
+                },
+                'Download All ZIP'
+              )
+            ),
+            el(
+              'div',
+              { className: 'grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-0.5' },
+              ei.items.map((img) =>
+                el(
+                  'div',
+                  { className: 'p-2 rounded-[10px] bg-white border border-[#e5e5e5] space-y-1.5' },
+                  sanitizeImageSrc(img.previewUrl)
+                    ? el('img', {
+                        src: sanitizeImageSrc(img.previewUrl),
+                        alt: img.fileName,
+                        className: 'w-full h-20 object-contain rounded bg-[#faf5e8]'
+                      })
+                    : el('div', { className: 'w-full h-20 flex items-center justify-center bg-[#faf5e8] text-[10px]' }, img.format.toUpperCase()),
+                  el(
+                    'div',
+                    { className: 'flex items-center justify-between gap-1 text-[10px]' },
+                    el('span', { className: 'font-semibold uppercase' }, `${img.format}${img.hasAlpha ? ' α' : ''} • ${img.width}×${img.height}`),
+                    el(
+                      'button',
+                      {
+                        type: 'button',
+                        className: 'text-[#0a0a0a] underline font-medium',
+                        onClick: () => downloadSingleExtractedImage(img)
+                      },
+                      'Save'
+                    )
+                  )
+                )
+              )
+            )
+          )
+        : null
+    );
+  }
+
+  if (tabId === 'attachments') {
+    const att = t.attachments;
+    const removeSet = new Set(att.pendingRemove);
+
+    return el(
+      'div',
+      { className: 'space-y-3' },
+      buildPdfSourceSelect('att-target-select', att.targetFileId, (id) => {
+        att.targetFileId = id;
+        att.items = [];
+        att.pendingAdd = [];
+        att.pendingRemove = [];
+        att.loaded = false;
+        workspace.emit('tool');
+        runInspectAttachmentsJob();
+      }),
+      el(
+        'div',
+        { className: 'flex gap-2' },
+        el(
+          'button',
+          {
+            type: 'button',
+            id: 'att-scan-btn',
+            className: 'btn-secondary !h-9 flex-1 !text-[12px]',
+            disabled: !att.targetFileId,
+            onClick: runInspectAttachmentsJob
+          },
+          att.loaded ? `Refresh (${att.items.length})` : 'Scan Attachments'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            id: 'att-zip-btn',
+            className: 'btn-compact !h-9',
+            disabled: att.items.length === 0,
+            onClick: runPackageAttachmentsZipJob
+          },
+          'Extract ZIP'
+        )
+      ),
+      el(
+        'label',
+        { className: 'block p-3 rounded-[12px] border border-dashed border-[#c7c2b4] bg-[#faf5e8] text-center cursor-pointer text-[12px]' },
+        '+ Attach Files (CSV, XML, ZIP, etc.)',
+        el('input', {
+          id: 'att-add-input',
+          type: 'file',
+          multiple: true,
+          className: 'hidden',
+          onChange: async (e) => {
+            const files = /** @type {HTMLInputElement} */ (e.target).files;
+            if (!files?.length) return;
+            for (const f of files) {
+              const buf = await readFileAsArrayBuffer(f);
+              att.pendingAdd.push({
+                name: f.name,
+                bytes: new Uint8Array(buf),
+                mimeType: f.type || 'application/octet-stream',
+                description: ''
+              });
+            }
+            workspace.emit('tool');
+          }
+        })
+      ),
+      att.pendingAdd.length > 0
+        ? el(
+            'div',
+            { className: 'p-2 rounded-[10px] bg-[#f0fdf4] border border-[#22c55e]/30 space-y-1 text-[11px]' },
+            el('p', { className: 'font-semibold text-[#166534]' }, `Queued to Attach (${att.pendingAdd.length})`),
+            att.pendingAdd.map((f, idx) =>
+              el(
+                'div',
+                { className: 'flex items-center justify-between' },
+                el('span', { className: 'truncate' }, `${f.name} (${formatBytes(f.bytes.byteLength)})`),
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'text-[#ef4444] font-bold',
+                    onClick: () => {
+                      att.pendingAdd.splice(idx, 1);
+                      workspace.emit('tool');
+                    }
+                  },
+                  '×'
+                )
+              )
+            )
+          )
+        : null,
+      att.items.length > 0
+        ? el(
+            'div',
+            { className: 'space-y-1.5 max-h-44 overflow-y-auto' },
+            att.items.map((item) => {
+              const markedRemove = removeSet.has(item.name);
+              return el(
+                'div',
+                {
+                  className: `flex items-center justify-between gap-2 px-2.5 py-2 rounded-[10px] border text-[11px] ${
+                    markedRemove ? 'bg-[#fef2f2] border-[#ef4444]/40 line-through' : 'bg-white border-[#e5e5e5]'
+                  }`
+                },
+                el(
+                  'div',
+                  { className: 'min-w-0 flex-1' },
+                  el('p', { className: 'font-medium truncate' }, item.name),
+                  el('p', { className: 'text-[#6a6a6a] truncate' }, `${formatBytes(item.size)} • ${item.mimeType}`)
+                ),
+                el(
+                  'div',
+                  { className: 'flex items-center gap-1.5 shrink-0' },
+                  el(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'underline font-medium',
+                      onClick: () => downloadSingleAttachment(item)
+                    },
+                    'Save'
+                  ),
+                  el(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'text-[#ef4444] font-semibold',
+                      onClick: () => {
+                        if (markedRemove) {
+                          att.pendingRemove = att.pendingRemove.filter((n) => n !== item.name);
+                        } else {
+                          att.pendingRemove.push(item.name);
+                        }
+                        workspace.emit('tool');
+                      }
+                    },
+                    markedRemove ? 'Undo' : 'Remove'
+                  )
+                )
+              );
+            })
+          )
+        : el('p', { className: 'text-[11px] text-[#6a6a6a]' }, att.loaded ? 'No embedded attachments found.' : 'Click Scan Attachments to list embedded files.'),
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'att-save-pdf-btn',
+          className: 'btn-primary w-full',
+          disabled: !att.targetFileId || (att.pendingAdd.length === 0 && att.pendingRemove.length === 0),
+          onClick: runUpdateAttachmentsJob
+        },
+        'Save Updated PDF'
+      )
+    );
+  }
+
+  if (tabId === 'bookmarks') {
+    const bm = t.bookmarks;
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      buildPdfSourceSelect('bm-target-select', bm.targetFileId, (id) => {
+        bm.targetFileId = id;
+        bm.tree = [];
+        bm.selectedNodeId = null;
+        bm.previewPageIndex = 0;
+        bm.previewLoadedIdx = -1;
+        workspace.emit('tool');
+      }),
+      el(
+        'p',
+        { className: 'type-body-sm' },
+        'Inspect, nest, reorder, and serialize Unicode Table of Contents (/Outlines) trees with side-by-side page jumping.'
+      ),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        el(
+          'button',
+          {
+            type: 'button',
+            className: 'btn-secondary !h-9 !text-[12px]',
+            disabled: !bm.targetFileId,
+            onClick: runReadOutlinesJob
+          },
+          'Load Outlines'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            id: 'open-bookmark-studio-btn',
+            className: 'btn-secondary !h-9 !text-[12px]',
+            disabled: !bm.targetFileId,
+            onClick: () => {
+              bm.modalOpen = true;
+              workspace.emit('tool');
+            }
+          },
+          `Tree Editor (${bm.tree.length})`
+        )
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          className: 'btn-primary w-full',
+          disabled: !bm.targetFileId,
+          onClick: runWriteOutlinesJob
+        },
+        'Save Bookmarks to PDF'
+      )
+    );
+  }
+
+  if (tabId === 'cbz') {
+    const cbz = t.cbz;
+    const isCbzToPdf = cbz.mode !== 'pdf-to-cbz';
+    return el(
+      'div',
+      { className: 'space-y-3.5' },
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5]' },
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `h-8 rounded-[9px] text-[12px] font-medium ${isCbzToPdf ? 'bg-[#0a0a0a] text-white' : 'text-[#555]'}`,
+            onClick: () => {
+              cbz.mode = 'cbz-to-pdf';
+              workspace.emit('tool');
+            }
+          },
+          'CBZ → PDF'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `h-8 rounded-[9px] text-[12px] font-medium ${!isCbzToPdf ? 'bg-[#0a0a0a] text-white' : 'text-[#555]'}`,
+            onClick: () => {
+              cbz.mode = 'pdf-to-cbz';
+              workspace.emit('tool');
+            }
+          },
+          'PDF → CBZ'
+        )
+      ),
+      isCbzToPdf
+        ? el(
+            'div',
+            { className: 'space-y-3' },
+            el(
+              'label',
+              { className: 'btn-secondary w-full cursor-pointer inline-flex items-center justify-center' },
+              cbz.cbzFile ? `${cbz.cbzFile.name} (${formatBytes(cbz.cbzFile.byteSize)})` : 'Select .cbz Archive',
+              el('input', {
+                id: 'cbz-inspector-file-input',
+                type: 'file',
+                accept: '.cbz,application/vnd.comicbook+zip,application/zip',
+                className: 'hidden',
+                onChange: async (e) => {
+                  const f = /** @type {HTMLInputElement} */ (e.target).files?.[0];
+                  if (f) await loadCbzArchiveFile(f);
+                }
+              })
+            ),
+            cbz.cbzEntries.length > 0
+              ? el(
+                  'div',
+                  { className: 'p-2.5 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5] max-h-32 overflow-y-auto space-y-0.5 text-[11px] font-mono' },
+                  cbz.cbzEntries.map((name, idx) => el('div', { className: 'truncate' }, `${idx + 1}. ${name}`))
+                )
+              : null,
+            el(
+              'label',
+              { className: 'inline-flex items-center gap-2 text-[12px] cursor-pointer' },
+              el('input', {
+                type: 'checkbox',
+                checked: Boolean(cbz.uniformWidth),
+                className: 'w-4 h-4 accent-[#0a0a0a]',
+                onChange: (e) => {
+                  cbz.uniformWidth = /** @type {HTMLInputElement} */ (e.target).checked;
+                }
+              }),
+              'Uniform A4 page width normalization'
+            ),
+            el(
+              'button',
+              {
+                type: 'button',
+                className: 'btn-primary w-full',
+                disabled: !cbz.cbzFile,
+                onClick: runCbzToPdfJob
+              },
+              'Convert CBZ to PDF'
+            )
+          )
+        : el(
+            'div',
+            { className: 'space-y-3' },
+            buildPdfSourceSelect('cbz-pdf-target', cbz.targetFileId, (id) => {
+              cbz.targetFileId = id;
+              workspace.emit('tool');
+            }),
+            el(
+              'div',
+              { className: 'grid grid-cols-2 gap-2' },
+              labeledField(
+                'Image Format',
+                selectControl(
+                  'cbz-img-fmt',
+                  'input-clay !h-9 mt-1',
+                  cbz.imageFormat,
+                  [
+                    ['webp', 'WebP (Compact)'],
+                    ['jpeg', 'JPEG'],
+                    ['png', 'PNG (Lossless)']
+                  ],
+                  (val) => {
+                    cbz.imageFormat = val;
+                  }
+                )
+              ),
+              labeledField(
+                'Scale',
+                selectControl(
+                  'cbz-scale',
+                  'input-clay !h-9 mt-1',
+                  cbz.pdfScale,
+                  [
+                    [1.5, '1.5× (Standard)'],
+                    [2, '2.0× (Crisp)'],
+                    [3, '3.0× (High-DPI)']
+                  ],
+                  (val) => {
+                    cbz.pdfScale = Number(val) || 2.0;
+                  }
+                )
+              )
+            ),
+            el(
+              'button',
+              {
+                type: 'button',
+                className: 'btn-primary w-full',
+                disabled: !cbz.targetFileId,
+                onClick: runPdfToCbzJob
+              },
+              'Export Store-Mode CBZ'
+            )
+          )
+    );
+  }
+
   // Optimize tab
   const opt = t.optimize;
+  const preset = opt.preset || 'lossless';
+  const qualityValueLabel = el(
+    'span',
+    { className: 'text-[12px] font-medium text-[#0a0a0a]' },
+    `${Math.round((Number(opt.jpegQuality) || 0.75) * 100)}%`
+  );
+
   return el(
     'div',
     { className: 'space-y-3.5' },
     el(
-      'p',
-      { className: 'type-body-sm' },
-      'Re-builds the document cleanly in a Web Worker using compressed PDF object streams and removes unreferenced objects.'
-    ),
-    el(
-      'label',
-      {
-        className:
-          'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
-      },
-      el('span', { className: 'text-[13px] font-medium' }, 'Use PDF Object Streams'),
-      el('input', {
-        type: 'checkbox',
-        checked: opt.useObjectStreams,
-        className: 'w-4 h-4 accent-[#0a0a0a]',
-        onChange: (e) => {
-          opt.useObjectStreams = /** @type {HTMLInputElement} */ (e.target).checked;
+      'div',
+      { className: 'space-y-1.5' },
+      el('label', { for: 'opt-preset', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Compression Preset'),
+      selectControl(
+        'opt-preset',
+        'input-clay !h-10',
+        preset,
+        [
+          ['lossless', 'Lossless (Object Streams & Pruning)'],
+          ['balanced', 'Balanced (Smart XObject Recompression)'],
+          ['maximum', 'Maximum (Raster Optimization)']
+        ],
+        (val) => {
+          opt.preset = val;
+          if (val === 'maximum' && ![72, 110, 150].includes(Number(opt.targetDpi))) {
+            opt.targetDpi = 110;
+          }
+          workspace.emit('tool');
         }
-      })
+      )
     ),
-    el(
-      'label',
-      {
-        className:
-          'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
-      },
-      el('span', { className: 'text-[13px] font-medium' }, 'Prune Orphan / Unused Objects'),
-      el('input', {
-        type: 'checkbox',
-        checked: opt.rebuildCleanCopy,
-        className: 'w-4 h-4 accent-[#0a0a0a]',
-        onChange: (e) => {
-          opt.rebuildCleanCopy = /** @type {HTMLInputElement} */ (e.target).checked;
-        }
-      })
-    ),
+    preset === 'lossless'
+      ? el(
+          'p',
+          { className: 'type-body-sm' },
+          'Rebuilds the document in a Web Worker using compressed PDF object streams while keeping text, vectors, and images 100% lossless.'
+        )
+      : preset === 'balanced'
+        ? el(
+            'p',
+            { className: 'type-body-sm' },
+            'Keeps selectable text and vectors intact while safely downsampling and JPEG-recompressing compatible embedded images (skipping masked/CMYK/indexed streams).'
+          )
+        : el(
+            'div',
+            { className: 'p-3 rounded-[12px] bg-[#fffbeb] border border-[#f59e0b]/40 space-y-1' },
+            el('p', { className: 'text-[12px] font-semibold text-[#92400e]' }, 'Raster Mode Warning'),
+            el(
+              'p',
+              { className: 'text-[12px] text-[#92400e]' },
+              'Pages are rasterized to JPEG via pdfjs-dist. Selectable and searchable text will be removed in exchange for maximum size reduction.'
+            )
+          ),
+    preset !== 'lossless'
+      ? el(
+          'div',
+          { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-3' },
+          el(
+            'div',
+            { className: 'space-y-1.5' },
+            el('span', { className: 'text-[12px] font-medium text-[#1a1a1a] block' }, 'Target DPI'),
+            el(
+              'div',
+              { className: 'grid grid-cols-3 gap-1.5' },
+              ...[72, 110, 150].map((dpi) =>
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: `h-8 rounded-[9px] text-[12px] font-medium border transition-colors ${
+                      Number(opt.targetDpi) === dpi
+                        ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
+                        : 'bg-white text-[#1a1a1a] border-[#e5e5e5] hover:border-[#0a0a0a]/40'
+                    }`,
+                    onClick: () => {
+                      opt.targetDpi = dpi;
+                      workspace.emit('tool');
+                    }
+                  },
+                  `${dpi} DPI`
+                )
+              )
+            )
+          ),
+          el(
+            'div',
+            { className: 'space-y-1' },
+            el(
+              'div',
+              { className: 'flex items-center justify-between' },
+              el('label', { for: 'opt-jpeg-quality', className: 'text-[12px] font-medium text-[#1a1a1a]' }, 'JPEG Quality'),
+              qualityValueLabel
+            ),
+            el('input', {
+              id: 'opt-jpeg-quality',
+              type: 'range',
+              min: '0.4',
+              max: '0.9',
+              step: '0.05',
+              value: String(opt.jpegQuality ?? 0.75),
+              className: 'w-full accent-[#0a0a0a] cursor-pointer',
+              onInput: (e) => {
+                const val = Number(/** @type {HTMLInputElement} */ (e.target).value) || 0.75;
+                opt.jpegQuality = val;
+                qualityValueLabel.textContent = `${Math.round(val * 100)}%`;
+              }
+            })
+          )
+        )
+      : null,
+    preset !== 'maximum'
+      ? el(
+          'label',
+          {
+            className:
+              'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
+          },
+          el('span', { className: 'text-[13px] font-medium' }, 'Use PDF Object Streams'),
+          el('input', {
+            type: 'checkbox',
+            checked: opt.useObjectStreams,
+            className: 'w-4 h-4 accent-[#0a0a0a]',
+            onChange: (e) => {
+              opt.useObjectStreams = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          })
+        )
+      : null,
+    preset !== 'maximum'
+      ? el(
+          'label',
+          {
+            className:
+              'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
+          },
+          el('span', { className: 'text-[13px] font-medium' }, 'Prune Orphan/Unused Objects'),
+          el('input', {
+            type: 'checkbox',
+            checked: opt.rebuildCleanCopy,
+            className: 'w-4 h-4 accent-[#0a0a0a]',
+            onChange: (e) => {
+              opt.rebuildCleanCopy = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          })
+        )
+      : null,
     el(
       'label',
       {
@@ -1251,6 +3946,44 @@ function buildToolBody(tabId) {
         }
       })
     ),
+    opt.lastStats
+      ? el(
+          'div',
+          { className: 'p-3 rounded-[12px] bg-white border border-[#e5e5e5] space-y-1.5' },
+          el(
+            'div',
+            { className: 'flex items-center justify-between gap-2' },
+            el('span', { className: 'text-[12px] font-medium text-[#6a6a6a]' }, 'Last Result'),
+            el(
+              'span',
+              {
+                className: `px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                  opt.lastStats.pctSaved > 0
+                    ? 'bg-[#dcfce7] text-[#166534]'
+                    : 'bg-[#f3f4f6] text-[#374151]'
+                }`
+              },
+              opt.lastStats.pctSaved > 0
+                ? `${opt.lastStats.pctSaved}% smaller`
+                : opt.lastStats.pctSaved === 0
+                  ? '0% change'
+                  : `+${Math.abs(opt.lastStats.pctSaved)}% larger`
+            )
+          ),
+          el(
+            'p',
+            { className: 'text-[13px] font-semibold text-[#0a0a0a]' },
+            `${formatBytes(opt.lastStats.originalSize)} → ${formatBytes(opt.lastStats.optimizedSize)}`
+          ),
+          opt.lastStats.preset === 'balanced'
+            ? el(
+                'p',
+                { className: 'text-[11px] text-[#6a6a6a]' },
+                `Images recompressed: ${opt.lastStats.recompressedImages} • Skipped: ${opt.lastStats.skippedImages}`
+              )
+            : null
+        )
+      : null,
     el(
       'button',
       {

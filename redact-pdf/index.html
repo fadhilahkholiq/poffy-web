@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="redact-pdf">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>True PDF Redaction Offline — Permanently Burn Sensitive Data | Poffy</title>
+    <meta name="description" content="Permanently destroy sensitive text and regions in PDFs via Selective Raster-Burn or Paranoid Mode with deep XMP/Info scrubbing inside local Web Workers." />
+    <meta name="keywords" content="redact pdf offline, permanent pdf redaction, remove sensitive text from pdf, regex pdf redaction, paranoid pdf scrub" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#fffaf0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy — Offline PDF Studio" />
+    <meta property="og:title" content="True PDF Redaction Offline — Permanently Burn Sensitive Data | Poffy" />
+    <meta property="og:description" content="Permanently destroy sensitive text and regions in PDFs via Selective Raster-Burn or Paranoid Mode with deep XMP/Info scrubbing inside local Web Workers." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Redact PDF — Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="True PDF Redaction Offline — Permanently Burn Sensitive Data | Poffy" />
+    <meta name="twitter:description" content="Permanently destroy sensitive text and regions in PDFs via Selective Raster-Burn or Paranoid Mode with deep XMP/Info scrubbing inside local Web Workers." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Redact PDF — Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"True PDF Redaction Offline — Permanently Burn Sensitive Data","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Permanently destroy sensitive text and regions in PDFs via Selective Raster-Burn or Paranoid Mode with deep XMP/Info scrubbing inside local Web Workers.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Selective Raster-Burn destroys underlying text layers completely","Regex & keyword search-and-mark (emails, phones, SSN, custom patterns)","Paranoid Mode burns every page & runs deep XMP/JavaScript privacy scrub"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why is Poffy redaction permanent compared to drawing black boxes?","acceptedAnswer":{"@type":"Answer","text":"Marked pages are rendered onto OffscreenCanvas with opaque pixels burned directly into the raster image and rebuilt via pdf-lib, leaving zero extractable text underneath."}},{"@type":"Question","name":"Does Selective Raster-Burn affect unmarked pages?","acceptedAnswer":{"@type":"Answer","text":"No. In default Selective mode, unmarked pages are copied losslessly via copyPages() to keep selectable text sharp unless Paranoid Mode is enabled."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Permanently redact sensitive PDF data with zero leaks.</h1>
+        <p>Draw redaction boxes or auto-mark emails, phone numbers, and regex patterns—then raster-burn marked pages while keeping clean pages crisp.</p>
+        <ul>
+          <li>Selective Raster-Burn destroys underlying text layers completely</li>
+          <li>Regex &amp; keyword search-and-mark (emails, phones, SSN, custom patterns)</li>
+          <li>Paranoid Mode burns every page &amp; runs deep XMP/JavaScript privacy scrub</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use Redact PDF offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

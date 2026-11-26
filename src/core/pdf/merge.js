@@ -1,5 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import { assertNotAborted, loadPdfSafe, yieldToLoop } from './doc-loader.js';
+import { writeOutlines } from './outlines.js';
 
 /**
  * @typedef {Object} MergeSourceInput
@@ -12,12 +13,14 @@ import { assertNotAborted, loadPdfSafe, yieldToLoop } from './doc-loader.js';
 /**
  * @typedef {Object} MergeOptions
  * @property {'sequential'|'interleave'} [mode='sequential'] - Merge order strategy
+ * @property {boolean} [autoBookmarks=false] - Generate top-level outlines from source filenames
  * @property {(percent: number, stage: string) => void} [onProgress] - Progress callback
  * @property {{ aborted?: boolean }} [abortToken] - Cancellation token
  */
 
 /**
  * Merges multiple PDF buffers either sequentially or interleaved (page-by-page round-robin).
+ * Optionally builds top-level bookmarks from source filenames using shared `writeOutlines()`.
  * @param {MergeSourceInput[]} sources - Ordered source PDFs
  * @param {MergeOptions} [options={}] - Merge configuration
  * @returns {Promise<Uint8Array>} Serialized merged PDF bytes
@@ -27,7 +30,7 @@ export async function mergePdfBuffers(sources, options = {}) {
     throw new Error('At least one PDF file is required to merge.');
   }
 
-  const { mode = 'sequential', onProgress, abortToken } = options;
+  const { mode = 'sequential', autoBookmarks = false, onProgress, abortToken } = options;
   const outputDoc = await PDFDocument.create();
 
   /** @type {{ doc: PDFDocument, indices: number[], name: string }[]} */
@@ -94,6 +97,27 @@ export async function mergePdfBuffers(sources, options = {}) {
     const pct = 30 + Math.round((end / copyPlan.length) * 60);
     onProgress?.(pct, `Merging pages (${end}/${copyPlan.length})...`);
     await yieldToLoop();
+  }
+
+  if (autoBookmarks) {
+    /** @type {Set<number>} */
+    const seenSources = new Set();
+    /** @type {import('./outlines.js').BookmarkNode[]} */
+    const toc = [];
+    for (let idx = 0; idx < copyPlan.length; idx += 1) {
+      const sIdx = copyPlan[idx].sourceIdx;
+      if (!seenSources.has(sIdx)) {
+        seenSources.add(sIdx);
+        const cleanTitle = loadedSources[sIdx].name.replace(/\.pdf$/i, '').trim() || `Document ${sIdx + 1}`;
+        toc.push({
+          id: `merge_bm_${sIdx}`,
+          title: cleanTitle,
+          pageIndex: idx,
+          children: []
+        });
+      }
+    }
+    writeOutlines(outputDoc, toc);
   }
 
   assertNotAborted(abortToken);

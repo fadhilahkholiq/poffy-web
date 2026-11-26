@@ -1,6 +1,13 @@
 import { formatBytes } from '../../core/utils/file-io.js';
 import { workspace } from '../../state/workspace.js';
-import { cancelActiveJob } from '../actions/export-runner.js';
+import { cancelActiveJob, runAutoCropJob } from '../actions/export-runner.js';
+import {
+  renderCompareStudioModal,
+  renderRedactStudioModal,
+  renderSignStudioModal
+} from './Phase3Modals.js';
+import { renderBookmarkStudioModal, renderCbzStudioModal } from './Phase4Modals.js';
+import { createClaySelect } from './ClaySelect.js';
 import { el, mount, sanitizeImageSrc } from '../utils/dom.js';
 
 /**
@@ -97,7 +104,11 @@ export function renderOverlays(container) {
             'div',
             { className: 'flex items-center justify-between gap-3' },
             el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'Processing Locally'),
-            el('span', { className: 'badge-pill' }, `${job.percent}%`)
+            el(
+              'span',
+              { className: 'badge-pill' },
+              job.total > 0 ? `${job.current}/${job.total} • ${job.percent}%` : `${job.percent}%`
+            )
           ),
           el('p', { className: 'type-body-sm text-[#3a3a3a]' }, job.stage || 'Working...'),
           el(
@@ -220,5 +231,181 @@ export function renderOverlays(container) {
       )
     : null;
 
-  mount(container, memoryBanner, noticeToast, jobDialog, previewModal);
+  const org = workspace.tools.organize;
+  const selectedCount = workspace.pages.filter((p) => p.selected).length;
+  const thresholdLabel = el('span', {}, String(org.autoCropThreshold));
+
+  const autoCropModal = org.autoCropModalOpen
+    ? el(
+        'div',
+        {
+          id: 'autocrop-modal-backdrop',
+          className:
+            'fixed inset-0 z-50 bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4',
+          role: 'dialog',
+          'aria-modal': 'true',
+          'aria-label': 'Auto-Crop Whitespace Margins',
+          onClick: (e) => {
+            if (e.target === e.currentTarget) {
+              org.autoCropModalOpen = false;
+              workspace.emit('tool');
+            }
+          }
+        },
+        el(
+          'div',
+          {
+            className:
+              'w-full max-w-md rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] p-6 shadow-2xl space-y-4'
+          },
+          el(
+            'div',
+            { className: 'flex items-center justify-between gap-3' },
+            el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'Auto-Crop Whitespace'),
+            el('span', { className: 'badge-pill bg-[#b8a4ed] text-[#0a0a0a]' }, 'OffscreenCanvas')
+          ),
+          el(
+            'p',
+            { className: 'type-body-sm' },
+            'Scans page luminance off the main thread and updates CropBox margins safely (undoable).'
+          ),
+          el(
+            'div',
+            { className: 'grid grid-cols-2 gap-3' },
+            el(
+              'label',
+              { className: 'text-[12px] text-[#6a6a6a] block' },
+              'Padding',
+              el('input', {
+                id: 'autocrop-padding',
+                type: 'number',
+                min: '0',
+                max: '100',
+                value: String(org.autoCropPadding),
+                className: 'input-clay !h-10 mt-1',
+                onInput: (e) => {
+                  org.autoCropPadding = Math.max(0, Number(/** @type {HTMLInputElement} */ (e.target).value) || 0);
+                }
+              })
+            ),
+            el(
+              'label',
+              { className: 'text-[12px] text-[#6a6a6a] block' },
+              'Unit',
+              createClaySelect({
+                id: 'autocrop-unit',
+                className: 'input-clay !h-10 mt-1',
+                currentValue: org.autoCropUnit,
+                options: [
+                  ['pt', 'Points (pt)'],
+                  ['mm', 'Millimeters (mm)']
+                ],
+                onChange: (val) => {
+                  org.autoCropUnit = val;
+                }
+              })
+            )
+          ),
+          el(
+            'label',
+            { className: 'block text-[12px] text-[#6a6a6a]' },
+            'Whiteness Threshold (',
+            thresholdLabel,
+            '/255)',
+            el('input', {
+              id: 'autocrop-threshold',
+              type: 'range',
+              min: '200',
+              max: '254',
+              step: '1',
+              value: String(org.autoCropThreshold),
+              className: 'w-full mt-1.5 accent-[#0a0a0a]',
+              onInput: (e) => {
+                org.autoCropThreshold = Number(/** @type {HTMLInputElement} */ (e.target).value) || 245;
+                thresholdLabel.textContent = String(org.autoCropThreshold);
+              }
+            })
+          ),
+          el(
+            'div',
+            { className: 'grid grid-cols-2 gap-3' },
+            el(
+              'label',
+              { className: 'text-[12px] text-[#6a6a6a] block' },
+              'Crop Mode',
+              createClaySelect({
+                id: 'autocrop-mode',
+                className: 'input-clay !h-10 mt-1',
+                currentValue: org.autoCropMode,
+                options: [
+                  ['uniform', 'Uniform (Union Box)'],
+                  ['per-page', 'Per-Page Tight Crop']
+                ],
+                onChange: (val) => {
+                  org.autoCropMode = val;
+                }
+              })
+            ),
+            el(
+              'label',
+              { className: 'text-[12px] text-[#6a6a6a] block' },
+              'Target Pages',
+              createClaySelect({
+                id: 'autocrop-scope',
+                className: 'input-clay !h-10 mt-1',
+                currentValue: selectedCount > 0 ? org.autoCropScope : 'all',
+                options: [
+                  ['all', `All Pages (${workspace.pages.length})`],
+                  ['selected', `Selected (${selectedCount})`, selectedCount === 0]
+                ],
+                onChange: (val) => {
+                  org.autoCropScope = val;
+                }
+              })
+            )
+          ),
+          el(
+            'div',
+            { className: 'flex justify-end gap-2 pt-2' },
+            el(
+              'button',
+              {
+                type: 'button',
+                id: 'autocrop-cancel-btn',
+                className: 'btn-secondary !h-10',
+                onClick: () => {
+                  org.autoCropModalOpen = false;
+                  workspace.emit('tool');
+                }
+              },
+              'Cancel'
+            ),
+            el(
+              'button',
+              {
+                type: 'button',
+                id: 'autocrop-run-btn',
+                className: 'btn-primary !h-10',
+                onClick: runAutoCropJob
+              },
+              'Detect & Apply Crop'
+            )
+          )
+        )
+      )
+    : null;
+
+  mount(
+    container,
+    memoryBanner,
+    noticeToast,
+    jobDialog,
+    previewModal,
+    autoCropModal,
+    renderRedactStudioModal(),
+    renderSignStudioModal(),
+    renderCompareStudioModal(),
+    renderBookmarkStudioModal(),
+    renderCbzStudioModal()
+  );
 }

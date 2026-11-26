@@ -1,12 +1,14 @@
 import { mergePdfBuffers } from '../core/pdf/merge.js';
 import { splitPdf } from '../core/pdf/split.js';
 import { compileVirtualPagesToDocument } from '../core/pdf/pages.js';
+import { computeAutoCropMargins } from '../core/pdf/autocrop.js';
 import { applyWatermarkToDocument } from '../core/pdf/watermark.js';
-import { applyPageNumbersToDocument } from '../core/pdf/numbering.js';
+import { applyPageNumbersToDocument, batchBatesNumbering } from '../core/pdf/numbering.js';
 import { imagesToPdf, normalizeImageForPdf } from '../core/pdf/convert.js';
 import {
   applyMetadataToDocument,
   inspectPdfMetadata,
+  inspectPdfPrivacyAudit,
   updatePdfMetadata
 } from '../core/pdf/metadata.js';
 import {
@@ -15,12 +17,39 @@ import {
   inspectAcroFormFields
 } from '../core/pdf/forms.js';
 import { optimizePdfBuffer } from '../core/pdf/optimize.js';
-import { assertNotAborted } from '../core/pdf/doc-loader.js';
+import { resizePdfDocument } from '../core/pdf/resize.js';
+import { imposePdfDocument } from '../core/pdf/imposition.js';
+import { splitSpreadsDocument } from '../core/pdf/spreads.js';
+import {
+  applyColorFiltersToPdf,
+  clearColorFilterPreviewCache,
+  generateColorFilterPreview
+} from '../core/pdf/filters.js';
+import { applyRedactionsToPdf, findRedactionMatchesInPdf } from '../core/pdf/redact.js';
+import { applyAnnotationsToDocument } from '../core/pdf/annotate.js';
+import { buildDiffReportPdf, comparePdfDocuments } from '../core/pdf/compare.js';
+import { batchExtractTextZip, extractTextFromPdfBuffer } from '../core/pdf/text-extract.js';
+import {
+  extractEmbeddedImagesFromPdf,
+  packageExtractedImagesZip
+} from '../core/pdf/image-extract.js';
+import {
+  inspectPdfAttachments,
+  packageAttachmentsZip,
+  updatePdfAttachments
+} from '../core/pdf/attachments.js';
+import {
+  applyOutlinesToPdfBuffer,
+  readOutlinesFromPdf,
+  writeOutlines
+} from '../core/pdf/outlines.js';
+import { cbzToPdf, pdfToCbz, unpackSortedCbzEntries } from '../core/pdf/cbz.js';
+import { assertNotAborted, loadPdfSafe } from '../core/pdf/doc-loader.js';
 
 /**
  * @typedef {Object} WorkerRequest
  * @property {string} requestId - Correlation UUID
- * @property {'REGISTER_SOURCE'|'EVICT_SOURCE'|'CLEAR_SOURCES'|'MERGE'|'SPLIT'|'EXPORT_WORKSPACE'|'INSPECT_META'|'APPLY_META'|'INSPECT_FORMS'|'APPLY_FORMS'|'IMAGES_TO_PDF'|'OPTIMIZE'|'ABORT_JOB'} type
+ * @property {'REGISTER_SOURCE'|'EVICT_SOURCE'|'CLEAR_SOURCES'|'MERGE'|'SPLIT'|'EXPORT_WORKSPACE'|'INSPECT_META'|'INSPECT_PRIVACY_AUDIT'|'APPLY_META'|'INSPECT_FORMS'|'APPLY_FORMS'|'IMAGES_TO_PDF'|'OPTIMIZE'|'AUTO_CROP'|'BATCH_BATES'|'RESIZE_PDF'|'NUP_BOOKLET'|'SPLIT_SPREADS'|'COLOR_FILTERS'|'PREVIEW_COLOR_FILTER'|'FIND_REDACTION_MATCHES'|'REDACT_PDF'|'SIGN_ANNOTATE'|'COMPARE_PDF'|'EXPORT_DIFF_REPORT'|'EXTRACT_TEXT'|'BATCH_EXTRACT_TEXT_ZIP'|'EXTRACT_IMAGES'|'PACKAGE_IMAGES_ZIP'|'INSPECT_ATTACHMENTS'|'UPDATE_ATTACHMENTS'|'PACKAGE_ATTACHMENTS_ZIP'|'READ_OUTLINES'|'WRITE_OUTLINES'|'INSPECT_CBZ'|'CBZ_TO_PDF'|'PDF_TO_CBZ'|'ABORT_JOB'} type
  * @property {Object} payload - Operation-specific configuration
  */
 
@@ -30,6 +59,8 @@ import { assertNotAborted } from '../core/pdf/doc-loader.js';
  * @property {'PROGRESS'} status
  * @property {number} percent - 0 to 100
  * @property {string} stage - Human-readable step
+ * @property {number} [current] - Current item/page index
+ * @property {number} [total] - Total item/page count
  */
 
 /**
@@ -66,12 +97,14 @@ function toTransferableBuffer(bytes) {
  * @param {number} percent
  * @param {string} stage
  */
-function postProgress(requestId, percent, stage) {
+function postProgress(requestId, percent, stage, current, total) {
   self.postMessage({
     requestId,
     status: 'PROGRESS',
     percent: Math.max(0, Math.min(100, Math.round(percent))),
-    stage
+    stage,
+    current,
+    total
   });
 }
 
@@ -129,12 +162,14 @@ self.addEventListener('message', async (event) => {
 
     if (type === 'EVICT_SOURCE') {
       sourceCache.delete(payload.sourceFileId);
+      clearColorFilterPreviewCache();
       self.postMessage({ requestId, status: 'SUCCESS', data: { evicted: true } });
       return;
     }
 
     if (type === 'CLEAR_SOURCES') {
       sourceCache.clear();
+      clearColorFilterPreviewCache();
       self.postMessage({ requestId, status: 'SUCCESS', data: { cleared: true } });
       return;
     }
@@ -143,6 +178,50 @@ self.addEventListener('message', async (event) => {
       const src = resolveSource(payload.sourceFileId, payload.inlineSources);
       const metadata = await inspectPdfMetadata(src.buffer, src.name);
       self.postMessage({ requestId, status: 'SUCCESS', data: metadata });
+      return;
+    }
+
+    if (type === 'INSPECT_PRIVACY_AUDIT') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const audit = await inspectPdfPrivacyAudit(src.buffer, src.name);
+      self.postMessage({ requestId, status: 'SUCCESS', data: audit });
+      return;
+    }
+
+    if (type === 'AUTO_CROP') {
+      const result = await computeAutoCropMargins(payload.targetPages || [], sourceCache, {
+        paddingPt: payload.paddingPt,
+        threshold: payload.threshold,
+        mode: payload.mode,
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      self.postMessage({ requestId, status: 'SUCCESS', data: result });
+      return;
+    }
+
+    if (type === 'BATCH_BATES') {
+      const files = (payload.sourceIds || []).map((id) => resolveSource(id, payload.inlineSources));
+      const batesResult = await batchBatesNumbering(files, payload.config || {}, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = toTransferableBuffer(batesResult.buffer);
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: batesResult.fileName,
+          mimeType: batesResult.mimeType,
+          data: {
+            fileCount: batesResult.fileCount,
+            totalPagesStamped: batesResult.totalPagesStamped,
+            manifestRows: batesResult.manifestRows
+          }
+        },
+        [resultBuffer]
+      );
       return;
     }
 
@@ -195,6 +274,7 @@ self.addEventListener('message', async (event) => {
       const sources = (payload.sourceIds || []).map((id) => resolveSource(id, payload.inlineSources));
       const bytes = await mergePdfBuffers(sources, {
         mode: payload.mode || 'sequential',
+        autoBookmarks: Boolean(payload.autoBookmarks),
         onProgress: (pct, stage) => postProgress(requestId, pct, stage),
         abortToken
       });
@@ -311,7 +391,7 @@ self.addEventListener('message', async (event) => {
 
       const opt = await optimizePdfBuffer(inputBytes, {
         ...payload.config,
-        onProgress: (pct, stage) => postProgress(requestId, 30 + pct * 0.7, stage),
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, 30 + pct * 0.7, stage, cur, tot),
         abortToken
       });
 
@@ -325,8 +405,550 @@ self.addEventListener('message', async (event) => {
           mimeType: 'application/pdf',
           data: {
             originalSize: opt.originalSize,
-            optimizedSize: opt.optimizedSize
+            optimizedSize: opt.optimizedSize,
+            recompressedImages: opt.recompressedImages,
+            skippedImages: opt.skippedImages,
+            preset: opt.preset
           }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'RESIZE_PDF') {
+      const compiled = await compileVirtualPagesToDocument(payload.virtualPages || [], sourceCache, {
+        onProgress: (pct, stage) => postProgress(requestId, pct * 0.25, stage),
+        abortToken
+      });
+      const res = await resizePdfDocument(compiled, {
+        ...payload.config,
+        onProgress: (pct, stage, cur, tot) =>
+          postProgress(requestId, 25 + pct * 0.7, stage, cur, tot),
+        abortToken
+      });
+      assertNotAborted(abortToken);
+      postProgress(requestId, 95, 'Serializing standardized PDF...');
+      const bytes = await res.doc.save({ useObjectStreams: true, addDefaultPage: false });
+      const resultBuffer = toTransferableBuffer(bytes);
+      postProgress(requestId, 100, 'Resize complete.');
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: payload.fileName || 'poffy_resized.pdf',
+          mimeType: 'application/pdf',
+          data: { pageCount: res.pageCount, targetDimensions: res.targetDimensions }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'NUP_BOOKLET') {
+      const compiled = await compileVirtualPagesToDocument(payload.virtualPages || [], sourceCache, {
+        onProgress: (pct, stage) => postProgress(requestId, pct * 0.25, stage),
+        abortToken
+      });
+      const res = await imposePdfDocument(compiled, {
+        ...payload.config,
+        onProgress: (pct, stage, cur, tot) =>
+          postProgress(requestId, 25 + pct * 0.7, stage, cur, tot),
+        abortToken
+      });
+      assertNotAborted(abortToken);
+      postProgress(requestId, 95, 'Serializing imposed sheets...');
+      const bytes = await res.doc.save({ useObjectStreams: true, addDefaultPage: false });
+      const resultBuffer = toTransferableBuffer(bytes);
+      postProgress(requestId, 100, 'Imposition complete.');
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: payload.fileName || 'poffy_imposed.pdf',
+          mimeType: 'application/pdf',
+          data: {
+            sheetCount: res.sheetCount,
+            paddedPageCount: res.paddedPageCount
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'SPLIT_SPREADS') {
+      const compiled = await compileVirtualPagesToDocument(payload.virtualPages || [], sourceCache, {
+        onProgress: (pct, stage) => postProgress(requestId, pct * 0.25, stage),
+        abortToken
+      });
+      const res = await splitSpreadsDocument(compiled, {
+        ...payload.config,
+        onProgress: (pct, stage, cur, tot) =>
+          postProgress(requestId, 25 + pct * 0.7, stage, cur, tot),
+        abortToken
+      });
+      assertNotAborted(abortToken);
+      postProgress(requestId, 95, 'Serializing split pages...');
+      const bytes = await res.doc.save({ useObjectStreams: true, addDefaultPage: false });
+      const resultBuffer = toTransferableBuffer(bytes);
+      postProgress(requestId, 100, 'Spreads split cleanly.');
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: payload.fileName || 'poffy_split_spreads.pdf',
+          mimeType: 'application/pdf',
+          data: {
+            inputPages: res.inputPages,
+            outputPages: res.outputPages,
+            splitCount: res.splitCount
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'PREVIEW_COLOR_FILTER') {
+      const targetVPage = payload.virtualPage;
+      if (!targetVPage) {
+        throw new Error('No preview page specified.');
+      }
+      const src =
+        targetVPage.sourceFileId !== '__blank__' ? sourceCache.get(targetVPage.sourceFileId) : null;
+      let inputBytes;
+      let pageIndex = 0;
+      let rotation = 0;
+
+      if (src && src.type === 'pdf' && !targetVPage.cropMargins) {
+        inputBytes = src.buffer;
+        pageIndex = targetVPage.sourcePageIndex || 0;
+        rotation = targetVPage.rotation || 0;
+      } else {
+        const singleDoc = await compileVirtualPagesToDocument([targetVPage], sourceCache, {
+          abortToken
+        });
+        inputBytes = await singleDoc.save({ useObjectStreams: false });
+      }
+
+      const cropSig = targetVPage.cropMargins
+        ? `${targetVPage.cropMargins.top},${targetVPage.cropMargins.right},${targetVPage.cropMargins.bottom},${targetVPage.cropMargins.left}`
+        : 'none';
+      const cacheKey = `${targetVPage.id}:${targetVPage.sourceFileId}:${pageIndex}:${rotation}:${cropSig}`;
+
+      const preview = await generateColorFilterPreview(inputBytes, {
+        cacheKey,
+        pageIndex,
+        rotation,
+        filterConfig: payload.config,
+        fileName: src?.name || ''
+      });
+
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer: preview.filteredBuffer,
+          mimeType: preview.mimeType,
+          data: {
+            originalBuffer: preview.originalBuffer,
+            width: preview.width,
+            height: preview.height,
+            otsuThreshold: preview.otsuThreshold
+          }
+        },
+        [preview.filteredBuffer, preview.originalBuffer]
+      );
+      return;
+    }
+
+    if (type === 'COLOR_FILTERS') {
+      const compiled = await compileVirtualPagesToDocument(payload.virtualPages || [], sourceCache, {
+        onProgress: (pct, stage) => postProgress(requestId, pct * 0.15, stage),
+        abortToken
+      });
+      const inputBytes = await compiled.save({ useObjectStreams: false });
+      const filtered = await applyColorFiltersToPdf(
+        inputBytes,
+        {
+          ...payload.config,
+          onProgress: (pct, stage, cur, tot) =>
+            postProgress(requestId, 15 + pct * 0.85, stage, cur, tot),
+          abortToken
+        },
+        payload.fileName || ''
+      );
+      const resultBuffer = toTransferableBuffer(filtered.bytes);
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: payload.fileName || 'poffy_filtered.pdf',
+          mimeType: 'application/pdf',
+          data: { pageCount: filtered.pageCount }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'FIND_REDACTION_MATCHES') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const matches = await findRedactionMatchesInPdf(src.buffer, payload.queryConfig || {}, {
+        fileName: src.name,
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      self.postMessage({ requestId, status: 'SUCCESS', data: matches });
+      return;
+    }
+
+    if (type === 'REDACT_PDF') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await applyRedactionsToPdf(
+        src.buffer,
+        payload.marks || [],
+        payload.config || {},
+        src.name,
+        {
+          onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+          abortToken
+        }
+      );
+      const resultBuffer = toTransferableBuffer(res.bytes);
+      const outName =
+        payload.fileName || `${src.name.replace(/\.pdf$/i, '')}_redacted.pdf`;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: outName,
+          mimeType: 'application/pdf',
+          data: {
+            totalPages: res.totalPages,
+            burnedPages: res.burnedPages,
+            copiedPages: res.copiedPages,
+            paranoidMode: res.paranoidMode
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'SIGN_ANNOTATE') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const doc = await loadPdfSafe(src.buffer, src.name);
+      await applyAnnotationsToDocument(doc, payload.overlays || [], {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      assertNotAborted(abortToken);
+      postProgress(requestId, 95, 'Serializing signed PDF...');
+      const bytes = await doc.save({ useObjectStreams: true, addDefaultPage: false });
+      const resultBuffer = toTransferableBuffer(bytes);
+      const outName =
+        payload.fileName || `${src.name.replace(/\.pdf$/i, '')}_signed.pdf`;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: outName,
+          mimeType: 'application/pdf',
+          data: { overlayCount: (payload.overlays || []).length }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'COMPARE_PDF') {
+      const res = await comparePdfDocuments(payload.bufferA, payload.bufferB, {
+        nameA: payload.nameA,
+        nameB: payload.nameB,
+        scale: payload.scale ?? 1.5,
+        sensitivity: payload.sensitivity ?? 24,
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          data: {
+            pagesA: res.pagesA,
+            pagesB: res.pagesB,
+            totalPages: res.totalPages,
+            pages: res.pages
+          }
+        },
+        res.transferables
+      );
+      return;
+    }
+
+    if (type === 'EXPORT_DIFF_REPORT') {
+      postProgress(requestId, 20, 'Building diff report PDF...');
+      const bytes = await buildDiffReportPdf({
+        nameA: payload.nameA || 'Original.pdf',
+        nameB: payload.nameB || 'Revised.pdf',
+        pages: payload.pages || []
+      });
+      const resultBuffer = toTransferableBuffer(bytes);
+      postProgress(requestId, 100, 'Diff report ready.');
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: payload.fileName || 'poffy_diff_report.pdf',
+          mimeType: 'application/pdf'
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'EXTRACT_TEXT') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await extractTextFromPdfBuffer(src.buffer, payload.config || {}, src.name, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      self.postMessage({ requestId, status: 'SUCCESS', data: res });
+      return;
+    }
+
+    if (type === 'BATCH_EXTRACT_TEXT_ZIP') {
+      const ids = Array.isArray(payload.sourceIds) ? payload.sourceIds : [];
+      const files = ids.map((id) => resolveSource(id, payload.inlineSources));
+      const res = await batchExtractTextZip(files, payload.config || {}, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = toTransferableBuffer(res.buffer);
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType,
+          data: { fileCount: res.fileCount, scannedCount: res.scannedCount }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'EXTRACT_IMAGES') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await extractEmbeddedImagesFromPdf(src.buffer, payload.config || {}, src.name, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const transferables = [];
+      const items = res.images.map((img) => {
+        const buf = toTransferableBuffer(img.bytes);
+        transferables.push(buf);
+        return {
+          id: img.id,
+          fileName: img.fileName,
+          format: img.format,
+          mimeType: img.mimeType,
+          width: img.width,
+          height: img.height,
+          hasAlpha: img.hasAlpha,
+          buffer: buf
+        };
+      });
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          data: {
+            images: items,
+            skippedSmall: res.skippedSmall,
+            skippedUnsupported: res.skippedUnsupported
+          }
+        },
+        transferables
+      );
+      return;
+    }
+
+    if (type === 'PACKAGE_IMAGES_ZIP') {
+      const res = packageExtractedImagesZip(payload.images || [], payload.sourceName || 'document');
+      const resultBuffer = toTransferableBuffer(res.buffer);
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'INSPECT_ATTACHMENTS') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const entries = await inspectPdfAttachments(src.buffer, src.name);
+      const transferables = [];
+      const items = entries.map((att) => {
+        const buf = toTransferableBuffer(att.bytes);
+        transferables.push(buf);
+        return {
+          id: att.id,
+          name: att.name,
+          description: att.description,
+          mimeType: att.mimeType,
+          size: att.size,
+          buffer: buf
+        };
+      });
+      self.postMessage({ requestId, status: 'SUCCESS', data: items }, transferables);
+      return;
+    }
+
+    if (type === 'UPDATE_ATTACHMENTS') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      postProgress(requestId, 30, 'Updating embedded file attachments...');
+      const res = await updatePdfAttachments(
+        src.buffer,
+        {
+          removeNames: payload.removeNames || [],
+          addFiles: payload.addFiles || []
+        },
+        src.name
+      );
+      const resultBuffer = toTransferableBuffer(res.bytes);
+      const transferables = [resultBuffer];
+      const nextList = res.attachments.map((att) => {
+        const buf = toTransferableBuffer(att.bytes);
+        transferables.push(buf);
+        return {
+          id: att.id,
+          name: att.name,
+          description: att.description,
+          mimeType: att.mimeType,
+          size: att.size,
+          buffer: buf
+        };
+      });
+      postProgress(requestId, 100, 'Attachments updated.');
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: payload.fileName || `${src.name.replace(/\.pdf$/i, '')}_attachments.pdf`,
+          mimeType: 'application/pdf',
+          data: { attachments: nextList }
+        },
+        transferables
+      );
+      return;
+    }
+
+    if (type === 'PACKAGE_ATTACHMENTS_ZIP') {
+      const res = packageAttachmentsZip(payload.attachments || [], payload.sourceName || 'document');
+      const resultBuffer = toTransferableBuffer(res.buffer);
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'READ_OUTLINES') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await readOutlinesFromPdf(src.buffer, src.name);
+      self.postMessage({ requestId, status: 'SUCCESS', data: res });
+      return;
+    }
+
+    if (type === 'WRITE_OUTLINES') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      postProgress(requestId, 40, 'Writing bookmark outlines...');
+      const bytes = await applyOutlinesToPdfBuffer(src.buffer, payload.tree || [], src.name);
+      const resultBuffer = toTransferableBuffer(bytes);
+      postProgress(requestId, 100, 'Bookmarks saved.');
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: payload.fileName || `${src.name.replace(/\.pdf$/i, '')}_bookmarked.pdf`,
+          mimeType: 'application/pdf'
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'INSPECT_CBZ') {
+      const unpacked = unpackSortedCbzEntries(payload.buffer);
+      self.postMessage({
+        requestId,
+        status: 'SUCCESS',
+        data: { fileNames: unpacked.fileNames, pageCount: unpacked.fileNames.length }
+      });
+      return;
+    }
+
+    if (type === 'CBZ_TO_PDF') {
+      const res = await cbzToPdf(payload.buffer, payload.config || {}, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = toTransferableBuffer(res.bytes);
+      const base = String(payload.fileName || 'comic').replace(/\.cbz$/i, '');
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: `${base}.pdf`,
+          mimeType: 'application/pdf',
+          data: { pageCount: res.pageCount, fileNames: res.fileNames }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'PDF_TO_CBZ') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await pdfToCbz(src.buffer, payload.config || {}, src.name, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = toTransferableBuffer(res.bytes);
+      const base = src.name.replace(/\.pdf$/i, '') || 'comic';
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: `${base}.cbz`,
+          mimeType: 'application/vnd.comicbook+zip',
+          data: { pageCount: res.pageCount, entryNames: res.entryNames }
         },
         [resultBuffer]
       );
@@ -341,6 +963,7 @@ self.addEventListener('message', async (event) => {
         metadataConfig,
         formConfig,
         optimizeConfig,
+        autoBookmarks = false,
         fileName = 'poffy_export.pdf'
       } = payload;
 
@@ -348,6 +971,26 @@ self.addEventListener('message', async (event) => {
         onProgress: (pct, stage) => postProgress(requestId, pct, stage),
         abortToken
       });
+
+      if (autoBookmarks) {
+        const seenSources = new Set();
+        const toc = [];
+        for (let idx = 0; idx < virtualPages.length; idx += 1) {
+          const vp = virtualPages[idx];
+          if (vp.sourceFileId === '__blank__' || seenSources.has(vp.sourceFileId)) continue;
+          seenSources.add(vp.sourceFileId);
+          const sEntry = sourceCache.get(vp.sourceFileId);
+          if (sEntry) {
+            toc.push({
+              id: `ws_bm_${idx}`,
+              title: sEntry.name.replace(/\.\w+$/i, '').trim() || `File ${toc.length + 1}`,
+              pageIndex: idx,
+              children: []
+            });
+          }
+        }
+        writeOutlines(outputDoc, toc);
+      }
 
       if (watermarkConfig?.enabled) {
         assertNotAborted(abortToken);

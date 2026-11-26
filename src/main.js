@@ -12,7 +12,7 @@ import { renderHeroDropzone } from './ui/components/HeroDropzone.js';
 import { renderOverlays } from './ui/components/Overlays.js';
 import { renderPageGrid } from './ui/components/PageGrid.js';
 import { renderTopNav } from './ui/components/TopNav.js';
-import { renderToolInspector } from './ui/components/ToolInspector.js';
+import { renderToolInspector, updateFilterPreviewDom } from './ui/components/ToolInspector.js';
 import { ingestFiles } from './ui/interactions/file-ingestion.js';
 import { el, mount, sanitizeExternalUrl, svgEl } from './ui/utils/dom.js';
 
@@ -78,7 +78,7 @@ function bootstrap() {
           { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-start' },
           el(
             'div',
-            { className: 'lg:col-span-4 space-y-3' },
+            { className: 'lg:col-span-4 space-y-3.5' },
             el(
               'a',
               {
@@ -92,83 +92,142 @@ function bootstrap() {
               'p',
               { className: 'type-body-sm max-w-[36ch]' },
               'Privacy-first PDF tools running 100% in browser memory via WebAssembly and Web Workers.'
+            ),
+            el(
+              'div',
+              { className: 'flex flex-wrap gap-1.5 pt-1' },
+              el('span', { className: 'badge-pill !bg-[#fffaf0] border border-[#e5e5e5] text-[11px]' }, 'Zero Uploads'),
+              el('span', { className: 'badge-pill !bg-[#fffaf0] border border-[#e5e5e5] text-[11px]' }, 'Works Offline'),
+              el('span', { className: 'badge-pill !bg-[#fffaf0] border border-[#e5e5e5] text-[11px]' }, `${FEATURE_PAGES.length} Tools`)
             )
           ),
           el(
             'nav',
-            { 'aria-label': 'All Offline PDF Tools', className: 'lg:col-span-8 space-y-3' },
-            el('p', { className: 'type-caption-upper text-[#6a6a6a]' }, 'PDF Tools Directory'),
-            el(
-              'ul',
-              { className: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-2 list-none p-0 m-0' },
-              el(
-                'li',
-                {},
-                el(
-                  'a',
-                  {
-                    href: '/',
-                    className: `inline-flex items-center gap-2 py-1 text-[14px] no-underline transition-colors ${
-                      !activeFeature
-                        ? 'font-semibold text-[#0a0a0a]'
-                        : 'text-[#3a3a3a] hover:text-[#0a0a0a] hover:underline'
-                    }`
-                  },
-                  el('span', {
-                    className: 'w-2 h-2 rounded-full bg-[#0a0a0a] shrink-0',
-                    'aria-hidden': 'true'
-                  }),
-                  'Studio Home'
-                )
-              ),
-              ...FEATURE_PAGES.map((f) => {
-                const isCurrent = activeFeature?.slug === f.slug;
-                return el(
-                  'li',
-                  {},
-                  el(
-                    'a',
-                    {
-                      href: f.path,
-                      'aria-current': isCurrent ? 'page' : undefined,
-                      className: `inline-flex items-center gap-2 py-1 text-[14px] no-underline transition-colors ${
-                        isCurrent
-                          ? 'font-semibold text-[#0a0a0a] underline underline-offset-4'
-                          : 'text-[#3a3a3a] hover:text-[#0a0a0a] hover:underline underline-offset-4'
-                      }`
-                    },
-                    el('span', {
-                      className: 'w-2 h-2 rounded-full shrink-0 border border-black/10',
-                      style: { backgroundColor: f.accent },
-                      'aria-hidden': 'true'
-                    }),
-                    f.shortName
-                  )
-                );
-              })
-            )
+            { 'aria-label': 'All Offline PDF Tools', className: 'lg:col-span-8' },
+            (() => {
+              const groups = [
+                {
+                  title: 'Pages & Layout',
+                  slugs: ['merge-pdf', 'split-pdf', 'organize-pdf', 'resize-pdf', 'nup-booklet', 'split-spreads'],
+                  includeHome: true
+                },
+                {
+                  title: 'Edit, Sign & Clean',
+                  slugs: ['watermark-pdf', 'page-numbers', 'sign-annotate', 'redact-pdf', 'color-filters', 'compare-pdf'],
+                  includeHome: false
+                },
+                {
+                  title: 'Convert & Extract',
+                  slugs: ['images-to-pdf', 'pdf-to-images', 'cbz-pdf', 'extract-text', 'extract-images'],
+                  includeHome: false
+                },
+                {
+                  title: 'Inspect & Output',
+                  slugs: ['optimize-pdf', 'metadata-scrubber', 'flatten-pdf', 'pdf-attachments', 'bookmark-editor'],
+                  includeHome: false
+                }
+              ];
+
+              const bySlug = new Map(FEATURE_PAGES.map((f) => [f.slug, f]));
+              const assignedSlugs = new Set(groups.flatMap((g) => g.slugs));
+              for (const f of FEATURE_PAGES) {
+                if (!assignedSlugs.has(f.slug)) {
+                  groups[3].slugs.push(f.slug);
+                }
+              }
+
+              return el(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-6' },
+                groups.map((grp) => {
+                  const items = [];
+                  if (grp.includeHome) {
+                    const isHome = !activeFeature;
+                    items.push(
+                      el(
+                        'li',
+                        {},
+                        el(
+                          'a',
+                          {
+                            href: '/',
+                            'aria-current': isHome ? 'page' : undefined,
+                            className: `footer-dir-link ${isHome ? 'is-current' : ''}`
+                          },
+                          el('span', {
+                            className: `w-2 h-2 rounded-full shrink-0 ${isHome ? 'bg-white' : 'bg-[#0a0a0a]'}`,
+                            'aria-hidden': 'true'
+                          }),
+                          el('span', { className: 'truncate' }, 'Studio Home')
+                        )
+                      )
+                    );
+                  }
+
+                  for (const slug of grp.slugs) {
+                    const f = bySlug.get(slug);
+                    if (!f) continue;
+                    const isCurrent = activeFeature?.slug === f.slug;
+                    items.push(
+                      el(
+                        'li',
+                        {},
+                        el(
+                          'a',
+                          {
+                            href: f.path,
+                            'aria-current': isCurrent ? 'page' : undefined,
+                            className: `footer-dir-link ${isCurrent ? 'is-current' : ''}`
+                          },
+                          el('span', {
+                            className: `w-2 h-2 rounded-full shrink-0 ${
+                              isCurrent ? 'ring-1 ring-white/50' : 'border border-black/15'
+                            }`,
+                            style: { backgroundColor: f.accent },
+                            'aria-hidden': 'true'
+                          }),
+                          el('span', { className: 'truncate' }, f.shortName)
+                        )
+                      )
+                    );
+                  }
+
+                  return el(
+                    'div',
+                    { className: 'space-y-2' },
+                    el(
+                      'p',
+                      { className: 'text-[11px] font-semibold uppercase tracking-[1.1px] text-[#6a6a6a] px-2.5' },
+                      grp.title
+                    ),
+                    el('ul', { className: 'space-y-0.5 list-none p-0 m-0' }, items)
+                  );
+                })
+              );
+            })()
           )
         ),
         el(
           'div',
           {
             className:
-              'pt-6 border-t border-[#e5e5e5] flex flex-wrap items-center justify-between gap-3 text-[13px] text-[#6a6a6a]'
+              'pt-6 border-t border-[#e5e5e5] flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left text-[13px] text-[#6a6a6a]'
           },
           el(
             'div',
-            { className: 'flex flex-wrap items-center gap-x-3 gap-y-1' },
-            el('span', { className: 'font-medium text-[#0a0a0a]' }, 'Poffy — Offline PDF Studio'),
+            { className: 'flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1' },
+            el('span', { className: 'font-medium text-[#0a0a0a]' }, 'Poffy'),
             el('span', { 'aria-hidden': 'true' }, '•'),
             el('span', {}, 'Created by Kholiq Fadhilah')
           ),
           el(
             'div',
-            { className: 'flex flex-wrap items-center gap-x-4 gap-y-2' },
+            { className: 'flex flex-col sm:flex-row items-center gap-x-5 gap-y-3' },
             el(
-              'span',
-              {},
-              '100% Client-Side • Zero Telemetry • Built with pdf-lib, pdfjs-dist & fflate'
+              'div',
+              { className: 'flex flex-col items-center md:items-end leading-snug' },
+              el('span', { className: 'font-medium text-[#3a3a3a]' }, '100% Client-Side & Zero Telemetry'),
+              el('span', { className: 'text-[12px] text-[#6a6a6a]' }, 'Built with pdf-lib, pdfjs-dist & fflate')
             ),
             el(
               'a',
@@ -177,7 +236,7 @@ function bootstrap() {
                 target: '_blank',
                 rel: 'noopener noreferrer',
                 className:
-                  'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f0e0] border border-[#e5e5e5] text-[#0a0a0a] font-medium no-underline hover:bg-[#ebe6d6]'
+                  'inline-flex items-center gap-1.5 self-center sm:self-auto w-fit px-3 py-1.5 rounded-full bg-[#fffaf0] border border-[#e5e5e5] text-[#0a0a0a] font-medium no-underline hover:bg-[#f5f0e0] hover:border-[#0a0a0a] transition-colors'
               },
               svgEl(
                 'svg',
@@ -305,7 +364,13 @@ function bootstrap() {
       return;
     }
 
+    if (topic === 'filter-preview') {
+      updateFilterPreviewDom();
+      return;
+    }
+
     if (topic === 'tool') {
+      renderOverlays(overlaysSlot);
       if (inspectorSlot) {
         renderToolInspector(inspectorSlot);
       }

@@ -41,7 +41,7 @@ class PdfOpsClient {
       if (!entry) return;
 
       if (msg.status === 'PROGRESS') {
-        entry.onProgress?.(msg.percent, msg.stage);
+        entry.onProgress?.(msg.percent, msg.stage, msg.current, msg.total);
         return;
       }
 

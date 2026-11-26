@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="split-spreads">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>Split PDF Book Spreads Offline — Cut 2-Up Scans in Half | Poffy</title>
+    <meta name="description" content="Slice 2-page scanned book spreads cleanly into single pages by updating CropBox and MediaBox offline with draggable split preview and cover skip." />
+    <meta name="keywords" content="split pdf book spreads, cut double page pdf in half, crop two page spread pdf, manga spread splitter offline" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#fffaf0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy — Offline PDF Studio" />
+    <meta property="og:title" content="Split PDF Book Spreads Offline — Cut 2-Up Scans in Half | Poffy" />
+    <meta property="og:description" content="Slice 2-page scanned book spreads cleanly into single pages by updating CropBox and MediaBox offline with draggable split preview and cover skip." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Split Spreads — Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Split PDF Book Spreads Offline — Cut 2-Up Scans in Half | Poffy" />
+    <meta name="twitter:description" content="Slice 2-page scanned book spreads cleanly into single pages by updating CropBox and MediaBox offline with draggable split preview and cover skip." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Split Spreads — Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Split PDF Book Spreads Offline — Cut 2-Up Scans in Half","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Slice 2-page scanned book spreads cleanly into single pages by updating CropBox and MediaBox offline with draggable split preview and cover skip.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Interactive draggable vertical/horizontal split line preview","Updates both CropBox and MediaBox cleanly with /Rotate accuracy","Skip first/last covers, landscape-only filter, and LTR/RTL reading order"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does splitting spreads re-rasterize my PDF pages?","acceptedAnswer":{"@type":"Answer","text":"No. Poffy duplicates pages via pdf-lib copyPages() and slices CropBox and MediaBox cleanly without losing text or resolution."}},{"@type":"Question","name":"Can I keep a single-page front or back cover unsplit?","acceptedAnswer":{"@type":"Answer","text":"Yes. Enable \"Skip first page (cover)\", \"Skip last page\", or \"Split landscape pages only\"."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Slice 2-page book spreads cleanly into single pages.</h1>
+        <p>Drag the visual divider line to set the exact gutter cut, skip front or back covers, and export lossless vector single pages offline.</p>
+        <ul>
+          <li>Interactive draggable vertical/horizontal split line preview</li>
+          <li>Updates both CropBox and MediaBox cleanly with /Rotate accuracy</li>
+          <li>Skip first/last covers, landscape-only filter, and LTR/RTL reading order</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use Split Spreads offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

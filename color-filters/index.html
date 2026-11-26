@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="color-filters">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>PDF Grayscale, Dark Mode &amp; Scan Cleanup Offline | Poffy</title>
+    <meta name="description" content="Convert PDFs to ink-saving grayscale, eye-friendly dark mode invert, or high-contrast Otsu-cleaned scans inside local Web Workers with live preview." />
+    <meta name="keywords" content="pdf grayscale offline, invert pdf dark mode, pdf scan cleanup contrast, otsu threshold pdf, whiten scanned pdf background" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#fffaf0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy — Offline PDF Studio" />
+    <meta property="og:title" content="PDF Grayscale, Dark Mode &amp; Scan Cleanup Offline | Poffy" />
+    <meta property="og:description" content="Convert PDFs to ink-saving grayscale, eye-friendly dark mode invert, or high-contrast Otsu-cleaned scans inside local Web Workers with live preview." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Color Filters — Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PDF Grayscale, Dark Mode &amp; Scan Cleanup Offline | Poffy" />
+    <meta name="twitter:description" content="Convert PDFs to ink-saving grayscale, eye-friendly dark mode invert, or high-contrast Otsu-cleaned scans inside local Web Workers with live preview." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Color Filters — Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"PDF Grayscale, Dark Mode & Scan Cleanup Offline","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Convert PDFs to ink-saving grayscale, eye-friendly dark mode invert, or high-contrast Otsu-cleaned scans inside local Web Workers with live preview.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Ink-Saver Grayscale, Dark Slate/Pure Invert, and Scan Cleanup presets","Background whitening, contrast boost, and Otsu auto-binarization","Instant side-by-side preview and configurable 150/200/300 DPI output"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"When should I enable B&W Otsu Binarization in Scan Cleanup?","acceptedAnswer":{"@type":"Answer","text":"Enable B&W Binarization on phone photos or receipts with uneven shadows to snap ink to crisp black on pure white encoded as compact PNG."}},{"@type":"Question","name":"Are page pixels ever sent to a remote server?","acceptedAnswer":{"@type":"Answer","text":"Never. All pdfjs-dist rendering and OffscreenCanvas pixel filters execute locally inside a dedicated Web Worker."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Convert PDFs to grayscale, dark mode, or crisp scans.</h1>
+        <p>Whiten shadowy phone scans, save printer ink with luminance grayscale, or generate dark-slate reading PDFs with a live side-by-side preview.</p>
+        <ul>
+          <li>Ink-Saver Grayscale, Dark Slate/Pure Invert, and Scan Cleanup presets</li>
+          <li>Background whitening, contrast boost, and Otsu auto-binarization</li>
+          <li>Instant side-by-side preview and configurable 150/200/300 DPI output</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use Color Filters offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

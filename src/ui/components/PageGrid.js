@@ -191,12 +191,37 @@ export function renderPageGrid(container) {
         'button',
         {
           type: 'button',
+          id: 'batch-auto-crop',
+          className: 'btn-compact',
+          disabled: pages.length === 0,
+          onClick: () => {
+            workspace.tools.organize.autoCropModalOpen = true;
+            workspace.emit('tool');
+          }
+        },
+        'Auto-Crop'
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
           id: 'batch-undo',
           className: 'btn-compact',
           disabled: workspace.undoStack.length === 0,
           onClick: () => workspace.undo()
         },
         'Undo'
+      ),
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'batch-redo',
+          className: 'btn-compact',
+          disabled: workspace.redoStack.length === 0,
+          onClick: () => workspace.redo()
+        },
+        'Redo'
       )
     )
   );

@@ -42,7 +42,8 @@ export function applyCropMarginsToPage(page, margins) {
 
   if (top === 0 && right === 0 && bottom === 0 && left === 0) return;
 
-  const box = page.getMediaBox();
+  // Use existing CropBox (falls back to MediaBox if unset) so non-zero offsets are preserved
+  const box = page.getCropBox();
   const minSize = 24;
   const newWidth = Math.max(minSize, box.width - left - right);
   const newHeight = Math.max(minSize, box.height - top - bottom);
@@ -120,8 +121,41 @@ export async function compileVirtualPagesToDocument(virtualPages, sourceMap, opt
     if (vPage.sourceFileId === '__blank__') {
       const preset = vPage.blankSpec?.preset || 'a4';
       const [defaultW, defaultH] = PAGE_SIZES[preset] || PAGE_SIZES.a4;
-      const width = Number(vPage.blankSpec?.width) || defaultW;
-      const height = Number(vPage.blankSpec?.height) || defaultH;
+      let width = Number(vPage.blankSpec?.width) || defaultW;
+      let height = Number(vPage.blankSpec?.height) || defaultH;
+
+      if (preset === 'match' && !vPage.blankSpec?.width) {
+        const dir = vPage.blankSpec?.matchHint === 'next' ? 1 : -1;
+        let neighbor = null;
+        for (let step = 1; step < virtualPages.length; step += 1) {
+          const idxFwd = i + step * dir;
+          const idxRev = i - step * dir;
+          if (idxFwd >= 0 && idxFwd < virtualPages.length && virtualPages[idxFwd].sourceFileId !== '__blank__') {
+            neighbor = virtualPages[idxFwd];
+            break;
+          }
+          if (idxRev >= 0 && idxRev < virtualPages.length && virtualPages[idxRev].sourceFileId !== '__blank__') {
+            neighbor = virtualPages[idxRev];
+            break;
+          }
+        }
+        if (neighbor) {
+          const nSrc = getSource(neighbor.sourceFileId);
+          if (nSrc?.type === 'pdf') {
+            let nDoc = parsedPdfCache.get(nSrc.id);
+            if (!nDoc) {
+              nDoc = await loadPdfSafe(nSrc.buffer, nSrc.name);
+              parsedPdfCache.set(nSrc.id, nDoc);
+            }
+            const refPage = nDoc.getPage(neighbor.sourcePageIndex);
+            const box = refPage.getCropBox();
+            const netRot = normalizeRotation((refPage.getRotation().angle || 0) + (neighbor.rotation || 0));
+            width = netRot === 90 || netRot === 270 ? box.height : box.width;
+            height = netRot === 90 || netRot === 270 ? box.width : box.height;
+          }
+        }
+      }
+
       createdPage = outputDoc.addPage([width, height]);
     } else {
       const source = getSource(vPage.sourceFileId);
