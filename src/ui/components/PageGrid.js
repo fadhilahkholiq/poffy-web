@@ -228,7 +228,7 @@ export function renderPageGrid(container) {
 
   const gridEl = el('div', {
     id: 'sortable-page-grid',
-    className: 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4'
+    className: 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4'
   });
 
   for (let idx = 0; idx < pages.length; idx += 1) {
@@ -402,7 +402,8 @@ export function renderPageGrid(container) {
     gridEl.appendChild(card);
   }
 
-  const dropArea = el('div', { id: 'workspace-drop-area', className: 'space-y-4' }, sourcesStrip, batchBar, gridEl);
+  const draftingStage = el('div', { className: 'editor-drafting-stage' }, gridEl);
+  const dropArea = el('div', { id: 'workspace-drop-area', className: 'space-y-4' }, sourcesStrip, batchBar, draftingStage);
   mount(container, dropArea);
 
   const unbindSort = bindSortablePageGrid(gridEl);
