@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="flatten-pdf">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>Fill &amp; Flatten PDF Forms Offline — AcroForm Inspector | Poffy</title>
+    <meta name="description" content="Inspect AcroForm text fields, checkboxes, dropdowns, and radio groups, update values, and flatten interactive PDF forms into static read-only pages offline." />
+    <meta name="keywords" content="flatten pdf form offline, fill pdf acroform, inspect pdf form fields, lock pdf form fields, client-side pdf forms" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#fffaf0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy — Offline PDF Studio" />
+    <meta property="og:title" content="Fill &amp; Flatten PDF Forms Offline — AcroForm Inspector | Poffy" />
+    <meta property="og:description" content="Inspect AcroForm text fields, checkboxes, dropdowns, and radio groups, update values, and flatten interactive PDF forms into static read-only pages offline." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Forms &amp; Flatten — Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Fill &amp; Flatten PDF Forms Offline — AcroForm Inspector | Poffy" />
+    <meta name="twitter:description" content="Inspect AcroForm text fields, checkboxes, dropdowns, and radio groups, update values, and flatten interactive PDF forms into static read-only pages offline." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Forms &amp; Flatten — Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Fill & Flatten PDF Forms Offline — AcroForm Inspector","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Inspect AcroForm text fields, checkboxes, dropdowns, and radio groups, update values, and flatten interactive PDF forms into static read-only pages offline.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Inspect PDFTextField, PDFCheckBox, PDFDropdown, and PDFRadioGroup","Edit field values directly in the Forms Studio sidebar","One-click form.flatten() locks fields into static PDF graphics"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why flatten a PDF form before sending it?","acceptedAnswer":{"@type":"Answer","text":"Flattening converts interactive form widgets into permanent static page content so recipients cannot alter filled fields."}},{"@type":"Question","name":"Can I save edited form values without flattening?","acceptedAnswer":{"@type":"Answer","text":"Yes. Uncheck \"Flatten interactive form fields\" to save an editable filled PDF."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Fill and flatten interactive PDF forms offline.</h1>
+        <p>Scan AcroForm text inputs, checkboxes, dropdowns, and radio buttons locally, edit values, and bake them into static page content.</p>
+        <ul>
+          <li>Inspect PDFTextField, PDFCheckBox, PDFDropdown, and PDFRadioGroup</li>
+          <li>Edit field values directly in the Forms Studio sidebar</li>
+          <li>One-click form.flatten() locks fields into static PDF graphics</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use Forms &amp; Flatten offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

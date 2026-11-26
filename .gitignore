@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build & Vite / PWA outputs
+dist/
+dist-ssr/
+dev-dist/
+.vite/
+*.local
+
+# Synced vendor static assets (regenerated on npm install via postinstall)
+public/pdfjs/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs & caches
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.cache/
+
+# Editor & OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+desktop.ini

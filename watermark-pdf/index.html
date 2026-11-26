@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="watermark-pdf">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>Watermark PDF Offline — Diagonal Text &amp; PNG/JPG Stamps | Poffy</title>
+    <meta name="description" content="Add customizable text watermarks (center, corners, or diagonal tiled grid with local Unicode TTF fallback) or aspect-locked PNG/JPG stamps 100% offline." />
+    <meta name="keywords" content="watermark pdf offline, add stamp to pdf, diagonal pdf watermark, unicode pdf watermark, image stamp pdf" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#fffaf0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy — Offline PDF Studio" />
+    <meta property="og:title" content="Watermark PDF Offline — Diagonal Text &amp; PNG/JPG Stamps | Poffy" />
+    <meta property="og:description" content="Add customizable text watermarks (center, corners, or diagonal tiled grid with local Unicode TTF fallback) or aspect-locked PNG/JPG stamps 100% offline." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Watermark PDF — Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Watermark PDF Offline — Diagonal Text &amp; PNG/JPG Stamps | Poffy" />
+    <meta name="twitter:description" content="Add customizable text watermarks (center, corners, or diagonal tiled grid with local Unicode TTF fallback) or aspect-locked PNG/JPG stamps 100% offline." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Watermark PDF — Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Watermark PDF Offline — Diagonal Text & PNG/JPG Stamps","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Add customizable text watermarks (center, corners, or diagonal tiled grid with local Unicode TTF fallback) or aspect-locked PNG/JPG stamps 100% offline.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Automatic @pdf-lib/fontkit + local Inter TTF fallback for Unicode text","Center, corner anchors, or full-page diagonal tiled grids","PNG & JPG image stamps with aspect-ratio lock and opacity"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does it support non-Latin or Unicode characters in watermarks?","acceptedAnswer":{"@type":"Answer","text":"Yes. Poffy automatically detects non-WinAnsi characters and embeds a bundled local Inter-Regular.ttf subset via @pdf-lib/fontkit."}},{"@type":"Question","name":"Are external font CDNs used?","acceptedAnswer":{"@type":"Answer","text":"Never. All standard and fallback TTF fonts are bundled locally for full offline operation."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Stamp text or image watermarks on PDFs offline.</h1>
+        <p>Apply custom opacity, angle, hex color, diagonal tiled grids, or PNG/JPG stamps with built-in offline Unicode TTF font support.</p>
+        <ul>
+          <li>Automatic @pdf-lib/fontkit + local Inter TTF fallback for Unicode text</li>
+          <li>Center, corner anchors, or full-page diagonal tiled grids</li>
+          <li>PNG &amp; JPG image stamps with aspect-ratio lock and opacity</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use Watermark PDF offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

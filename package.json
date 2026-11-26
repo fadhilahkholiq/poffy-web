@@ -1,0 +1,32 @@
+{
+  "name": "poffy",
+  "version": "1.0.0",
+  "description": "Poffy — 100% client-side, privacy-first, offline-capable PDF Studio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "generate:pages": "node scripts/generate-feature-pages.mjs",
+    "postinstall": "node scripts/sync-static-assets.mjs"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "fflate": "^0.8.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.5.438"
+  },
+  "devDependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@tailwindcss/vite": "^4.1.18",
+    "tailwindcss": "^4.1.18",
+    "vite": "^6.4.1",
+    "vite-plugin-pwa": "^1.0.3"
+  },
+  "overrides": {
+    "glob": "^14.0.6",
+    "minimatch": "^11.0.9"
+  }
+}

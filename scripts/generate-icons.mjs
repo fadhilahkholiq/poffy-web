@@ -1,0 +1,143 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const iconsDir = path.resolve(__dirname, '../public/icons');
+fs.mkdirSync(iconsDir, { recursive: true });
+
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (let i = 0; i < buf.length; i += 1) {
+    c ^= buf[i];
+    for (let k = 0; k < 8; k += 1) {
+      c = (c >>> 1) ^ (c & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function makeChunk(type, data) {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length, 0);
+  const typeBuf = Buffer.from(type, 'ascii');
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
+  return Buffer.concat([len, typeBuf, data, crc]);
+}
+
+function encodePng(width, height, rgba) {
+  const stride = width * 4 + 1;
+  const raw = Buffer.alloc(stride * height);
+  for (let y = 0; y < height; y += 1) {
+    const rowStart = y * stride;
+    raw[rowStart] = 0;
+    rgba.copy(raw, rowStart + 1, y * width * 4, (y + 1) * width * 4);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 6; // RGBA
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    makeChunk('IHDR', ihdr),
+    makeChunk('IDAT', zlib.deflateSync(raw, { level: 9 })),
+    makeChunk('IEND', Buffer.alloc(0))
+  ]);
+}
+
+function hexToRgba(hex) {
+  const clean = hex.replace('#', '');
+  return [
+    Number.parseInt(clean.slice(0, 2), 16),
+    Number.parseInt(clean.slice(2, 4), 16),
+    Number.parseInt(clean.slice(4, 6), 16),
+    255
+  ];
+}
+
+function fillRoundedRect(buf, w, h, rx, ry, rw, rh, radius, color) {
+  const [r, g, b, a] = hexToRgba(color);
+  const x0 = Math.max(0, Math.floor(rx));
+  const y0 = Math.max(0, Math.floor(ry));
+  const x1 = Math.min(w, Math.ceil(rx + rw));
+  const y1 = Math.min(h, Math.ceil(ry + rh));
+  const rad = Math.max(0, radius);
+
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      let inside = true;
+      if (rad > 0) {
+        const cx =
+          x < rx + rad ? rx + rad : x > rx + rw - rad ? rx + rw - rad : x;
+        const cy =
+          y < ry + rad ? ry + rad : y > ry + rh - rad ? ry + rh - rad : y;
+        const dx = x - cx;
+        const dy = y - cy;
+        if (
+          (x < rx + rad || x > rx + rw - rad) &&
+          (y < ry + rad || y > ry + rh - rad) &&
+          dx * dx + dy * dy > rad * rad
+        ) {
+          inside = false;
+        }
+      }
+      if (inside) {
+        const idx = (y * w + x) * 4;
+        buf[idx] = r;
+        buf[idx + 1] = g;
+        buf[idx + 2] = b;
+        buf[idx + 3] = a;
+      }
+    }
+  }
+}
+
+// 1. PWA 192x192 & 512x512 PNG icons matching SVG emblem
+function buildAppIcon(size) {
+  const buf = Buffer.alloc(size * size * 4);
+  const s = size / 192;
+  fillRoundedRect(buf, size, size, 0, 0, size, size, 44 * s, '#0a0a0a');
+  fillRoundedRect(buf, size, size, 38 * s, 32 * s, 84 * s, 112 * s, 16 * s, '#ff4d8b');
+  fillRoundedRect(buf, size, size, 54 * s, 46 * s, 84 * s, 112 * s, 16 * s, '#b8a4ed');
+  fillRoundedRect(buf, size, size, 70 * s, 60 * s, 84 * s, 100 * s, 16 * s, '#fffaf0');
+  fillRoundedRect(buf, size, size, 86 * s, 80 * s, 52 * s, 10 * s, 5 * s, '#0a0a0a');
+  fillRoundedRect(buf, size, size, 86 * s, 100 * s, 38 * s, 10 * s, 5 * s, '#ffb084');
+  fillRoundedRect(buf, size, size, 86 * s, 120 * s, 46 * s, 10 * s, 5 * s, '#a4d4c5');
+  return encodePng(size, size, buf);
+}
+
+// 2. Social Open Graph 1200x630 PNG card in Clay DESIGN.md palette
+function buildOgCard() {
+  const w = 1200;
+  const h = 630;
+  const buf = Buffer.alloc(w * h * 4);
+  fillRoundedRect(buf, w, h, 0, 0, w, h, 0, '#fffaf0');
+  // Soft inner showcase panel
+  fillRoundedRect(buf, w, h, 48, 48, 1104, 534, 36, '#faf5e8');
+  // Clay stacked document artwork on right
+  fillRoundedRect(buf, w, h, 700, 115, 220, 290, 28, '#ff4d8b');
+  fillRoundedRect(buf, w, h, 760, 160, 220, 290, 28, '#b8a4ed');
+  fillRoundedRect(buf, w, h, 820, 205, 240, 290, 28, '#0a0a0a');
+  fillRoundedRect(buf, w, h, 856, 250, 168, 22, 11, '#fffaf0');
+  fillRoundedRect(buf, w, h, 856, 294, 124, 22, 11, '#ffb084');
+  fillRoundedRect(buf, w, h, 856, 338, 148, 22, 11, '#a4d4c5');
+  // Feature accent pills on left
+  fillRoundedRect(buf, w, h, 100, 120, 220, 44, 22, '#f5f0e0');
+  fillRoundedRect(buf, w, h, 122, 134, 16, 16, 8, '#22c55e');
+  fillRoundedRect(buf, w, h, 100, 200, 480, 56, 16, '#0a0a0a');
+  fillRoundedRect(buf, w, h, 100, 276, 390, 42, 14, '#1a3a3a');
+  fillRoundedRect(buf, w, h, 100, 344, 140, 80, 20, '#ff4d8b');
+  fillRoundedRect(buf, w, h, 256, 344, 140, 80, 20, '#ffb084');
+  fillRoundedRect(buf, w, h, 412, 344, 140, 80, 20, '#e8b94a');
+  fillRoundedRect(buf, w, h, 100, 444, 210, 56, 14, '#0a0a0a');
+  fillRoundedRect(buf, w, h, 326, 444, 210, 56, 14, '#a4d4c5');
+  return encodePng(w, h, buf);
+}
+
+fs.writeFileSync(path.join(iconsDir, 'icon-192.png'), buildAppIcon(192));
+fs.writeFileSync(path.join(iconsDir, 'icon-512.png'), buildAppIcon(512));
+fs.writeFileSync(path.join(iconsDir, 'og-card.png'), buildOgCard());
+console.log('Generated PNG icons: icon-192.png, icon-512.png, og-card.png');

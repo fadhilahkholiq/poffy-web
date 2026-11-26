@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="organize-pdf">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>Organize PDF Pages Offline — Rotate, Reorder &amp; Crop | Poffy</title>
+    <meta name="description" content="Drag-and-drop reorder PDF pages, rotate 90°/180°/270° instantly, duplicate or delete pages, insert blank A4/Letter/Legal pages, and crop MediaBox margins offline." />
+    <meta name="keywords" content="organize pdf pages, rotate pdf offline, crop pdf margins, reorder pdf pages, insert blank pdf page" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#fffaf0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy — Offline PDF Studio" />
+    <meta property="og:title" content="Organize PDF Pages Offline — Rotate, Reorder &amp; Crop | Poffy" />
+    <meta property="og:description" content="Drag-and-drop reorder PDF pages, rotate 90°/180°/270° instantly, duplicate or delete pages, insert blank A4/Letter/Legal pages, and crop MediaBox margins offline." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Organize Pages — Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Organize PDF Pages Offline — Rotate, Reorder &amp; Crop | Poffy" />
+    <meta name="twitter:description" content="Drag-and-drop reorder PDF pages, rotate 90°/180°/270° instantly, duplicate or delete pages, insert blank A4/Letter/Legal pages, and crop MediaBox margins offline." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Organize Pages — Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Organize PDF Pages Offline — Rotate, Reorder & Crop","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Drag-and-drop reorder PDF pages, rotate 90°/180°/270° instantly, duplicate or delete pages, insert blank A4/Letter/Legal pages, and crop MediaBox margins offline.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Instant CSS rotation previews with undo history","Insert blank A4, US Letter, or Legal pages anywhere","Adjust MediaBox & CropBox margins in PostScript points"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Why is rotating or dragging 100+ pages so fast?","acceptedAnswer":{"@type":"Answer","text":"Poffy tracks edits in a lightweight Virtual Page Graph and only invokes pdf-lib inside a background Web Worker when exporting."}},{"@type":"Question","name":"Can I undo page deletions or rotations?","acceptedAnswer":{"@type":"Answer","text":"Yes. The batch toolbar includes multi-step Undo for every virtual page layout change."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Reorder, rotate, and crop PDF pages at 60fps.</h1>
+        <p>Virtual Page Graph editing keeps every drag, rotation, and crop instant without re-saving until you click Export PDF.</p>
+        <ul>
+          <li>Instant CSS rotation previews with undo history</li>
+          <li>Insert blank A4, US Letter, or Legal pages anywhere</li>
+          <li>Adjust MediaBox &amp; CropBox margins in PostScript points</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use Organize Pages offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
