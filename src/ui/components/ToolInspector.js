@@ -348,10 +348,10 @@ export function renderToolInspector(container) {
 
   const aside = el(
     'aside',
-    { className: 'clay-card p-4 sm:p-5 space-y-4 lg:sticky lg:top-[74px] lg:max-h-[calc(100vh-92px)] lg:overflow-y-auto' },
-    toolsTray,
+    { className: 'clay-card p-4 sm:p-5 space-y-4 lg:sticky lg:top-[74px]' },
     headerCard,
-    body
+    body,
+    toolsTray
   );
 
   mount(container, aside);

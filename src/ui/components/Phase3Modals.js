@@ -26,6 +26,137 @@ import {
 } from '../utils/signature-pad.js';
 
 const sigTrayBlobUrls = new Map();
+/** @type {Map<string, string>} */
+const overlaySigBlobUrls = new Map();
+/** @type {HTMLCanvasElement|null} */
+let persistentPadCanvas = null;
+let persistentPadColor = '#0a0a0a';
+let persistentPadStroke = 2.5;
+let signAsideScrollTop = 0;
+let signStageScrollTop = 0;
+
+/**
+ * Resolves an independent `blob:` ObjectURL for a placed signature overlay so changing
+ * the active brush/typed signature never revokes previews already placed on pages.
+ * @param {{ id: string, imageBytes?: Uint8Array|ArrayBuffer }} ov
+ * @returns {string|null}
+ */
+function getOverlaySignatureBlobUrl(ov) {
+  if (!ov?.id || !ov.imageBytes) return null;
+  if (overlaySigBlobUrls.has(ov.id)) {
+    return overlaySigBlobUrls.get(ov.id) || null;
+  }
+  const raw = ov.imageBytes instanceof Uint8Array ? ov.imageBytes : new Uint8Array(ov.imageBytes);
+  const url = URL.createObjectURL(new Blob([raw], { type: 'image/png' }));
+  overlaySigBlobUrls.set(ov.id, url);
+  return url;
+}
+
+/**
+ * Revokes cached ObjectURLs for signature overlays that were removed from the workspace.
+ * @param {{ id: string }[]} activeOverlays
+ */
+function pruneRemovedOverlayUrls(activeOverlays) {
+  const activeIds = new Set(activeOverlays.map((o) => o.id));
+  for (const [id, url] of overlaySigBlobUrls.entries()) {
+    if (!activeIds.has(id)) {
+      URL.revokeObjectURL(url);
+      overlaySigBlobUrls.delete(id);
+    }
+  }
+}
+
+/**
+ * Returns the persistent Bezier draw canvas so strokes are preserved across inspector re-renders.
+ * @param {string} color
+ * @param {number} strokeWidth
+ * @returns {HTMLCanvasElement}
+ */
+function getPersistentDrawCanvas(color, strokeWidth) {
+  persistentPadColor = color || '#0a0a0a';
+  persistentPadStroke = Math.max(2, Number(strokeWidth) || 2.5);
+  if (persistentPadCanvas) return persistentPadCanvas;
+
+  const canvas = /** @type {HTMLCanvasElement} */ (
+    el('canvas', {
+      id: 'sign-draw-canvas',
+      width: 360,
+      height: 135,
+      className: 'w-full aspect-[8/3] rounded-[10px] border border-[#e5e5e5] bg-white cursor-crosshair touch-none'
+    })
+  );
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    let drawing = false;
+    let moved = false;
+    /** @type {{ x: number, y: number }[]} */
+    let pts = [];
+    const getPt = (ev) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((ev.clientX - rect.left) / Math.max(1, rect.width)) * canvas.width,
+        y: ((ev.clientY - rect.top) / Math.max(1, rect.height)) * canvas.height
+      };
+    };
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      canvas.setPointerCapture?.(e.pointerId);
+      drawing = true;
+      moved = false;
+      const p0 = getPt(e);
+      pts = [p0];
+      ctx.strokeStyle = persistentPadColor;
+      ctx.fillStyle = persistentPadColor;
+      ctx.lineWidth = persistentPadStroke;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drawing) return;
+      const p = getPt(e);
+      moved = true;
+      pts.push(p);
+      if (pts.length >= 3) {
+        const pPrev2 = pts[pts.length - 3];
+        const pPrev = pts[pts.length - 2];
+        const startMidX = (pPrev2.x + pPrev.x) / 2;
+        const startMidY = (pPrev2.y + pPrev.y) / 2;
+        const endMidX = (pPrev.x + p.x) / 2;
+        const endMidY = (pPrev.y + p.y) / 2;
+        ctx.beginPath();
+        ctx.moveTo(pts.length === 3 ? pPrev2.x : startMidX, pts.length === 3 ? pPrev2.y : startMidY);
+        ctx.quadraticCurveTo(pPrev.x, pPrev.y, endMidX, endMidY);
+        ctx.stroke();
+      } else if (pts.length === 2) {
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        ctx.lineTo((pts[0].x + p.x) / 2, (pts[0].y + p.y) / 2);
+        ctx.stroke();
+      }
+    });
+    const endDraw = () => {
+      if (!drawing) return;
+      drawing = false;
+      if (!moved && pts[0]) {
+        ctx.beginPath();
+        ctx.arc(pts[0].x, pts[0].y, persistentPadStroke * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (pts.length >= 2) {
+        const prev = pts[pts.length - 2];
+        const last = pts[pts.length - 1];
+        ctx.beginPath();
+        ctx.moveTo((prev.x + last.x) / 2, (prev.y + last.y) / 2);
+        ctx.lineTo(last.x, last.y);
+        ctx.stroke();
+      }
+      pts = [];
+    };
+    canvas.addEventListener('pointerup', endDraw);
+    canvas.addEventListener('pointercancel', endDraw);
+  }
+  persistentPadCanvas = canvas;
+  return canvas;
+}
 
 /**
  * Resolves a safe `blob:` ObjectURL for a saved localStorage signature entry.
@@ -427,8 +558,12 @@ export function renderRedactStudioModal() {
  */
 export function renderSignStudioModal() {
   const s = workspace.tools.sign;
-  if (!s.modalOpen) return null;
+  if (!s.modalOpen) {
+    pruneRemovedOverlayUrls(s.overlays);
+    return null;
+  }
 
+  pruneRemovedOverlayUrls(s.overlays);
   const src = s.targetFileId ? workspace.sourceFiles.get(s.targetFileId) : null;
   const pageCount = src?.pageCount || 1;
   const safePageIdx = Math.max(0, Math.min(pageCount - 1, Number(s.activePageIndex) || 0));
@@ -443,6 +578,7 @@ export function renderSignStudioModal() {
   const pageOverlays = s.overlays.filter((o) => o.pageIndex === safePageIdx);
   const selected = s.overlays.find((o) => o.id === s.selectedOverlayId) || null;
   const savedTrays = loadSavedSignatures();
+  const padCanvas = getPersistentDrawCanvas(s.color, s.strokeWidth);
 
   const applyNewSignatureAsset = (asset, label, alsoSave) => {
     if (!asset) return;
@@ -452,7 +588,7 @@ export function renderSignStudioModal() {
     const blobUrl = URL.createObjectURL(new Blob([asset.bytes], { type: 'image/png' }));
     s.activeSigBytes = asset.bytes;
     s.activeSigPreviewUrl = blobUrl;
-    s.activeSigAspect = Math.max(0.5, asset.width / Math.max(1, asset.height));
+    s.activeSigAspect = Math.max(0.25, asset.width / Math.max(1, asset.height));
     s.activeKind = 'signature';
     if (alsoSave && asset.dataUrl) {
       saveSignatureLocally({
@@ -484,7 +620,7 @@ export function renderSignStudioModal() {
       nw = 0.07;
       finalNh = 0.07;
     }
-    s.overlays.push({
+    const ovEntry = {
       id,
       pageIndex: safePageIdx,
       kind,
@@ -499,71 +635,44 @@ export function renderSignStudioModal() {
       text: kind === 'text' ? s.textValue : '',
       fontSize: s.fontSize,
       fontFamily: 'Helvetica',
-      imageBytes: kind === 'signature' ? s.activeSigBytes : undefined,
-      imageFormat: 'png',
-      previewUrl: kind === 'signature' ? s.activeSigPreviewUrl : undefined
-    });
+      imageBytes: kind === 'signature' ? new Uint8Array(s.activeSigBytes) : undefined,
+      imageAspect: kind === 'signature' ? s.activeSigAspect : undefined,
+      imageFormat: 'png'
+    };
+    if (ovEntry.kind === 'signature') {
+      getOverlaySignatureBlobUrl(ovEntry);
+    }
+    s.overlays.push(ovEntry);
     s.selectedOverlayId = id;
     workspace.emit('tool');
   };
 
-  // Bezier signature draw pad
-  const padCanvas = /** @type {HTMLCanvasElement} */ (
-    el('canvas', {
-      id: 'sign-draw-canvas',
-      width: 320,
-      height: 120,
-      className: 'w-full h-[120px] rounded-[10px] border border-[#e5e5e5] bg-white cursor-crosshair touch-none'
-    })
-  );
-  (() => {
-    const ctx = padCanvas.getContext('2d');
-    if (!ctx) return;
-    let drawing = false;
-    let pts = [];
-    const getPt = (ev) => {
-      const rect = padCanvas.getBoundingClientRect();
-      return {
-        x: ((ev.clientX - rect.left) / Math.max(1, rect.width)) * padCanvas.width,
-        y: ((ev.clientY - rect.top) / Math.max(1, rect.height)) * padCanvas.height
-      };
-    };
-    padCanvas.addEventListener('pointerdown', (e) => {
-      padCanvas.setPointerCapture?.(e.pointerId);
-      drawing = true;
-      pts = [getPt(e)];
-      ctx.strokeStyle = s.color || '#0a0a0a';
-      ctx.lineWidth = Math.max(2, Number(s.strokeWidth) || 2.5);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-    });
-    padCanvas.addEventListener('pointermove', (e) => {
-      if (!drawing) return;
-      const p = getPt(e);
-      pts.push(p);
-      if (pts.length >= 3) {
-        const prev = pts[pts.length - 2];
-        const midX = (prev.x + p.x) / 2;
-        const midY = (prev.y + p.y) / 2;
-        ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
-        ctx.stroke();
+  /**
+   * Auto-captures a drawn or typed signature if the user taps the PDF page directly
+   * before clicking "Use & Save Signature".
+   */
+  const autoCaptureAndPlaceSignature = async (nx, ny) => {
+    if (s.activeSigBytes) {
+      placeOverlayAt('signature', nx, ny, 0.28, 0.1);
+      return;
+    }
+    if (s.sigMode === 'draw') {
+      const trimmed = await trimCanvasToTransparentPng(padCanvas, 6);
+      if (trimmed) {
+        applyNewSignatureAsset(trimmed, 'Drawn', true);
+        placeOverlayAt('signature', nx, ny, 0.28, 0.1);
+        return;
       }
-    });
-    const endDraw = () => {
-      if (!drawing) return;
-      drawing = false;
-      const last = pts[pts.length - 1];
-      if (last) {
-        ctx.lineTo(last.x, last.y);
-        ctx.stroke();
+    } else if (s.sigMode === 'type' && s.typedText.trim()) {
+      const rendered = await renderTypedSignaturePng(s.typedText, s.typedStyle, s.color);
+      if (rendered) {
+        applyNewSignatureAsset(rendered, s.typedText.trim().slice(0, 14), true);
+        placeOverlayAt('signature', nx, ny, 0.28, 0.1);
+        return;
       }
-      pts = [];
-    };
-    padCanvas.addEventListener('pointerup', endDraw);
-    padCanvas.addEventListener('pointercancel', endDraw);
-  })();
+    }
+    workspace.showNotice('warning', 'Create Signature First', 'Draw, type, or upload a signature before placing.');
+  };
 
   const draftOverlayEl = el('div', {
     className: 'hidden absolute border-2 border-dashed border-[#ff4d8b] bg-[#ff4d8b]/15 pointer-events-none'
@@ -584,7 +693,7 @@ export function renderSignStudioModal() {
         if (s.activeKind === 'signature') {
           const cx = (e.clientX - rect.left) / rect.width;
           const cy = (e.clientY - rect.top) / rect.height;
-          placeOverlayAt('signature', cx - 0.14, cy - 0.05, 0.28, 0.1);
+          void autoCaptureAndPlaceSignature(cx - 0.14, cy - 0.05);
           return;
         }
 
@@ -649,12 +758,13 @@ export function renderSignStudioModal() {
     ...pageOverlays.map((ov) => {
       const isSel = ov.id === s.selectedOverlayId;
       let innerPreview = null;
-      if (ov.kind === 'signature' && sanitizeImageSrc(ov.previewUrl)) {
+      const sigImgUrl = ov.kind === 'signature' ? sanitizeImageSrc(getOverlaySignatureBlobUrl(ov)) : null;
+      if (ov.kind === 'signature' && sigImgUrl) {
         innerPreview = el('img', {
-          src: sanitizeImageSrc(ov.previewUrl),
+          src: sigImgUrl,
           alt: 'Placed signature',
           draggable: false,
-          className: 'w-full h-full object-fill pointer-events-none'
+          className: 'w-full h-full object-contain pointer-events-none'
         });
       } else if (ov.kind === 'text') {
         innerPreview = el(
@@ -761,8 +871,18 @@ export function renderSignStudioModal() {
                 const onMove = (ev) => {
                   const dw = (ev.clientX - sx) / Math.max(1, sRect.width);
                   const dh = (ev.clientY - sy) / Math.max(1, sRect.height);
-                  ov.nw = Math.max(0.03, Math.min(1 - ov.nx, startW + dw));
-                  ov.nh = Math.max(0.02, Math.min(1 - ov.ny, startH + dh));
+                  const nextW = Math.max(0.04, Math.min(1 - ov.nx, startW + dw));
+                  if (ov.kind === 'signature' && ov.imageAspect > 0) {
+                    const stageRatio = sRect.width / Math.max(1, sRect.height);
+                    const lockedH = (nextW * stageRatio) / ov.imageAspect;
+                    if (ov.ny + lockedH <= 1) {
+                      ov.nw = nextW;
+                      ov.nh = Math.max(0.03, lockedH);
+                    }
+                  } else {
+                    ov.nw = nextW;
+                    ov.nh = Math.max(0.02, Math.min(1 - ov.ny, startH + dh));
+                  }
                   boxEl.style.width = `${ov.nw * 100}%`;
                   boxEl.style.height = `${ov.nh * 100}%`;
                 };
@@ -781,6 +901,417 @@ export function renderSignStudioModal() {
     }),
     draftOverlayEl
   );
+
+  const modalAside = el(
+    'aside',
+    {
+      className:
+        'lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#e5e5e5] p-4 overflow-y-auto space-y-3 bg-[#fffaf0]',
+      onScroll: (e) => {
+        signAsideScrollTop = /** @type {HTMLElement} */ (e.currentTarget).scrollTop;
+      }
+    },
+    el(
+      'div',
+      { className: 'grid grid-cols-4 gap-1.5' },
+      ...[
+        ['signature', 'Sign'],
+        ['text', 'Text'],
+        ['highlight', 'Highlight'],
+        ['rect', 'Rect'],
+        ['ellipse', 'Ellipse'],
+        ['arrow', 'Arrow'],
+        ['line', 'Line'],
+        ['check', 'Check ✓']
+      ].map(([kind, label]) =>
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `h-8 rounded-[8px] text-[11px] font-medium border ${
+              s.activeKind === kind
+                ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
+                : 'bg-white text-[#1a1a1a] border-[#e5e5e5]'
+            }`,
+            onClick: () => {
+              s.activeKind = kind;
+              workspace.emit('tool');
+            }
+          },
+          label
+        )
+      )
+    ),
+    s.activeKind === 'signature'
+      ? el(
+          'div',
+          { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2.5' },
+          el(
+            'div',
+            { className: 'grid grid-cols-3 gap-1' },
+            ...['draw', 'type', 'upload'].map((m) =>
+              el(
+                'button',
+                {
+                  type: 'button',
+                  className: `h-7 rounded-[7px] text-[11px] font-medium ${
+                    s.sigMode === m ? 'bg-[#0a0a0a] text-white' : 'bg-white border border-[#e5e5e5]'
+                  }`,
+                  onClick: () => {
+                    s.sigMode = m;
+                    workspace.emit('tool');
+                  }
+                },
+                m.charAt(0).toUpperCase() + m.slice(1)
+              )
+            )
+          ),
+          s.sigMode === 'draw'
+            ? el(
+                'div',
+                { className: 'space-y-2' },
+                padCanvas,
+                el(
+                  'div',
+                  { className: 'flex gap-1.5' },
+                  el(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'btn-secondary !h-8 !px-2.5 !text-[11px]',
+                      onClick: () => {
+                        const ctx = padCanvas.getContext('2d');
+                        ctx?.clearRect(0, 0, padCanvas.width, padCanvas.height);
+                      }
+                    },
+                    'Clear'
+                  ),
+                  el(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'btn-primary !h-8 flex-1 !text-[11px]',
+                      onClick: async () => {
+                        const trimmed = await trimCanvasToTransparentPng(padCanvas, 6);
+                        if (!trimmed) {
+                          workspace.showNotice('warning', 'Pad Empty', 'Draw your signature inside the pad first.');
+                          return;
+                        }
+                        applyNewSignatureAsset(trimmed, 'Drawn', true);
+                        workspace.showNotice(
+                          'success',
+                          'Signature Ready',
+                          'Tap anywhere on the page preview or click "+ Place" to stamp it.'
+                        );
+                      }
+                    },
+                    'Use & Save Signature'
+                  )
+                ),
+                el(
+                  'p',
+                  { className: 'text-[10px] text-[#6a6a6a]' },
+                  'Draw above, then tap anywhere on the PDF page preview (or click + Place).'
+                )
+              )
+            : s.sigMode === 'type'
+              ? el(
+                  'div',
+                  { className: 'space-y-2' },
+                  (() => {
+                    const inp = /** @type {HTMLInputElement} */ (
+                      el('input', {
+                        type: 'text',
+                        value: s.typedText,
+                        placeholder: 'Type full name...',
+                        className: 'input-clay !h-9 text-[13px]',
+                        onInput: (e) => {
+                          s.typedText = /** @type {HTMLInputElement} */ (e.target).value;
+                        }
+                      })
+                    );
+                    inp.value = s.typedText;
+                    return inp;
+                  })(),
+                  el(
+                    'div',
+                    { className: 'grid grid-cols-3 gap-1' },
+                    TYPED_SIGNATURE_STYLES.map((st) =>
+                      el(
+                        'button',
+                        {
+                          type: 'button',
+                          className: `h-7 rounded text-[10px] border ${
+                            s.typedStyle === st.id ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]' : 'bg-white border-[#e5e5e5]'
+                          }`,
+                          onClick: () => {
+                            s.typedStyle = st.id;
+                            workspace.emit('tool');
+                          }
+                        },
+                        st.label.split(' ')[0]
+                      )
+                    )
+                  ),
+                  el(
+                    'p',
+                    { className: 'text-[10px] text-[#6a6a6a]' },
+                    'Offline canvas typography (drop optional local cursive .ttf files in public/fonts/).'
+                  ),
+                  el(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'btn-primary !h-8 w-full !text-[11px]',
+                      onClick: async () => {
+                        const rendered = await renderTypedSignaturePng(s.typedText, s.typedStyle, s.color);
+                        if (!rendered) {
+                          workspace.showNotice('warning', 'Name Empty', 'Enter your name before rendering.');
+                          return;
+                        }
+                        applyNewSignatureAsset(rendered, s.typedText.slice(0, 14), true);
+                        workspace.showNotice(
+                          'success',
+                          'Signature Ready',
+                          'Tap anywhere on the page preview or click "+ Place" to stamp it.'
+                        );
+                      }
+                    },
+                    'Render & Use Typed Signature'
+                  )
+                )
+              : el(
+                  'div',
+                  { className: 'space-y-2' },
+                  el('input', {
+                    type: 'file',
+                    accept: 'image/png,image/webp,image/jpeg',
+                    className: 'input-clay !h-9 !py-1.5 text-[11px]',
+                    onChange: async (e) => {
+                      const file = /** @type {HTMLInputElement} */ (e.target).files?.[0];
+                      if (!file) return;
+                      const normalized = await normalizeSignatureImageFile(file);
+                      applyNewSignatureAsset(normalized, file.name, true);
+                    }
+                  })
+                ),
+          sanitizeImageSrc(s.activeSigPreviewUrl)
+            ? el(
+                'div',
+                { className: 'flex items-center justify-between gap-2 p-2 rounded bg-white border border-[#e5e5e5]' },
+                el(
+                  'div',
+                  { className: 'flex items-center gap-2 min-w-0' },
+                  el('img', { src: sanitizeImageSrc(s.activeSigPreviewUrl), alt: 'Active signature', className: 'h-8 max-w-[120px] object-contain' }),
+                  el('span', { className: 'text-[10px] font-semibold text-[#15803d]' }, 'Ready')
+                ),
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'btn-compact !h-7 shrink-0',
+                    onClick: () => placeOverlayAt('signature', 0.35, 0.72, 0.28, 0.1)
+                  },
+                  '+ Place'
+                )
+              )
+            : null,
+          savedTrays.length > 0
+            ? el(
+                'div',
+                { className: 'space-y-1 pt-1' },
+                el(
+                  'div',
+                  { className: 'flex items-center justify-between text-[11px]' },
+                  el('span', { className: 'text-[#6a6a6a] font-medium' }, 'Saved Local Tray'),
+                  el(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'text-[#ef4444] hover:underline',
+                      onClick: () => {
+                        clearSavedSignaturesLocally();
+                        workspace.emit('tool');
+                      }
+                    },
+                    'Clear Tray'
+                  )
+                ),
+                el(
+                  'div',
+                  { className: 'flex flex-wrap gap-1.5' },
+                  savedTrays.map((tray) => {
+                    const trayUrl = getSavedSignatureBlobUrl(tray);
+                    return el(
+                      'button',
+                      {
+                        type: 'button',
+                        className: 'p-1 rounded border border-[#e5e5e5] bg-white hover:border-[#0a0a0a]',
+                        title: `Load ${tray.label || 'saved signature'}`,
+                        onClick: () => {
+                          const bytes = pngDataUrlToBytes(tray.dataUrl);
+                          applyNewSignatureAsset(
+                            { bytes, dataUrl: tray.dataUrl, width: tray.width || 240, height: tray.height || 90 },
+                            tray.label,
+                            false
+                          );
+                        }
+                      },
+                      el('img', { src: sanitizeImageSrc(trayUrl), alt: tray.label || 'Saved', className: 'h-6 w-auto object-contain' })
+                    );
+                  })
+                )
+              )
+            : null
+        )
+      : null,
+    s.activeKind === 'text'
+      ? el(
+          'div',
+          { className: 'space-y-2' },
+          (() => {
+            const ti = /** @type {HTMLInputElement} */ (
+              el('input', {
+                type: 'text',
+                value: s.textValue,
+                placeholder: 'Annotation text...',
+                className: 'input-clay !h-9 text-[12px]',
+                onInput: (e) => {
+                  s.textValue = /** @type {HTMLInputElement} */ (e.target).value;
+                  if (selected && selected.kind === 'text') {
+                    selected.text = s.textValue;
+                  }
+                }
+              })
+            );
+            ti.value = selected?.kind === 'text' ? selected.text : s.textValue;
+            return ti;
+          })(),
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn-secondary !h-8 w-full !text-[11px]',
+              onClick: () => placeOverlayAt('text', 0.2, 0.2, 0.35, 0.07)
+            },
+            '+ Place Text Callout'
+          )
+        )
+      : null,
+    el(
+      'div',
+      { className: 'grid grid-cols-2 gap-2' },
+      el(
+        'label',
+        { className: 'text-[11px] text-[#6a6a6a] block' },
+        'Color',
+        el('input', {
+          type: 'color',
+          value: selected ? selected.color : s.color,
+          className: 'input-clay !h-9 !p-1 mt-1 cursor-pointer',
+          onInput: (e) => {
+            const val = /** @type {HTMLInputElement} */ (e.target).value;
+            s.color = val;
+            if (selected) {
+              selected.color = val;
+              workspace.emit('tool');
+            }
+          }
+        })
+      ),
+      el(
+        'label',
+        { className: 'text-[11px] text-[#6a6a6a] block' },
+        'Stroke/Font',
+        el('input', {
+          type: 'number',
+          min: '1',
+          max: '48',
+          value: String(selected ? (selected.kind === 'text' ? selected.fontSize : selected.strokeWidth) : (s.activeKind === 'text' ? s.fontSize : s.strokeWidth)),
+          className: 'input-clay !h-9 mt-1',
+          onInput: (e) => {
+            const v = Number(/** @type {HTMLInputElement} */ (e.target).value) || 2;
+            if (s.activeKind === 'text' || selected?.kind === 'text') {
+              s.fontSize = v;
+              if (selected) selected.fontSize = v;
+            } else {
+              s.strokeWidth = v;
+              if (selected) selected.strokeWidth = v;
+            }
+          }
+        })
+      )
+    ),
+    selected
+      ? el(
+          'div',
+          { className: 'p-2.5 rounded-[12px] bg-white border border-[#e5e5e5] space-y-2' },
+          el(
+            'div',
+            { className: 'flex items-center justify-between text-[11px]' },
+            el('span', { className: 'font-semibold' }, `Selected: ${selected.kind}`),
+            el(
+              'button',
+              {
+                type: 'button',
+                className: 'text-[#ef4444] font-semibold',
+                onClick: () => {
+                  s.overlays = s.overlays.filter((o) => o.id !== selected.id);
+                  s.selectedOverlayId = null;
+                  workspace.emit('tool');
+                }
+              },
+              'Delete'
+            )
+          ),
+          el(
+            'label',
+            { className: 'text-[11px] text-[#6a6a6a] block' },
+            `Rotation (${selected.rotation || 0}°)`,
+            el('input', {
+              type: 'range',
+              min: '-180',
+              max: '180',
+              step: '5',
+              value: String(selected.rotation || 0),
+              className: 'w-full accent-[#0a0a0a]',
+              onInput: (e) => {
+                selected.rotation = Number(/** @type {HTMLInputElement} */ (e.target).value) || 0;
+                const node = document.querySelector(`[data-overlay-item="${selected.id}"]`);
+                if (node) /** @type {HTMLElement} */ (node).style.transform = `rotate(${selected.rotation}deg)`;
+              }
+            })
+          )
+        )
+      : null,
+    el(
+      'button',
+      {
+        type: 'button',
+        id: 'sign-export-btn',
+        className: 'btn-primary w-full',
+        disabled: s.overlays.length === 0,
+        onClick: runSignAnnotateJob
+      },
+      'Apply Overlays & Download PDF'
+    )
+  );
+
+  const modalStagePane = el(
+    'div',
+    {
+      className: 'lg:col-span-8 bg-[#f5f0e0] overflow-auto p-4 sm:p-6 flex items-start justify-center',
+      onScroll: (e) => {
+        signStageScrollTop = /** @type {HTMLElement} */ (e.currentTarget).scrollTop;
+      }
+    },
+    stageWrap
+  );
+
+  queueMicrotask(() => {
+    modalAside.scrollTop = signAsideScrollTop;
+    modalStagePane.scrollTop = signStageScrollTop;
+  });
 
   return el(
     'div',
@@ -860,375 +1391,8 @@ export function renderSignStudioModal() {
       el(
         'div',
         { className: 'flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden' },
-        el(
-          'aside',
-          { className: 'lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#e5e5e5] p-4 overflow-y-auto space-y-3 bg-[#fffaf0]' },
-          el(
-            'div',
-            { className: 'grid grid-cols-4 gap-1.5' },
-            ...[
-              ['signature', 'Sign'],
-              ['text', 'Text'],
-              ['highlight', 'Highlight'],
-              ['rect', 'Rect'],
-              ['ellipse', 'Ellipse'],
-              ['arrow', 'Arrow'],
-              ['line', 'Line'],
-              ['check', 'Check ✓']
-            ].map(([kind, label]) =>
-              el(
-                'button',
-                {
-                  type: 'button',
-                  className: `h-8 rounded-[8px] text-[11px] font-medium border ${
-                    s.activeKind === kind
-                      ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
-                      : 'bg-white text-[#1a1a1a] border-[#e5e5e5]'
-                  }`,
-                  onClick: () => {
-                    s.activeKind = kind;
-                    workspace.emit('tool');
-                  }
-                },
-                label
-              )
-            )
-          ),
-          s.activeKind === 'signature'
-            ? el(
-                'div',
-                { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2.5' },
-                el(
-                  'div',
-                  { className: 'grid grid-cols-3 gap-1' },
-                  ...['draw', 'type', 'upload'].map((m) =>
-                    el(
-                      'button',
-                      {
-                        type: 'button',
-                        className: `h-7 rounded-[7px] text-[11px] font-medium ${
-                          s.sigMode === m ? 'bg-[#0a0a0a] text-white' : 'bg-white border border-[#e5e5e5]'
-                        }`,
-                        onClick: () => {
-                          s.sigMode = m;
-                          workspace.emit('tool');
-                        }
-                      },
-                      m.charAt(0).toUpperCase() + m.slice(1)
-                    )
-                  )
-                ),
-                s.sigMode === 'draw'
-                  ? el(
-                      'div',
-                      { className: 'space-y-2' },
-                      padCanvas,
-                      el(
-                        'div',
-                        { className: 'flex gap-1.5' },
-                        el(
-                          'button',
-                          {
-                            type: 'button',
-                            className: 'btn-secondary !h-8 !px-2.5 !text-[11px]',
-                            onClick: () => {
-                              const ctx = padCanvas.getContext('2d');
-                              ctx?.clearRect(0, 0, padCanvas.width, padCanvas.height);
-                            }
-                          },
-                          'Clear'
-                        ),
-                        el(
-                          'button',
-                          {
-                            type: 'button',
-                            className: 'btn-primary !h-8 flex-1 !text-[11px]',
-                            onClick: async () => {
-                              const trimmed = await trimCanvasToTransparentPng(padCanvas, 6);
-                              if (!trimmed) {
-                                workspace.showNotice('warning', 'Pad Empty', 'Draw your signature inside the pad first.');
-                                return;
-                              }
-                              applyNewSignatureAsset(trimmed, 'Drawn', true);
-                            }
-                          },
-                          'Use & Save Signature'
-                        )
-                      )
-                    )
-                  : s.sigMode === 'type'
-                    ? el(
-                        'div',
-                        { className: 'space-y-2' },
-                        (() => {
-                          const inp = /** @type {HTMLInputElement} */ (
-                            el('input', {
-                              type: 'text',
-                              value: s.typedText,
-                              placeholder: 'Type full name...',
-                              className: 'input-clay !h-9 text-[13px]',
-                              onInput: (e) => {
-                                s.typedText = /** @type {HTMLInputElement} */ (e.target).value;
-                              }
-                            })
-                          );
-                          inp.value = s.typedText;
-                          return inp;
-                        })(),
-                        el(
-                          'div',
-                          { className: 'grid grid-cols-3 gap-1' },
-                          TYPED_SIGNATURE_STYLES.map((st) =>
-                            el(
-                              'button',
-                              {
-                                type: 'button',
-                                className: `h-7 rounded text-[10px] border ${
-                                  s.typedStyle === st.id ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]' : 'bg-white border-[#e5e5e5]'
-                                }`,
-                                onClick: () => {
-                                  s.typedStyle = st.id;
-                                  workspace.emit('tool');
-                                }
-                              },
-                              st.label.split(' ')[0]
-                            )
-                          )
-                        ),
-                        el(
-                          'p',
-                          { className: 'text-[10px] text-[#6a6a6a]' },
-                          'Offline canvas typography (drop optional local cursive .ttf files in public/fonts/).'
-                        ),
-                        el(
-                          'button',
-                          {
-                            type: 'button',
-                            className: 'btn-primary !h-8 w-full !text-[11px]',
-                            onClick: async () => {
-                              const rendered = await renderTypedSignaturePng(s.typedText, s.typedStyle, s.color);
-                              if (!rendered) return;
-                              applyNewSignatureAsset(rendered, s.typedText.slice(0, 14), true);
-                            }
-                          },
-                          'Render & Use Typed Signature'
-                        )
-                      )
-                    : el(
-                        'div',
-                        { className: 'space-y-2' },
-                        el('input', {
-                          type: 'file',
-                          accept: 'image/png,image/webp,image/jpeg',
-                          className: 'input-clay !h-9 !py-1.5 text-[11px]',
-                          onChange: async (e) => {
-                            const file = /** @type {HTMLInputElement} */ (e.target).files?.[0];
-                            if (!file) return;
-                            const normalized = await normalizeSignatureImageFile(file);
-                            applyNewSignatureAsset(normalized, file.name, true);
-                          }
-                        })
-                      ),
-                sanitizeImageSrc(s.activeSigPreviewUrl)
-                  ? el(
-                      'div',
-                      { className: 'flex items-center justify-between gap-2 p-2 rounded bg-white border border-[#e5e5e5]' },
-                      el('img', { src: sanitizeImageSrc(s.activeSigPreviewUrl), alt: 'Active signature', className: 'h-8 max-w-[140px] object-contain' }),
-                      el(
-                        'button',
-                        {
-                          type: 'button',
-                          className: 'btn-compact !h-7',
-                          onClick: () => placeOverlayAt('signature', 0.35, 0.72, 0.28, 0.1)
-                        },
-                        '+ Place'
-                      )
-                    )
-                  : null,
-                savedTrays.length > 0
-                  ? el(
-                      'div',
-                      { className: 'space-y-1 pt-1' },
-                      el(
-                        'div',
-                        { className: 'flex items-center justify-between text-[11px]' },
-                        el('span', { className: 'text-[#6a6a6a] font-medium' }, 'Saved Local Tray'),
-                        el(
-                          'button',
-                          {
-                            type: 'button',
-                            className: 'text-[#ef4444] hover:underline',
-                            onClick: () => {
-                              clearSavedSignaturesLocally();
-                              workspace.emit('tool');
-                            }
-                          },
-                          'Clear Tray'
-                        )
-                      ),
-                      el(
-                        'div',
-                        { className: 'flex flex-wrap gap-1.5' },
-                        savedTrays.map((tray) => {
-                          const trayUrl = getSavedSignatureBlobUrl(tray);
-                          return el(
-                            'button',
-                            {
-                              type: 'button',
-                              className: 'p-1 rounded border border-[#e5e5e5] bg-white hover:border-[#0a0a0a]',
-                              title: `Load ${tray.label || 'saved signature'}`,
-                              onClick: () => {
-                                const bytes = pngDataUrlToBytes(tray.dataUrl);
-                                applyNewSignatureAsset(
-                                  { bytes, dataUrl: tray.dataUrl, width: tray.width || 240, height: tray.height || 90 },
-                                  tray.label,
-                                  false
-                                );
-                              }
-                            },
-                            el('img', { src: sanitizeImageSrc(trayUrl), alt: tray.label || 'Saved', className: 'h-6 w-auto object-contain' })
-                          );
-                        })
-                      )
-                    )
-                  : null
-              )
-            : null,
-          s.activeKind === 'text'
-            ? el(
-                'div',
-                { className: 'space-y-2' },
-                (() => {
-                  const ti = /** @type {HTMLInputElement} */ (
-                    el('input', {
-                      type: 'text',
-                      value: s.textValue,
-                      placeholder: 'Annotation text...',
-                      className: 'input-clay !h-9 text-[12px]',
-                      onInput: (e) => {
-                        s.textValue = /** @type {HTMLInputElement} */ (e.target).value;
-                        if (selected && selected.kind === 'text') {
-                          selected.text = s.textValue;
-                        }
-                      }
-                    })
-                  );
-                  ti.value = selected?.kind === 'text' ? selected.text : s.textValue;
-                  return ti;
-                })(),
-                el(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'btn-secondary !h-8 w-full !text-[11px]',
-                    onClick: () => placeOverlayAt('text', 0.2, 0.2, 0.35, 0.07)
-                  },
-                  '+ Place Text Callout'
-                )
-              )
-            : null,
-          el(
-            'div',
-            { className: 'grid grid-cols-2 gap-2' },
-            el(
-              'label',
-              { className: 'text-[11px] text-[#6a6a6a] block' },
-              'Color',
-              el('input', {
-                type: 'color',
-                value: selected ? selected.color : s.color,
-                className: 'input-clay !h-9 !p-1 mt-1 cursor-pointer',
-                onInput: (e) => {
-                  const val = /** @type {HTMLInputElement} */ (e.target).value;
-                  s.color = val;
-                  if (selected) {
-                    selected.color = val;
-                    workspace.emit('tool');
-                  }
-                }
-              })
-            ),
-            el(
-              'label',
-              { className: 'text-[11px] text-[#6a6a6a] block' },
-              'Stroke/Font',
-              el('input', {
-                type: 'number',
-                min: '1',
-                max: '48',
-                value: String(selected ? (selected.kind === 'text' ? selected.fontSize : selected.strokeWidth) : (s.activeKind === 'text' ? s.fontSize : s.strokeWidth)),
-                className: 'input-clay !h-9 mt-1',
-                onInput: (e) => {
-                  const v = Number(/** @type {HTMLInputElement} */ (e.target).value) || 2;
-                  if (s.activeKind === 'text' || selected?.kind === 'text') {
-                    s.fontSize = v;
-                    if (selected) selected.fontSize = v;
-                  } else {
-                    s.strokeWidth = v;
-                    if (selected) selected.strokeWidth = v;
-                  }
-                }
-              })
-            )
-          ),
-          selected
-            ? el(
-                'div',
-                { className: 'p-2.5 rounded-[12px] bg-white border border-[#e5e5e5] space-y-2' },
-                el(
-                  'div',
-                  { className: 'flex items-center justify-between text-[11px]' },
-                  el('span', { className: 'font-semibold' }, `Selected: ${selected.kind}`),
-                  el(
-                    'button',
-                    {
-                      type: 'button',
-                      className: 'text-[#ef4444] font-semibold',
-                      onClick: () => {
-                        s.overlays = s.overlays.filter((o) => o.id !== selected.id);
-                        s.selectedOverlayId = null;
-                        workspace.emit('tool');
-                      }
-                    },
-                    'Delete'
-                  )
-                ),
-                el(
-                  'label',
-                  { className: 'text-[11px] text-[#6a6a6a] block' },
-                  `Rotation (${selected.rotation || 0}°)`,
-                  el('input', {
-                    type: 'range',
-                    min: '-180',
-                    max: '180',
-                    step: '5',
-                    value: String(selected.rotation || 0),
-                    className: 'w-full accent-[#0a0a0a]',
-                    onInput: (e) => {
-                      selected.rotation = Number(/** @type {HTMLInputElement} */ (e.target).value) || 0;
-                      const node = document.querySelector(`[data-overlay-item="${selected.id}"]`);
-                      if (node) /** @type {HTMLElement} */ (node).style.transform = `rotate(${selected.rotation}deg)`;
-                    }
-                  })
-                )
-              )
-            : null,
-          el(
-            'button',
-            {
-              type: 'button',
-              id: 'sign-export-btn',
-              className: 'btn-primary w-full',
-              onClick: runSignAnnotateJob
-            },
-            'Apply Overlays & Download PDF'
-          )
-        ),
-        el(
-          'div',
-          { className: 'lg:col-span-8 bg-[#f5f0e0] overflow-auto p-4 sm:p-6 flex items-start justify-center' },
-          stageWrap
-        )
+        modalAside,
+        modalStagePane
       )
     )
   );

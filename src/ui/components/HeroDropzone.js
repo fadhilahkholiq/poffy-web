@@ -88,7 +88,7 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
 
     const featureMain = el(
       'main',
-      { className: 'max-w-[1200px] mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-12' },
+      { className: 'max-w-[1360px] mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-12' },
       el(
         'section',
         { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-center' },
@@ -236,7 +236,7 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
 
   const main = el(
     'main',
-    { className: 'max-w-[1200px] mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-12' },
+    { className: 'max-w-[1360px] mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-12' },
     el(
       'section',
       { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-center' },
