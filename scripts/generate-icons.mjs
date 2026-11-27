@@ -95,45 +95,44 @@ function fillRoundedRect(buf, w, h, rx, ry, rw, rh, radius, color) {
   }
 }
 
-// 1. PWA 192x192 & 512x512 PNG icons matching SVG emblem
+// 1. PWA 192x192 & 512x512 PNG icons matching iOS / Apple Light Studio SVG emblem
 function buildAppIcon(size) {
   const buf = Buffer.alloc(size * size * 4);
   const s = size / 192;
-  fillRoundedRect(buf, size, size, 0, 0, size, size, 44 * s, '#0a0a0a');
-  fillRoundedRect(buf, size, size, 38 * s, 32 * s, 84 * s, 112 * s, 16 * s, '#ff4d8b');
-  fillRoundedRect(buf, size, size, 54 * s, 46 * s, 84 * s, 112 * s, 16 * s, '#b8a4ed');
-  fillRoundedRect(buf, size, size, 70 * s, 60 * s, 84 * s, 100 * s, 16 * s, '#fffaf0');
-  fillRoundedRect(buf, size, size, 86 * s, 80 * s, 52 * s, 10 * s, 5 * s, '#0a0a0a');
-  fillRoundedRect(buf, size, size, 86 * s, 100 * s, 38 * s, 10 * s, 5 * s, '#ffb084');
-  fillRoundedRect(buf, size, size, 86 * s, 120 * s, 46 * s, 10 * s, 5 * s, '#a4d4c5');
+  fillRoundedRect(buf, size, size, 0, 0, size, size, 44 * s, '#0071e3');
+  fillRoundedRect(buf, size, size, 34 * s, 28 * s, 88 * s, 114 * s, 18 * s, '#73b5f4');
+  fillRoundedRect(buf, size, size, 70 * s, 50 * s, 88 * s, 114 * s, 18 * s, '#ffffff');
+  fillRoundedRect(buf, size, size, 88 * s, 76 * s, 44 * s, 10 * s, 5 * s, '#0071e3');
+  fillRoundedRect(buf, size, size, 88 * s, 98 * s, 52 * s, 8 * s, 4 * s, '#d1d1d6');
+  fillRoundedRect(buf, size, size, 88 * s, 116 * s, 38 * s, 8 * s, 4 * s, '#e5e5ea');
   return encodePng(size, size, buf);
 }
 
-// 2. Social Open Graph 1200x630 PNG card in Clay DESIGN.md palette
+// 2. Social Open Graph 1200x630 PNG card in iOS / macOS Light Studio palette
 function buildOgCard() {
   const w = 1200;
   const h = 630;
   const buf = Buffer.alloc(w * h * 4);
-  fillRoundedRect(buf, w, h, 0, 0, w, h, 0, '#fffaf0');
-  // Soft inner showcase panel
-  fillRoundedRect(buf, w, h, 48, 48, 1104, 534, 36, '#faf5e8');
-  // Clay stacked document artwork on right
-  fillRoundedRect(buf, w, h, 700, 115, 220, 290, 28, '#ff4d8b');
-  fillRoundedRect(buf, w, h, 760, 160, 220, 290, 28, '#b8a4ed');
-  fillRoundedRect(buf, w, h, 820, 205, 240, 290, 28, '#0a0a0a');
-  fillRoundedRect(buf, w, h, 856, 250, 168, 22, 11, '#fffaf0');
-  fillRoundedRect(buf, w, h, 856, 294, 124, 22, 11, '#ffb084');
-  fillRoundedRect(buf, w, h, 856, 338, 148, 22, 11, '#a4d4c5');
-  // Feature accent pills on left
-  fillRoundedRect(buf, w, h, 100, 120, 220, 44, 22, '#f5f0e0');
-  fillRoundedRect(buf, w, h, 122, 134, 16, 16, 8, '#22c55e');
-  fillRoundedRect(buf, w, h, 100, 200, 480, 56, 16, '#0a0a0a');
-  fillRoundedRect(buf, w, h, 100, 276, 390, 42, 14, '#1a3a3a');
-  fillRoundedRect(buf, w, h, 100, 344, 140, 80, 20, '#ff4d8b');
-  fillRoundedRect(buf, w, h, 256, 344, 140, 80, 20, '#ffb084');
-  fillRoundedRect(buf, w, h, 412, 344, 140, 80, 20, '#e8b94a');
-  fillRoundedRect(buf, w, h, 100, 444, 210, 56, 14, '#0a0a0a');
-  fillRoundedRect(buf, w, h, 326, 444, 210, 56, 14, '#a4d4c5');
+  fillRoundedRect(buf, w, h, 0, 0, w, h, 0, '#ffffff');
+  // Recessed studio showcase panel
+  fillRoundedRect(buf, w, h, 48, 48, 1104, 534, 36, '#f5f5f7');
+  // iOS blue app tile + layered white document sheets on right
+  fillRoundedRect(buf, w, h, 720, 130, 340, 340, 76, '#0071e3');
+  fillRoundedRect(buf, w, h, 780, 182, 156, 202, 32, '#73b5f4');
+  fillRoundedRect(buf, w, h, 844, 222, 156, 202, 32, '#ffffff');
+  fillRoundedRect(buf, w, h, 874, 268, 80, 18, 9, '#0071e3');
+  fillRoundedRect(buf, w, h, 874, 306, 96, 14, 7, '#d1d1d6');
+  fillRoundedRect(buf, w, h, 874, 336, 70, 14, 7, '#e5e5ea');
+  // Status pill & clean typographic blocks on left
+  fillRoundedRect(buf, w, h, 100, 120, 220, 44, 22, '#e8f8ed');
+  fillRoundedRect(buf, w, h, 122, 134, 16, 16, 8, '#34c759');
+  fillRoundedRect(buf, w, h, 100, 198, 480, 54, 14, '#1d1d1f');
+  fillRoundedRect(buf, w, h, 100, 274, 390, 36, 12, '#6e6e73');
+  fillRoundedRect(buf, w, h, 100, 344, 140, 80, 20, '#e8f2ff');
+  fillRoundedRect(buf, w, h, 256, 344, 140, 80, 20, '#e6f7fa');
+  fillRoundedRect(buf, w, h, 412, 344, 140, 80, 20, '#f3ebff');
+  fillRoundedRect(buf, w, h, 100, 448, 210, 52, 26, '#0071e3');
+  fillRoundedRect(buf, w, h, 326, 448, 210, 52, 26, '#ffffff');
   return encodePng(w, h, buf);
 }
 

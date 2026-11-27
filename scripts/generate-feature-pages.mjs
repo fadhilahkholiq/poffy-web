@@ -61,7 +61,7 @@ function buildFeatureHtml(feature) {
     <meta name="author" content="Poffy" />
     <meta name="application-name" content="Poffy" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
-    <meta name="theme-color" content="#fffaf0" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Poffy" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -69,21 +69,21 @@ function buildFeatureHtml(feature) {
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_US" />
-    <meta property="og:site_name" content="Poffy — Offline PDF Studio" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
     <meta property="og:title" content="${escAttr(feature.title)}" />
     <meta property="og:description" content="${escAttr(feature.description)}" />
     <meta property="og:image" content="/icons/og-card.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="${escAttr(feature.shortName)} — Poffy Offline PDF Studio" />
+    <meta property="og:image:alt" content="${escAttr(feature.shortName)} · Poffy Offline PDF Studio" />
 
     <!-- Twitter / X Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escAttr(feature.title)}" />
     <meta name="twitter:description" content="${escAttr(feature.description)}" />
     <meta name="twitter:image" content="/icons/og-card.png" />
-    <meta name="twitter:image:alt" content="${escAttr(feature.shortName)} — Poffy Offline PDF Studio" />
+    <meta name="twitter:image:alt" content="${escAttr(feature.shortName)} · Poffy Offline PDF Studio" />
 
     <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />

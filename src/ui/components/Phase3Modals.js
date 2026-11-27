@@ -30,7 +30,7 @@ const sigTrayBlobUrls = new Map();
 const overlaySigBlobUrls = new Map();
 /** @type {HTMLCanvasElement|null} */
 let persistentPadCanvas = null;
-let persistentPadColor = '#0a0a0a';
+let persistentPadColor = '#1d1d1f';
 let persistentPadStroke = 2.5;
 let signAsideScrollTop = 0;
 let signStageScrollTop = 0;
@@ -73,7 +73,7 @@ function pruneRemovedOverlayUrls(activeOverlays) {
  * @returns {HTMLCanvasElement}
  */
 function getPersistentDrawCanvas(color, strokeWidth) {
-  persistentPadColor = color || '#0a0a0a';
+  persistentPadColor = color || '#1d1d1f';
   persistentPadStroke = Math.max(2, Number(strokeWidth) || 2.5);
   if (persistentPadCanvas) return persistentPadCanvas;
 
@@ -82,7 +82,7 @@ function getPersistentDrawCanvas(color, strokeWidth) {
       id: 'sign-draw-canvas',
       width: 360,
       height: 135,
-      className: 'w-full aspect-[8/3] rounded-[10px] border border-[#e5e5e5] bg-white cursor-crosshair touch-none'
+      className: 'w-full aspect-[8/3] rounded-[10px] border border-[#e5e5ea] bg-white cursor-crosshair touch-none'
     })
   );
   const ctx = canvas.getContext('2d');
@@ -195,7 +195,7 @@ export function renderRedactStudioModal() {
   const pageMarks = r.marks.filter((m) => m.pageIndex === safePageIdx);
   const draftRectEl = el('div', {
     className:
-      'hidden absolute border-2 border-dashed border-[#ef4444] bg-[#ef4444]/25 pointer-events-none'
+      'hidden absolute border-2 border-dashed border-[#ff3b30] bg-[#ff3b30]/25 pointer-events-none'
   });
 
   const stageWrap = el(
@@ -258,7 +258,7 @@ export function renderRedactStudioModal() {
       }
     },
     r.previewLoading
-      ? el('div', { className: 'w-[420px] h-[540px] flex items-center justify-center text-[13px] text-[#6a6a6a]' }, 'Rendering page preview...')
+      ? el('div', { className: 'w-[420px] h-[540px] flex items-center justify-center text-[13px] text-[#6e6e73]' }, 'Rendering page preview...')
       : sanitizeImageSrc(r.previewUrl)
         ? el('img', {
             src: sanitizeImageSrc(r.previewUrl),
@@ -266,12 +266,12 @@ export function renderRedactStudioModal() {
             draggable: false,
             className: 'block max-h-[70vh] w-auto pointer-events-none'
           })
-        : el('div', { className: 'w-[420px] h-[540px] flex items-center justify-center text-[13px] text-[#6a6a6a]' }, 'Select a PDF to redact.'),
+        : el('div', { className: 'w-[420px] h-[540px] flex items-center justify-center text-[13px] text-[#6e6e73]' }, 'Select a PDF to redact.'),
     ...pageMarks.map((mark) =>
       el(
         'div',
         {
-          className: 'absolute border-2 border-[#ef4444]',
+          className: 'absolute border-2 border-[#ff3b30]',
           style: {
             left: `${mark.nx * 100}%`,
             top: `${mark.ny * 100}%`,
@@ -287,7 +287,7 @@ export function renderRedactStudioModal() {
             type: 'button',
             title: 'Remove redaction mark',
             className:
-              'absolute -top-2.5 -right-2.5 w-5 h-5 rounded-full bg-[#ef4444] text-white text-[11px] font-bold flex items-center justify-center shadow cursor-pointer',
+              'absolute -top-2.5 -right-2.5 w-5 h-5 rounded-full bg-[#ff3b30] text-white text-[11px] font-bold flex items-center justify-center shadow cursor-pointer',
             onClick: (ev) => {
               ev.stopPropagation();
               r.marks = r.marks.filter((item) => item.id !== mark.id);
@@ -350,16 +350,16 @@ export function renderRedactStudioModal() {
       'div',
       {
         className:
-          'w-full max-w-6xl max-h-[92vh] rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] shadow-2xl flex flex-col overflow-hidden'
+          'w-full max-w-6xl max-h-[92vh] rounded-[24px] bg-[#ffffff] border border-[#e5e5ea] shadow-2xl flex flex-col overflow-hidden'
       },
       el(
         'div',
-        { className: 'px-5 py-3.5 border-b border-[#e5e5e5] flex flex-wrap items-center justify-between gap-3 bg-white' },
+        { className: 'px-5 py-3.5 border-b border-[#e5e5ea] flex flex-wrap items-center justify-between gap-3 bg-white' },
         el(
           'div',
           { className: 'flex items-center gap-2.5' },
-          el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'True Redaction Studio'),
-          el('span', { className: 'badge-pill bg-[#1a3a3a] text-white' }, `${r.marks.length} total mark${r.marks.length === 1 ? '' : 's'}`)
+          el('h3', { className: 'type-title-md text-[#1d1d1f]' }, 'True Redaction Studio'),
+          el('span', { className: 'badge-pill bg-[#0071e3] text-white' }, `${r.marks.length} total mark${r.marks.length === 1 ? '' : 's'}`)
         ),
         el(
           'div',
@@ -411,11 +411,11 @@ export function renderRedactStudioModal() {
         { className: 'flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden' },
         el(
           'aside',
-          { className: 'lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#e5e5e5] p-4 overflow-y-auto space-y-3.5 bg-[#fffaf0]' },
+          { className: 'lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#e5e5ea] p-4 overflow-y-auto space-y-3.5 bg-[#ffffff]' },
           el(
             'div',
-            { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
-            el('p', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Search & Auto-Mark Text'),
+            { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
+            el('p', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, 'Search & Auto-Mark Text'),
             searchModeSelect,
             r.searchMode === 'keyword' || r.searchMode === 'regex' ? searchInput : null,
             el(
@@ -431,17 +431,17 @@ export function renderRedactStudioModal() {
           ),
           el(
             'div',
-            { className: 'p-3 rounded-[12px] bg-white border border-[#e5e5e5] space-y-2' },
+            { className: 'p-3 rounded-[12px] bg-white border border-[#e5e5ea] space-y-2' },
             el(
               'div',
               { className: 'flex items-center justify-between' },
-              el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, `Page ${safePageIdx + 1} Marks (${pageMarks.length})`),
+              el('span', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, `Page ${safePageIdx + 1} Marks (${pageMarks.length})`),
               pageMarks.length > 0
                 ? el(
                     'button',
                     {
                       type: 'button',
-                      className: 'text-[11px] text-[#ef4444] hover:underline',
+                      className: 'text-[11px] text-[#ff3b30] hover:underline',
                       onClick: () => {
                         r.marks = r.marks.filter((m) => m.pageIndex !== safePageIdx);
                         workspace.emit('tool');
@@ -452,20 +452,20 @@ export function renderRedactStudioModal() {
                 : null
             ),
             pageMarks.length === 0
-              ? el('p', { className: 'text-[11px] text-[#6a6a6a]' }, 'Click and drag directly on the page preview to draw a redaction box.')
+              ? el('p', { className: 'text-[11px] text-[#6e6e73]' }, 'Click and drag directly on the page preview to draw a redaction box.')
               : el(
                   'div',
                   { className: 'space-y-1 max-h-36 overflow-y-auto' },
                   pageMarks.map((mark, idx) =>
                     el(
                       'div',
-                      { className: 'flex items-center justify-between gap-2 px-2 py-1 rounded bg-[#faf5e8] text-[11px]' },
+                      { className: 'flex items-center justify-between gap-2 px-2 py-1 rounded bg-[#f2f2f7] text-[11px]' },
                       el('span', { className: 'truncate' }, `${idx + 1}. ${mark.sourceLabel || 'Box'}`),
                       el(
                         'button',
                         {
                           type: 'button',
-                          className: 'text-[#ef4444] font-bold',
+                          className: 'text-[#ff3b30] font-bold',
                           onClick: () => {
                             r.marks = r.marks.filter((item) => item.id !== mark.id);
                             workspace.emit('tool');
@@ -482,7 +482,7 @@ export function renderRedactStudioModal() {
             { className: 'grid grid-cols-2 gap-2' },
             el(
               'label',
-              { className: 'text-[12px] text-[#6a6a6a] block' },
+              { className: 'text-[12px] text-[#6e6e73] block' },
               'Burn DPI',
               createClaySelect({
                 className: 'input-clay !h-9 mt-1',
@@ -499,7 +499,7 @@ export function renderRedactStudioModal() {
             ),
             el(
               'label',
-              { className: 'text-[12px] text-[#6a6a6a] block' },
+              { className: 'text-[12px] text-[#6e6e73] block' },
               'Mask Color',
               el('input', {
                 type: 'color',
@@ -514,11 +514,11 @@ export function renderRedactStudioModal() {
           ),
           el(
             'label',
-            { className: 'flex items-start gap-2 p-2.5 rounded-[12px] bg-[#fef2f2] border border-[#ef4444]/30 cursor-pointer text-[12px]' },
+            { className: 'flex items-start gap-2 p-2.5 rounded-[12px] bg-[#fef2f2] border border-[#ff3b30]/30 cursor-pointer text-[12px]' },
             el('input', {
               type: 'checkbox',
               checked: Boolean(r.paranoidMode),
-              className: 'w-4 h-4 accent-[#ef4444] mt-0.5',
+              className: 'w-4 h-4 accent-[#ff3b30] mt-0.5',
               onChange: (e) => {
                 r.paranoidMode = /** @type {HTMLInputElement} */ (e.target).checked;
                 workspace.emit('tool');
@@ -544,7 +544,7 @@ export function renderRedactStudioModal() {
         ),
         el(
           'div',
-          { className: 'lg:col-span-8 bg-[#f5f0e0] overflow-auto p-4 sm:p-6 flex items-start justify-center' },
+          { className: 'lg:col-span-8 bg-[#f5f5f7] overflow-auto p-4 sm:p-6 flex items-start justify-center' },
           stageWrap
         )
       )
@@ -629,7 +629,7 @@ export function renderSignStudioModal() {
       nw,
       nh: finalNh,
       rotation: 0,
-      color: kind === 'highlight' && s.color === '#0a0a0a' ? '#facc15' : s.color,
+      color: kind === 'highlight' && s.color === '#1d1d1f' ? '#facc15' : s.color,
       opacity: kind === 'highlight' ? 0.35 : s.opacity,
       strokeWidth: s.strokeWidth,
       text: kind === 'text' ? s.textValue : '',
@@ -675,7 +675,7 @@ export function renderSignStudioModal() {
   };
 
   const draftOverlayEl = el('div', {
-    className: 'hidden absolute border-2 border-dashed border-[#ff4d8b] bg-[#ff4d8b]/15 pointer-events-none'
+    className: 'hidden absolute border-2 border-dashed border-[#0071e3] bg-[#0071e3]/15 pointer-events-none'
   });
 
   const stageWrap = el(
@@ -746,7 +746,7 @@ export function renderSignStudioModal() {
       }
     },
     s.previewLoading
-      ? el('div', { className: 'w-[420px] h-[540px] flex items-center justify-center text-[13px] text-[#6a6a6a]' }, 'Rendering page preview...')
+      ? el('div', { className: 'w-[420px] h-[540px] flex items-center justify-center text-[13px] text-[#6e6e73]' }, 'Rendering page preview...')
       : sanitizeImageSrc(s.previewUrl)
         ? el('img', {
             src: sanitizeImageSrc(s.previewUrl),
@@ -754,7 +754,7 @@ export function renderSignStudioModal() {
             draggable: false,
             className: 'block max-h-[70vh] w-auto pointer-events-none'
           })
-        : el('div', { className: 'w-[420px] h-[540px] flex items-center justify-center text-[13px] text-[#6a6a6a]' }, 'Select a PDF to sign.'),
+        : el('div', { className: 'w-[420px] h-[540px] flex items-center justify-center text-[13px] text-[#6e6e73]' }, 'Select a PDF to sign.'),
     ...pageOverlays.map((ov) => {
       const isSel = ov.id === s.selectedOverlayId;
       let innerPreview = null;
@@ -811,7 +811,7 @@ export function renderSignStudioModal() {
         'div',
         {
           dataset: { overlayItem: ov.id },
-          className: `absolute cursor-move ${isSel ? 'ring-2 ring-[#ff4d8b] bg-[#ff4d8b]/5' : 'hover:ring-1 hover:ring-[#0a0a0a]/40'}`,
+          className: `absolute cursor-move ${isSel ? 'ring-2 ring-[#0071e3] bg-[#0071e3]/5' : 'hover:ring-1 hover:ring-[#1d1d1f]/40'}`,
           style: {
             left: `${ov.nx * 100}%`,
             top: `${ov.ny * 100}%`,
@@ -858,7 +858,7 @@ export function renderSignStudioModal() {
           ? el('div', {
               dataset: { resizeHandle: 'se' },
               title: 'Drag to resize',
-              className: 'absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-[#ff4d8b] border-2 border-white cursor-se-resize shadow',
+              className: 'absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-[#0071e3] border-2 border-white cursor-se-resize shadow',
               onPointerdown: (e) => {
                 e.stopPropagation();
                 const stageEl = document.getElementById('sign-canvas-stage');
@@ -906,7 +906,7 @@ export function renderSignStudioModal() {
     'aside',
     {
       className:
-        'lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#e5e5e5] p-4 overflow-y-auto space-y-3 bg-[#fffaf0]',
+        'lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#e5e5ea] p-4 overflow-y-auto space-y-3 bg-[#ffffff]',
       onScroll: (e) => {
         signAsideScrollTop = /** @type {HTMLElement} */ (e.currentTarget).scrollTop;
       }
@@ -930,8 +930,8 @@ export function renderSignStudioModal() {
             type: 'button',
             className: `h-8 rounded-[8px] text-[11px] font-medium border ${
               s.activeKind === kind
-                ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
-                : 'bg-white text-[#1a1a1a] border-[#e5e5e5]'
+                ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
+                : 'bg-white text-[#1d1d1f] border-[#e5e5ea]'
             }`,
             onClick: () => {
               s.activeKind = kind;
@@ -945,7 +945,7 @@ export function renderSignStudioModal() {
     s.activeKind === 'signature'
       ? el(
           'div',
-          { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2.5' },
+          { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2.5' },
           el(
             'div',
             { className: 'grid grid-cols-3 gap-1' },
@@ -955,7 +955,7 @@ export function renderSignStudioModal() {
                 {
                   type: 'button',
                   className: `h-7 rounded-[7px] text-[11px] font-medium ${
-                    s.sigMode === m ? 'bg-[#0a0a0a] text-white' : 'bg-white border border-[#e5e5e5]'
+                    s.sigMode === m ? 'bg-[#1d1d1f] text-white' : 'bg-white border border-[#e5e5ea]'
                   }`,
                   onClick: () => {
                     s.sigMode = m;
@@ -1010,7 +1010,7 @@ export function renderSignStudioModal() {
                 ),
                 el(
                   'p',
-                  { className: 'text-[10px] text-[#6a6a6a]' },
+                  { className: 'text-[10px] text-[#6e6e73]' },
                   'Draw above, then tap anywhere on the PDF page preview (or click + Place).'
                 )
               )
@@ -1042,7 +1042,7 @@ export function renderSignStudioModal() {
                         {
                           type: 'button',
                           className: `h-7 rounded text-[10px] border ${
-                            s.typedStyle === st.id ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]' : 'bg-white border-[#e5e5e5]'
+                            s.typedStyle === st.id ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]' : 'bg-white border-[#e5e5ea]'
                           }`,
                           onClick: () => {
                             s.typedStyle = st.id;
@@ -1055,7 +1055,7 @@ export function renderSignStudioModal() {
                   ),
                   el(
                     'p',
-                    { className: 'text-[10px] text-[#6a6a6a]' },
+                    { className: 'text-[10px] text-[#6e6e73]' },
                     'Offline canvas typography (drop optional local cursive .ttf files in public/fonts/).'
                   ),
                   el(
@@ -1098,7 +1098,7 @@ export function renderSignStudioModal() {
           sanitizeImageSrc(s.activeSigPreviewUrl)
             ? el(
                 'div',
-                { className: 'flex items-center justify-between gap-2 p-2 rounded bg-white border border-[#e5e5e5]' },
+                { className: 'flex items-center justify-between gap-2 p-2 rounded bg-white border border-[#e5e5ea]' },
                 el(
                   'div',
                   { className: 'flex items-center gap-2 min-w-0' },
@@ -1123,12 +1123,12 @@ export function renderSignStudioModal() {
                 el(
                   'div',
                   { className: 'flex items-center justify-between text-[11px]' },
-                  el('span', { className: 'text-[#6a6a6a] font-medium' }, 'Saved Local Tray'),
+                  el('span', { className: 'text-[#6e6e73] font-medium' }, 'Saved Local Tray'),
                   el(
                     'button',
                     {
                       type: 'button',
-                      className: 'text-[#ef4444] hover:underline',
+                      className: 'text-[#ff3b30] hover:underline',
                       onClick: () => {
                         clearSavedSignaturesLocally();
                         workspace.emit('tool');
@@ -1146,7 +1146,7 @@ export function renderSignStudioModal() {
                       'button',
                       {
                         type: 'button',
-                        className: 'p-1 rounded border border-[#e5e5e5] bg-white hover:border-[#0a0a0a]',
+                        className: 'p-1 rounded border border-[#e5e5ea] bg-white hover:border-[#1d1d1f]',
                         title: `Load ${tray.label || 'saved signature'}`,
                         onClick: () => {
                           const bytes = pngDataUrlToBytes(tray.dataUrl);
@@ -1203,7 +1203,7 @@ export function renderSignStudioModal() {
       { className: 'grid grid-cols-2 gap-2' },
       el(
         'label',
-        { className: 'text-[11px] text-[#6a6a6a] block' },
+        { className: 'text-[11px] text-[#6e6e73] block' },
         'Color',
         el('input', {
           type: 'color',
@@ -1221,7 +1221,7 @@ export function renderSignStudioModal() {
       ),
       el(
         'label',
-        { className: 'text-[11px] text-[#6a6a6a] block' },
+        { className: 'text-[11px] text-[#6e6e73] block' },
         'Stroke/Font',
         el('input', {
           type: 'number',
@@ -1245,7 +1245,7 @@ export function renderSignStudioModal() {
     selected
       ? el(
           'div',
-          { className: 'p-2.5 rounded-[12px] bg-white border border-[#e5e5e5] space-y-2' },
+          { className: 'p-2.5 rounded-[12px] bg-white border border-[#e5e5ea] space-y-2' },
           el(
             'div',
             { className: 'flex items-center justify-between text-[11px]' },
@@ -1254,7 +1254,7 @@ export function renderSignStudioModal() {
               'button',
               {
                 type: 'button',
-                className: 'text-[#ef4444] font-semibold',
+                className: 'text-[#ff3b30] font-semibold',
                 onClick: () => {
                   s.overlays = s.overlays.filter((o) => o.id !== selected.id);
                   s.selectedOverlayId = null;
@@ -1266,7 +1266,7 @@ export function renderSignStudioModal() {
           ),
           el(
             'label',
-            { className: 'text-[11px] text-[#6a6a6a] block' },
+            { className: 'text-[11px] text-[#6e6e73] block' },
             `Rotation (${selected.rotation || 0}°)`,
             el('input', {
               type: 'range',
@@ -1274,7 +1274,7 @@ export function renderSignStudioModal() {
               max: '180',
               step: '5',
               value: String(selected.rotation || 0),
-              className: 'w-full accent-[#0a0a0a]',
+              className: 'w-full accent-[#1d1d1f]',
               onInput: (e) => {
                 selected.rotation = Number(/** @type {HTMLInputElement} */ (e.target).value) || 0;
                 const node = document.querySelector(`[data-overlay-item="${selected.id}"]`);
@@ -1300,7 +1300,7 @@ export function renderSignStudioModal() {
   const modalStagePane = el(
     'div',
     {
-      className: 'lg:col-span-8 bg-[#f5f0e0] overflow-auto p-4 sm:p-6 flex items-start justify-center',
+      className: 'lg:col-span-8 bg-[#f5f5f7] overflow-auto p-4 sm:p-6 flex items-start justify-center',
       onScroll: (e) => {
         signStageScrollTop = /** @type {HTMLElement} */ (e.currentTarget).scrollTop;
       }
@@ -1332,16 +1332,16 @@ export function renderSignStudioModal() {
       'div',
       {
         className:
-          'w-full max-w-6xl max-h-[92vh] rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] shadow-2xl flex flex-col overflow-hidden'
+          'w-full max-w-6xl max-h-[92vh] rounded-[24px] bg-[#ffffff] border border-[#e5e5ea] shadow-2xl flex flex-col overflow-hidden'
       },
       el(
         'div',
-        { className: 'px-5 py-3.5 border-b border-[#e5e5e5] flex flex-wrap items-center justify-between gap-3 bg-white' },
+        { className: 'px-5 py-3.5 border-b border-[#e5e5ea] flex flex-wrap items-center justify-between gap-3 bg-white' },
         el(
           'div',
           { className: 'flex items-center gap-2.5' },
-          el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'e-Signature & Vector Annotator'),
-          el('span', { className: 'badge-pill bg-[#ff4d8b] text-white' }, `${s.overlays.length} overlay${s.overlays.length === 1 ? '' : 's'}`)
+          el('h3', { className: 'type-title-md text-[#1d1d1f]' }, 'e-Signature & Vector Annotator'),
+          el('span', { className: 'badge-pill bg-[#0071e3] text-white' }, `${s.overlays.length} overlay${s.overlays.length === 1 ? '' : 's'}`)
         ),
         el(
           'div',
@@ -1417,16 +1417,16 @@ export function renderCompareStudioModal() {
   const buildUploadZone = (slot, label, entry) =>
     el(
       'div',
-      { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+      { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
       el(
         'div',
         { className: 'flex items-center justify-between gap-2' },
-        el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, label),
-        entry ? el('span', { className: 'text-[11px] text-[#6a6a6a]' }, formatBytes(entry.byteSize)) : null
+        el('span', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, label),
+        entry ? el('span', { className: 'text-[11px] text-[#6e6e73]' }, formatBytes(entry.byteSize)) : null
       ),
       el(
         'p',
-        { className: 'text-[12px] text-[#1a1a1a] truncate font-medium' },
+        { className: 'text-[12px] text-[#1d1d1f] truncate font-medium' },
         entry ? entry.name : 'No PDF loaded'
       ),
       el(
@@ -1462,8 +1462,8 @@ export function renderCompareStudioModal() {
     );
 
   // Synchronized scroll panes
-  const paneA = el('div', { className: 'flex-1 overflow-auto bg-white rounded-[10px] border border-[#e5e5e5] p-2 max-h-[60vh]' });
-  const paneB = el('div', { className: 'flex-1 overflow-auto bg-white rounded-[10px] border border-[#e5e5e5] p-2 max-h-[60vh]' });
+  const paneA = el('div', { className: 'flex-1 overflow-auto bg-white rounded-[10px] border border-[#e5e5ea] p-2 max-h-[60vh]' });
+  const paneB = el('div', { className: 'flex-1 overflow-auto bg-white rounded-[10px] border border-[#e5e5ea] p-2 max-h-[60vh]' });
   let syncingScroll = false;
   const bindSync = (from, to) => {
     from.addEventListener('scroll', () => {
@@ -1479,23 +1479,23 @@ export function renderCompareStudioModal() {
 
   let viewerContent = el(
     'div',
-    { className: 'h-full min-h-[320px] flex items-center justify-center text-[13px] text-[#6a6a6a] text-center p-6' },
+    { className: 'h-full min-h-[320px] flex items-center justify-center text-[13px] text-[#6e6e73] text-center p-6' },
     'Load Original (v1) and Revised (v2) PDFs above, then click Compare PDFs.'
   );
 
   if (activePage) {
     if (cmp.viewMode === 'side-by-side') {
-      paneA.appendChild(el('p', { className: 'text-[11px] font-semibold text-[#6a6a6a] mb-1.5' }, `v1: ${cmp.fileA?.name || 'Original'}`));
+      paneA.appendChild(el('p', { className: 'text-[11px] font-semibold text-[#6e6e73] mb-1.5' }, `v1: ${cmp.fileA?.name || 'Original'}`));
       paneA.appendChild(
         sanitizeImageSrc(activePage.imageAUrl)
           ? el('img', { src: sanitizeImageSrc(activePage.imageAUrl), alt: 'Original v1 page', className: 'w-full h-auto block' })
-          : el('div', { className: 'p-8 text-center text-[12px] text-[#ef4444]' }, 'Page absent in Original (Added in Revised)')
+          : el('div', { className: 'p-8 text-center text-[12px] text-[#ff3b30]' }, 'Page absent in Original (Added in Revised)')
       );
-      paneB.appendChild(el('p', { className: 'text-[11px] font-semibold text-[#6a6a6a] mb-1.5' }, `v2: ${cmp.fileB?.name || 'Revised'}`));
+      paneB.appendChild(el('p', { className: 'text-[11px] font-semibold text-[#6e6e73] mb-1.5' }, `v2: ${cmp.fileB?.name || 'Revised'}`));
       paneB.appendChild(
         sanitizeImageSrc(activePage.imageBUrl)
           ? el('img', { src: sanitizeImageSrc(activePage.imageBUrl), alt: 'Revised v2 page', className: 'w-full h-auto block' })
-          : el('div', { className: 'p-8 text-center text-[12px] text-[#ef4444]' }, 'Page removed in Revised')
+          : el('div', { className: 'p-8 text-center text-[12px] text-[#ff3b30]' }, 'Page removed in Revised')
       );
       viewerContent = el('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-3 w-full' }, paneA, paneB);
     } else if (cmp.viewMode === 'overlay') {
@@ -1503,11 +1503,11 @@ export function renderCompareStudioModal() {
         'div',
         { className: 'w-full flex flex-col items-center gap-2' },
         el('div', { className: 'flex items-center gap-3 text-[11px]' },
-          el('span', { className: 'inline-flex items-center gap-1' }, el('span', { className: 'w-2.5 h-2.5 rounded-full bg-[#ef4444]' }), 'Removed (v1)'),
-          el('span', { className: 'inline-flex items-center gap-1' }, el('span', { className: 'w-2.5 h-2.5 rounded-full bg-[#22c55e]' }), 'Added (v2)')
+          el('span', { className: 'inline-flex items-center gap-1' }, el('span', { className: 'w-2.5 h-2.5 rounded-full bg-[#ff3b30]' }), 'Removed (v1)'),
+          el('span', { className: 'inline-flex items-center gap-1' }, el('span', { className: 'w-2.5 h-2.5 rounded-full bg-[#34c759]' }), 'Added (v2)')
         ),
         sanitizeImageSrc(activePage.diffUrl)
-          ? el('img', { src: sanitizeImageSrc(activePage.diffUrl), alt: 'Visual pixel diff map', className: 'max-h-[62vh] w-auto rounded-[10px] border border-[#e5e5e5] bg-white shadow' })
+          ? el('img', { src: sanitizeImageSrc(activePage.diffUrl), alt: 'Visual pixel diff map', className: 'max-h-[62vh] w-auto rounded-[10px] border border-[#e5e5ea] bg-white shadow' })
           : null
       );
     } else if (cmp.viewMode === 'curtain') {
@@ -1522,7 +1522,7 @@ export function renderCompareStudioModal() {
           : null
       );
       const divider = el('div', {
-        className: 'absolute top-0 bottom-0 w-0.5 bg-[#ff4d8b] pointer-events-none',
+        className: 'absolute top-0 bottom-0 w-0.5 bg-[#0071e3] pointer-events-none',
         style: { left: `${cmp.splitPercent || 50}%` }
       });
       viewerContent = el(
@@ -1530,7 +1530,7 @@ export function renderCompareStudioModal() {
         { className: 'w-full max-w-2xl mx-auto space-y-2' },
         el(
           'div',
-          { className: 'relative rounded-[10px] overflow-hidden border border-[#e5e5e5] bg-white' },
+          { className: 'relative rounded-[10px] overflow-hidden border border-[#e5e5ea] bg-white' },
           sanitizeImageSrc(activePage.imageBUrl)
             ? el('img', { src: sanitizeImageSrc(activePage.imageBUrl), alt: 'v2 base', className: 'w-full h-auto block' })
             : el('div', { className: 'h-64 flex items-center justify-center text-[12px]' }, 'Page absent in v2'),
@@ -1542,7 +1542,7 @@ export function renderCompareStudioModal() {
           min: '0',
           max: '100',
           value: String(cmp.splitPercent || 50),
-          className: 'w-full accent-[#0a0a0a] cursor-pointer',
+          className: 'w-full accent-[#1d1d1f] cursor-pointer',
           onInput: (e) => {
             const p = Number(/** @type {HTMLInputElement} */ (e.target).value) || 50;
             cmp.splitPercent = p;
@@ -1556,9 +1556,9 @@ export function renderCompareStudioModal() {
       const diffRows = activePage.textDiff || [];
       viewerContent = el(
         'div',
-        { className: 'w-full bg-white rounded-[12px] border border-[#e5e5e5] p-3 max-h-[60vh] overflow-y-auto space-y-1 font-mono text-[12px]' },
+        { className: 'w-full bg-white rounded-[12px] border border-[#e5e5ea] p-3 max-h-[60vh] overflow-y-auto space-y-1 font-mono text-[12px]' },
         diffRows.length === 0
-          ? el('p', { className: 'text-[#6a6a6a]' }, 'No extractable text layer on this page.')
+          ? el('p', { className: 'text-[#6e6e73]' }, 'No extractable text layer on this page.')
           : diffRows.map((row) =>
               el(
                 'div',
@@ -1568,7 +1568,7 @@ export function renderCompareStudioModal() {
                       ? 'bg-[#fef2f2] text-[#991b1b]'
                       : row.type === 'added'
                         ? 'bg-[#f0fdf4] text-[#166534]'
-                        : 'text-[#3a3a3a]'
+                        : 'text-[#424245]'
                   }`
                 },
                 `${row.type === 'removed' ? '- ' : row.type === 'added' ? '+ ' : '  '}${row.value}`
@@ -1595,16 +1595,16 @@ export function renderCompareStudioModal() {
     },
     el(
       'div',
-      { className: 'w-full max-w-6xl max-h-[92vh] rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] shadow-2xl flex flex-col overflow-hidden' },
+      { className: 'w-full max-w-6xl max-h-[92vh] rounded-[24px] bg-[#ffffff] border border-[#e5e5ea] shadow-2xl flex flex-col overflow-hidden' },
       el(
         'div',
-        { className: 'px-5 py-3.5 border-b border-[#e5e5e5] flex flex-wrap items-center justify-between gap-3 bg-white' },
+        { className: 'px-5 py-3.5 border-b border-[#e5e5ea] flex flex-wrap items-center justify-between gap-3 bg-white' },
         el(
           'div',
           { className: 'flex items-center gap-2.5' },
-          el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'Visual & Text Diff (Compare PDF)'),
+          el('h3', { className: 'type-title-md text-[#1d1d1f]' }, 'Visual & Text Diff (Compare PDF)'),
           results
-            ? el('span', { className: 'badge-pill bg-[#b8a4ed] text-[#0a0a0a]' }, `${results.pagesA}p vs ${results.pagesB}p`)
+            ? el('span', { className: 'badge-pill bg-[#e8f2ff] text-[#1d1d1f]' }, `${results.pagesA}p vs ${results.pagesB}p`)
             : null
         ),
         el(
@@ -1648,7 +1648,7 @@ export function renderCompareStudioModal() {
       ),
       el(
         'div',
-        { className: 'p-4 border-b border-[#e5e5e5] grid grid-cols-1 md:grid-cols-3 gap-3 items-center bg-[#fffaf0]' },
+        { className: 'p-4 border-b border-[#e5e5ea] grid grid-cols-1 md:grid-cols-3 gap-3 items-center bg-[#ffffff]' },
         buildUploadZone('A', 'Original (v1)', cmp.fileA),
         buildUploadZone('B', 'Revised (v2)', cmp.fileB),
         el(
@@ -1656,14 +1656,14 @@ export function renderCompareStudioModal() {
           { className: 'space-y-2' },
           el(
             'label',
-            { className: 'text-[11px] text-[#6a6a6a] block' },
+            { className: 'text-[11px] text-[#6e6e73] block' },
             `Pixel Sensitivity (${cmp.sensitivity})`,
             el('input', {
               type: 'range',
               min: '5',
               max: '60',
               value: String(cmp.sensitivity),
-              className: 'w-full accent-[#0a0a0a] mt-1',
+              className: 'w-full accent-[#1d1d1f] mt-1',
               onInput: (e) => {
                 cmp.sensitivity = Number(/** @type {HTMLInputElement} */ (e.target).value) || 24;
               }
@@ -1688,14 +1688,14 @@ export function renderCompareStudioModal() {
         results
           ? el(
               'aside',
-              { className: 'lg:col-span-3 border-b lg:border-b-0 lg:border-r border-[#e5e5e5] p-3 overflow-y-auto space-y-2 bg-[#fffaf0]' },
+              { className: 'lg:col-span-3 border-b lg:border-b-0 lg:border-r border-[#e5e5ea] p-3 overflow-y-auto space-y-2 bg-[#ffffff]' },
               el(
                 'label',
                 { className: 'flex items-center gap-2 text-[12px] font-medium cursor-pointer pb-1' },
                 el('input', {
                   type: 'checkbox',
                   checked: Boolean(cmp.changedOnly),
-                  className: 'w-4 h-4 accent-[#0a0a0a]',
+                  className: 'w-4 h-4 accent-[#1d1d1f]',
                   onChange: (e) => {
                     cmp.changedOnly = /** @type {HTMLInputElement} */ (e.target).checked;
                     cmp.activePageIndex = 0;
@@ -1711,8 +1711,8 @@ export function renderCompareStudioModal() {
                     type: 'button',
                     className: `w-full text-left px-2.5 py-2 rounded-[10px] border text-[12px] flex items-center justify-between ${
                       idx === safeActiveIdx
-                        ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
-                        : 'bg-white text-[#1a1a1a] border-[#e5e5e5]'
+                        ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
+                        : 'bg-white text-[#1d1d1f] border-[#e5e5ea]'
                     }`,
                     onClick: () => {
                       cmp.activePageIndex = idx;
@@ -1727,9 +1727,9 @@ export function renderCompareStudioModal() {
                         idx === safeActiveIdx
                           ? 'text-white'
                           : p.status === 'unchanged'
-                            ? 'text-[#6a6a6a]'
+                            ? 'text-[#6e6e73]'
                             : p.status === 'removed'
-                              ? 'text-[#ef4444]'
+                              ? 'text-[#ff3b30]'
                               : 'text-[#16a34a]'
                       }`
                     },
@@ -1741,7 +1741,7 @@ export function renderCompareStudioModal() {
           : null,
         el(
           'div',
-          { className: `${results ? 'lg:col-span-9' : 'lg:col-span-12'} bg-[#f5f0e0] p-4 overflow-auto flex flex-col gap-3` },
+          { className: `${results ? 'lg:col-span-9' : 'lg:col-span-12'} bg-[#f5f5f7] p-4 overflow-auto flex flex-col gap-3` },
           results
             ? el(
                 'div',
@@ -1758,8 +1758,8 @@ export function renderCompareStudioModal() {
                       type: 'button',
                       className: `h-8 px-3 rounded-[9px] text-[12px] font-medium border ${
                         cmp.viewMode === mode
-                          ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
-                          : 'bg-white text-[#1a1a1a] border-[#e5e5e5]'
+                          ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
+                          : 'bg-white text-[#1d1d1f] border-[#e5e5ea]'
                       }`,
                       onClick: () => {
                         cmp.viewMode = mode;

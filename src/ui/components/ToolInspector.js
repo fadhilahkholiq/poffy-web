@@ -44,47 +44,74 @@ import {
   useWorkspacePdfForCompare
 } from '../actions/export-runner.js';
 import { el, mount, sanitizeImageSrc } from '../utils/dom.js';
+import { getToolIcon } from '../utils/tool-icons.js';
+import { getToolStyleBySlug } from '../utils/tool-styles.js';
 import { createClaySelect } from './ClaySelect.js';
 
 /**
- * Tool tab metadata matching DESIGN.md accent palette.
- * @type {{ id: import('../../state/workspace.js').ToolTabId, label: string, group: 'pages'|'edit'|'convert'|'docs', accent: string, accentText: string }[]}
+ * Full 22-tool studio rail metadata mapped cleanly onto workspace ToolTabId panels.
+ * @type {{ id: import('../../state/workspace.js').ToolTabId, slug: string, label: string, group: 'pages'|'edit'|'convert'|'docs' }[]}
  */
 const TOOL_TABS = [
-  { id: 'organize', label: 'Organize', group: 'pages', accent: '#ff4d8b', accentText: '#ffffff' },
-  { id: 'split', label: 'Split', group: 'pages', accent: '#1a3a3a', accentText: '#ffffff' },
-  { id: 'watermark', label: 'Watermark', group: 'edit', accent: '#b8a4ed', accentText: '#0a0a0a' },
-  { id: 'numbering', label: 'Numbers', group: 'edit', accent: '#ffb084', accentText: '#0a0a0a' },
-  { id: 'convert', label: 'Images ↔ PDF', group: 'convert', accent: '#e8b94a', accentText: '#0a0a0a' },
-  { id: 'resize', label: 'Resize', group: 'pages', accent: '#e8b94a', accentText: '#0a0a0a' },
-  { id: 'nup', label: 'N-Up/Booklet', group: 'pages', accent: '#b8a4ed', accentText: '#0a0a0a' },
-  { id: 'spreads', label: 'Split Spreads', group: 'pages', accent: '#1a3a3a', accentText: '#ffffff' },
-  { id: 'filters', label: 'Color Filters', group: 'edit', accent: '#a4d4c5', accentText: '#0a0a0a' },
-  { id: 'redact', label: 'Redact', group: 'edit', accent: '#1a3a3a', accentText: '#ffffff' },
-  { id: 'sign', label: 'Sign & Annotate', group: 'edit', accent: '#ff4d8b', accentText: '#ffffff' },
-  { id: 'compare', label: 'Compare', group: 'docs', accent: '#b8a4ed', accentText: '#0a0a0a' },
-  { id: 'extract-text', label: 'Extract Text', group: 'convert', accent: '#a4d4c5', accentText: '#0a0a0a' },
-  { id: 'extract-images', label: 'Extract Images', group: 'convert', accent: '#e8b94a', accentText: '#0a0a0a' },
-  { id: 'attachments', label: 'Attachments', group: 'docs', accent: '#ff6b5a', accentText: '#0a0a0a' },
-  { id: 'bookmarks', label: 'Bookmarks', group: 'docs', accent: '#ffb084', accentText: '#0a0a0a' },
-  { id: 'cbz', label: 'CBZ ↔ PDF', group: 'convert', accent: '#b8a4ed', accentText: '#0a0a0a' },
-  { id: 'metadata', label: 'Metadata', group: 'docs', accent: '#a4d4c5', accentText: '#0a0a0a' },
-  { id: 'forms', label: 'Forms', group: 'docs', accent: '#ff6b5a', accentText: '#0a0a0a' },
-  { id: 'optimize', label: 'Optimize', group: 'docs', accent: '#f5f0e0', accentText: '#0a0a0a' }
+  { id: 'organize', slug: 'merge-pdf', label: 'Merge & Reorder', group: 'pages' },
+  { id: 'split', slug: 'split-pdf', label: 'Split & Extract', group: 'pages' },
+  { id: 'organize', slug: 'organize-pdf', label: 'Rotate & Crop', group: 'pages' },
+  { id: 'resize', slug: 'resize-pdf', label: 'Resize Pages', group: 'pages' },
+  { id: 'nup', slug: 'nup-booklet', label: 'Booklet & N-Up', group: 'pages' },
+  { id: 'spreads', slug: 'split-spreads', label: 'Split Book Scans', group: 'pages' },
+  { id: 'watermark', slug: 'watermark-pdf', label: 'Watermark & Stamp', group: 'edit' },
+  { id: 'metadata', slug: 'metadata-scrubber', label: 'Privacy Scrubber', group: 'edit' },
+  { id: 'redact', slug: 'redact-pdf', label: 'True Redact', group: 'edit' },
+  { id: 'sign', slug: 'sign-annotate', label: 'Sign & Annotate', group: 'edit' },
+  { id: 'forms', slug: 'flatten-pdf', label: 'Flatten Forms', group: 'edit' },
+  { id: 'filters', slug: 'color-filters', label: 'Dark Mode & Cleanup', group: 'edit' },
+  { id: 'convert', slug: 'images-to-pdf', label: 'Images to PDF', group: 'convert' },
+  { id: 'convert', slug: 'pdf-to-images', label: 'PDF to Images', group: 'convert' },
+  { id: 'cbz', slug: 'cbz-pdf', label: 'CBZ ↔ PDF', group: 'convert' },
+  { id: 'extract-text', slug: 'extract-text', label: 'Extract Text', group: 'convert' },
+  { id: 'extract-images', slug: 'extract-images', label: 'Extract Images', group: 'convert' },
+  { id: 'optimize', slug: 'optimize-pdf', label: 'Compress PDF', group: 'docs' },
+  { id: 'numbering', slug: 'page-numbers', label: 'Page Numbers', group: 'docs' },
+  { id: 'compare', slug: 'compare-pdf', label: 'Compare Versions', group: 'docs' },
+  { id: 'attachments', slug: 'pdf-attachments', label: 'Attachments', group: 'docs' },
+  { id: 'bookmarks', slug: 'bookmark-editor', label: 'Bookmark Editor', group: 'docs' }
 ];
 
 /** @type {'all'|'pages'|'edit'|'convert'|'docs'} */
 let inspectorToolGroup = 'all';
 let inspectorSearchQuery = '';
+/** @type {string|null} */
+let activeRailSlug = document.documentElement.dataset.feature || null;
+
+/**
+ * Selects a specific tool slug and switches the workspace active tool cleanly.
+ * @param {import('../../state/workspace.js').ToolTabId} toolId
+ * @param {string} slug
+ */
+export function selectStudioTool(toolId, slug) {
+  activeRailSlug = slug || null;
+  workspace.setActiveTool(toolId);
+}
+
+/**
+ * Resolves the active 22-tool rail entry matching `workspace.activeTool`.
+ */
+function resolveActiveTab() {
+  if (activeRailSlug) {
+    const bySlug = TOOL_TABS.find((t) => t.slug === activeRailSlug && t.id === workspace.activeTool);
+    if (bySlug) return bySlug;
+  }
+  return TOOL_TABS.find((t) => t.id === workspace.activeTool) || TOOL_TABS[0];
+}
 
 /**
  * Helper to create a labeled input or select control safely.
  * @param {string} labelText
  * @param {HTMLElement} controlEl
- * @param {string} [labelClass='text-[12px] text-[#6a6a6a] block']
+ * @param {string} [labelClass='text-[12px] text-[#6e6e73] block']
  * @returns {HTMLElement}
  */
-function labeledField(labelText, controlEl, labelClass = 'text-[12px] text-[#6a6a6a] block') {
+function labeledField(labelText, controlEl, labelClass = 'text-[12px] text-[#6e6e73] block') {
   return el('label', { className: labelClass }, labelText, controlEl);
 }
 
@@ -119,7 +146,7 @@ function buildPdfSourceSelect(selectId, currentFileId, onChange) {
   if (pdfSources.length === 0) {
     return el(
       'p',
-      { className: 'type-caption text-[#6a6a6a]' },
+      { className: 'type-caption text-[#6e6e73]' },
       'Upload at least one PDF file to use this inspector.'
     );
   }
@@ -133,7 +160,7 @@ function buildPdfSourceSelect(selectId, currentFileId, onChange) {
   return el(
     'div',
     { className: 'space-y-1.5' },
-    el('label', { for: selectId, className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Target Source PDF'),
+    el('label', { for: selectId, className: 'text-[13px] font-medium text-[#1d1d1f]' }, 'Target Source PDF'),
     sel
   );
 }
@@ -151,12 +178,12 @@ function mountFilterPreviewInto(slot) {
     el(
       'div',
       { className: 'space-y-1' },
-      el('p', { className: 'text-[11px] font-medium text-[#6a6a6a] text-center' }, label),
+      el('p', { className: 'text-[11px] font-medium text-[#6e6e73] text-center' }, label),
       el(
         'div',
         {
           className:
-            'rounded-[8px] border border-[#e5e5e5] bg-white overflow-hidden min-h-[120px] flex items-center justify-center p-1'
+            'rounded-[8px] border border-[#e5e5ea] bg-white overflow-hidden min-h-[120px] flex items-center justify-center p-1'
         },
         imgSrc
           ? el('img', {
@@ -164,7 +191,7 @@ function mountFilterPreviewInto(slot) {
               alt: `${label} page preview`,
               className: 'w-full h-auto max-h-40 object-contain block'
             })
-          : el('span', { className: 'text-[11px] text-[#6a6a6a] text-center px-2' }, emptyText)
+          : el('span', { className: 'text-[11px] text-[#6e6e73] text-center px-2' }, emptyText)
       )
     );
 
@@ -172,23 +199,23 @@ function mountFilterPreviewInto(slot) {
     slot,
     el(
       'div',
-      { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+      { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
       el(
         'div',
         { className: 'flex items-center justify-between gap-2' },
-        el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Live Preview'),
+        el('span', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, 'Live Preview'),
         el(
           'div',
           { className: 'flex items-center gap-1.5' },
           flt.previewOtsuThreshold !== null
             ? el(
                 'span',
-                { className: 'px-2 py-0.5 rounded-full bg-white border border-[#e5e5e5] text-[10px] font-medium' },
+                { className: 'px-2 py-0.5 rounded-full bg-white border border-[#e5e5ea] text-[10px] font-medium' },
                 `Otsu T=${flt.previewOtsuThreshold}`
               )
             : null,
           flt.previewLoading
-            ? el('span', { className: 'text-[11px] text-[#6a6a6a]' }, 'Updating...')
+            ? el('span', { className: 'text-[11px] text-[#6e6e73]' }, 'Updating...')
             : null
         )
       ),
@@ -213,11 +240,11 @@ export function updateFilterPreviewDom() {
 }
 
 /**
- * Renders the contextual Tool Inspector panel using safe DOM APIs only.
+ * Renders the Left Studio Tool Rail (grouped switcher + filter) using safe DOM APIs only.
  * @param {HTMLElement} container
  */
-export function renderToolInspector(container) {
-  const activeTab = TOOL_TABS.find((t) => t.id === workspace.activeTool) || TOOL_TABS[0];
+export function renderToolRail(container) {
+  const activeTab = resolveActiveTab();
 
   const GROUP_FILTERS = /** @type {const} */ ([
     { id: 'all', label: `All (${TOOL_TABS.length})` },
@@ -229,37 +256,48 @@ export function renderToolInspector(container) {
 
   const tabList = el(
     'div',
-    { className: 'flex flex-wrap gap-1.5 pt-1', role: 'tablist', 'aria-label': 'Editor PDF tools' },
+    {
+      className: 'flex flex-wrap lg:flex-col gap-1',
+      role: 'tablist',
+      'aria-label': 'Editor PDF tools'
+    },
     TOOL_TABS.map((tab) => {
-      const isActive = tab.id === activeTab.id;
+      const isActive = tab.slug === activeTab.slug;
+      const st = getToolStyleBySlug(tab.slug);
       return el(
         'button',
         {
           type: 'button',
           role: 'tab',
-          dataset: { tabLabel: tab.label.toLowerCase(), tabGroup: tab.group },
+          dataset: { tabLabel: tab.label.toLowerCase(), tabGroup: tab.group, toolId: tab.id, toolSlug: tab.slug },
           'aria-selected': String(isActive),
-          className: `inspector-tool-tab ${isActive ? 'is-active' : ''}`,
-          onClick: () =>
+          className: `studio-rail-btn ${isActive ? 'is-active' : ''}`,
+          onClick: () => {
+            activeRailSlug = tab.slug;
             workspace.setActiveTool(
               /** @type {import('../../state/workspace.js').ToolTabId} */ (tab.id)
-            )
+            );
+          }
         },
-        el('span', {
-          className: `w-2 h-2 rounded-full shrink-0 ${
-            isActive ? 'ring-1 ring-white/50' : 'border border-black/15'
-          }`,
-          style: { backgroundColor: tab.accent },
-          'aria-hidden': 'true'
-        }),
-        tab.label
+        el(
+          'span',
+          {
+            className: 'w-5 h-5 rounded-[6px] flex items-center justify-center shrink-0',
+            style: isActive
+              ? { backgroundColor: 'rgba(255,255,255,0.2)', color: '#ffffff' }
+              : { backgroundColor: st.bg, color: st.fg },
+            'aria-hidden': 'true'
+          },
+          getToolIcon(tab.slug, 12)
+        ),
+        el('span', { className: 'truncate' }, tab.label)
       );
     })
   );
 
   const visibleCountEl = el(
     'span',
-    { className: 'text-[11px] font-medium text-[#6a6a6a] shrink-0 px-2' },
+    { className: 'text-[11px] font-medium text-[#86868b] shrink-0' },
     `${TOOL_TABS.length} tools`
   );
 
@@ -312,8 +350,9 @@ export function renderToolInspector(container) {
     id: 'inspector-tool-search',
     type: 'search',
     value: inspectorSearchQuery,
-    placeholder: `Search ${TOOL_TABS.length} studio tools`,
-    className: 'input-clay !h-8 !rounded-full !px-3.5 text-[12px] flex-1 min-w-0',
+    placeholder: 'Filter tools',
+    'aria-label': 'Filter studio tools',
+    className: 'input-clay !h-9 !rounded-[10px] !px-3 text-[12.5px] w-full',
     onInput: (e) => {
       inspectorSearchQuery = /** @type {HTMLInputElement} */ (e.target).value;
       applyTabFilters();
@@ -322,36 +361,68 @@ export function renderToolInspector(container) {
 
   applyTabFilters();
 
-  const toolsTray = el(
-    'div',
-    { className: 'inspector-tools-tray space-y-2' },
-    el('div', { className: 'flex items-center gap-1.5' }, tabFilterInput, visibleCountEl),
+  const rail = el(
+    'nav',
+    { className: 'p-3.5 space-y-3', 'aria-label': 'Studio tools' },
+    el(
+      'div',
+      { className: 'flex items-center justify-between gap-2 px-1' },
+      el('span', { className: 'type-caption-upper text-[#86868b]' }, 'Tools'),
+      visibleCountEl
+    ),
+    tabFilterInput,
     groupRow,
     tabList
   );
 
+  mount(container, rail);
+}
+
+/**
+ * Renders the contextual Right Tool Inspector panel using safe DOM APIs only.
+ * @param {HTMLElement} container
+ */
+export function renderToolInspector(container) {
+  const activeTab = resolveActiveTab();
+  const st = getToolStyleBySlug(activeTab.slug);
+
   const headerCard = el(
     'div',
     {
-      className: 'rounded-[16px] px-4 py-3 flex items-center justify-between gap-2 border border-black/5',
-      style: { backgroundColor: activeTab.accent, color: activeTab.accentText }
+      className:
+        'pb-3.5 border-b border-black/[0.08] flex items-center justify-between gap-2.5'
     },
     el(
-      'span',
-      { className: 'type-title-sm', style: { color: activeTab.accentText } },
-      `${activeTab.label} Studio`
-    ),
-    el('span', { className: 'text-[12px] font-medium opacity-85' }, 'Offline Worker')
+      'div',
+      { className: 'flex items-center gap-2.5 min-w-0' },
+      el(
+        'span',
+        {
+          className: 'w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0',
+          style: { backgroundColor: st.bg, color: st.fg }
+        },
+        getToolIcon(activeTab.slug, 18)
+      ),
+      el(
+        'div',
+        { className: 'min-w-0' },
+        el(
+          'span',
+          { className: 'type-title-sm text-[#1d1d1f] block truncate' },
+          activeTab.label
+        ),
+        el('span', { className: 'text-[11.5px] text-[#86868b] block' }, 'Local Web Worker')
+      )
+    )
   );
 
   const body = el('div', { id: 'tool-panel-body', className: 'space-y-4' }, buildToolBody(activeTab.id));
 
   const aside = el(
     'aside',
-    { className: 'clay-card p-4 sm:p-5 space-y-4 lg:sticky lg:top-[74px]' },
+    { className: 'p-4 sm:p-5 space-y-4' },
     headerCard,
-    body,
-    toolsTray
+    body
   );
 
   mount(container, aside);
@@ -423,7 +494,7 @@ function buildToolBody(tabId) {
       el(
         'div',
         { className: 'space-y-2' },
-        el('p', { className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Multi-PDF Merge Order'),
+        el('p', { className: 'text-[13px] font-medium text-[#1d1d1f]' }, 'Multi-PDF Merge Order'),
         el(
           'div',
           { className: 'grid grid-cols-2 gap-2' },
@@ -431,7 +502,7 @@ function buildToolBody(tabId) {
             'button',
             {
               type: 'button',
-              className: 'btn-secondary !h-10 !px-3',
+              className: 'btn-secondary !h-9 !px-2 !text-[12px] whitespace-nowrap',
               disabled: workspace.sourceFiles.size < 2,
               onClick: () => workspace.interleaveAllSources()
             },
@@ -441,7 +512,7 @@ function buildToolBody(tabId) {
             'button',
             {
               type: 'button',
-              className: 'btn-primary !h-10 !px-3',
+              className: 'btn-primary !h-9 !px-2 !text-[12px] whitespace-nowrap',
               onClick: exportWorkspacePdf
             },
             'Export Merged PDF'
@@ -449,12 +520,12 @@ function buildToolBody(tabId) {
         ),
         el(
           'label',
-          { className: 'inline-flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer pt-1' },
+          { className: 'inline-flex items-center gap-2 text-[12px] text-[#1d1d1f] cursor-pointer pt-1' },
           el('input', {
             id: 'org-auto-bookmarks',
             type: 'checkbox',
             checked: Boolean(o.autoBookmarks),
-            className: 'w-4 h-4 accent-[#0a0a0a]',
+            className: 'w-4 h-4 accent-[#1d1d1f]',
             onChange: (e) => {
               o.autoBookmarks = /** @type {HTMLInputElement} */ (e.target).checked;
             }
@@ -463,29 +534,29 @@ function buildToolBody(tabId) {
         ),
         el(
           'p',
-          { className: 'type-caption text-[#6a6a6a]' },
+          { className: 'type-caption text-[#6e6e73]' },
           'Drag any page card in the grid to reorder, or interleave pages 1-by-1 across uploaded PDFs.'
         )
       ),
-      el('hr', { className: 'border-[#e5e5e5]' }),
+      el('hr', { className: 'border-[#e5e5ea]' }),
       el(
         'div',
         { className: 'space-y-2.5' },
         el(
           'div',
-          { className: 'flex items-center justify-between gap-2' },
-          el('label', { for: 'org-blank-size', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Insert Blank Pages'),
+          { className: 'flex flex-wrap items-center justify-between gap-2' },
+          el('label', { for: 'org-blank-size', className: 'text-[13px] font-medium text-[#1d1d1f]' }, 'Insert Blank Pages'),
           el(
             'button',
             {
               type: 'button',
-              className: 'btn-secondary !h-8 !px-2.5 !text-[12px] shrink-0',
+              className: 'btn-secondary !h-8 !px-2.5 !text-[11.5px] shrink-0 whitespace-nowrap',
               onClick: () => {
                 o.autoCropModalOpen = true;
                 workspace.emit('tool');
               }
             },
-            'Auto-Crop Whitespace...'
+            'Auto-Crop Whitespace'
           )
         ),
         el(
@@ -540,8 +611,8 @@ function buildToolBody(tabId) {
         ),
         el(
           'div',
-          { className: 'flex items-center gap-1.5' },
-          el('span', { className: 'text-[12px] text-[#6a6a6a] shrink-0' }, 'Every'),
+          { className: 'flex flex-wrap items-center gap-1.5' },
+          el('span', { className: 'text-[12px] text-[#6e6e73] shrink-0' }, 'Every'),
           el('input', {
             id: 'org-blank-every-n',
             type: 'number',
@@ -557,7 +628,7 @@ function buildToolBody(tabId) {
             'button',
             {
               type: 'button',
-              className: 'btn-secondary !h-8 !px-2.5 !text-[12px] flex-1',
+              className: 'btn-secondary !h-8 !px-2 !text-[11.5px] flex-1 whitespace-nowrap',
               onClick: () => workspace.insertBlankEveryN(o.blankEveryN || 1, o.blankSize)
             },
             'Insert Every N'
@@ -566,7 +637,7 @@ function buildToolBody(tabId) {
             'button',
             {
               type: 'button',
-              className: 'btn-secondary !h-8 !px-2.5 !text-[12px] shrink-0',
+              className: 'btn-secondary !h-8 !px-2 !text-[11.5px] shrink-0 whitespace-nowrap',
               title: 'Append 1 blank page if total count is odd',
               onClick: () => workspace.padToEvenPageCount(o.blankSize)
             },
@@ -574,14 +645,14 @@ function buildToolBody(tabId) {
           )
         )
       ),
-      el('hr', { className: 'border-[#e5e5e5]' }),
+      el('hr', { className: 'border-[#e5e5ea]' }),
       el(
         'div',
         { className: 'space-y-2.5' },
         el(
           'p',
-          { className: 'text-[13px] font-medium text-[#1a1a1a]' },
-          `Crop Margins (pt) — ${selectedCount > 0 ? `${selectedCount} selected` : 'All pages'}`
+          { className: 'text-[13px] font-medium text-[#1d1d1f]' },
+          `Crop Margins (pt) · ${selectedCount > 0 ? `${selectedCount} selected` : 'All pages'}`
         ),
         el(
           'div',
@@ -669,7 +740,7 @@ function buildToolBody(tabId) {
       el(
         'div',
         { className: 'space-y-1.5' },
-        el('label', { for: 'split-mode', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Split Strategy'),
+        el('label', { for: 'split-mode', className: 'text-[13px] font-medium text-[#1d1d1f]' }, 'Split Strategy'),
         selectControl(
           'split-mode',
           'input-clay',
@@ -690,11 +761,11 @@ function buildToolBody(tabId) {
         ? el(
             'div',
             { className: 'space-y-1.5' },
-            el('label', { for: 'split-range', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Page Range Expression'),
+            el('label', { for: 'split-range', className: 'text-[13px] font-medium text-[#1d1d1f]' }, 'Page Range Expression'),
             rangeInput,
             el(
               'p',
-              { className: 'type-caption text-[#6a6a6a]' },
+              { className: 'type-caption text-[#6e6e73]' },
               s.mode === 'extract' && selectedCount > 0
                 ? `${selectedCount} selected grid pages will be extracted (or deselect to use range).`
                 : 'Comma-separated ranges create separate PDFs bundled into a .zip archive.'
@@ -705,7 +776,7 @@ function buildToolBody(tabId) {
         ? el(
             'div',
             { className: 'space-y-1.5' },
-            el('label', { for: 'split-every-n', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Pages per chunk (N)'),
+            el('label', { for: 'split-every-n', className: 'text-[13px] font-medium text-[#1d1d1f]' }, 'Pages per chunk (N)'),
             everyNInput
           )
         : null,
@@ -729,7 +800,7 @@ function buildToolBody(tabId) {
         id: 'wm-enabled',
         type: 'checkbox',
         checked: w.enabled,
-        className: 'w-4 h-4 accent-[#0a0a0a]',
+        className: 'w-4 h-4 accent-[#1d1d1f]',
         onChange: (e) => {
           w.enabled = /** @type {HTMLInputElement} */ (e.target).checked;
         }
@@ -741,7 +812,7 @@ function buildToolBody(tabId) {
       {
         id: 'wm-unicode-badge',
         className: `text-[11px] font-medium px-2 py-0.5 rounded-full ${
-          unicodeNeeded ? 'bg-[#b8a4ed] text-[#0a0a0a]' : 'bg-[#f5f0e0] text-[#6a6a6a]'
+          unicodeNeeded ? 'bg-[#e8f2ff] text-[#1d1d1f]' : 'bg-[#f5f5f7] text-[#6e6e73]'
         }`
       },
       unicodeNeeded ? 'Unicode TTF Active' : 'WinAnsi/Standard'
@@ -761,7 +832,7 @@ function buildToolBody(tabId) {
           const needsUni = !isWinAnsiCompatible(w.text);
           unicodeBadge.textContent = needsUni ? 'Unicode TTF Active' : 'WinAnsi/Standard';
           unicodeBadge.className = `text-[11px] font-medium px-2 py-0.5 rounded-full ${
-            needsUni ? 'bg-[#b8a4ed] text-[#0a0a0a]' : 'bg-[#f5f0e0] text-[#6a6a6a]'
+            needsUni ? 'bg-[#e8f2ff] text-[#1d1d1f]' : 'bg-[#f5f5f7] text-[#6e6e73]'
           }`;
         }
       })
@@ -778,9 +849,9 @@ function buildToolBody(tabId) {
         'label',
         {
           className:
-            'flex items-center justify-between gap-3 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
+            'flex items-center justify-between gap-3 p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer'
         },
-        el('span', { className: 'text-[14px] font-medium text-[#0a0a0a]' }, 'Include Watermark on Export'),
+        el('span', { className: 'text-[14px] font-medium text-[#1d1d1f]' }, 'Include Watermark on Export'),
         enabledCheck
       ),
       el(
@@ -791,7 +862,7 @@ function buildToolBody(tabId) {
           {
             type: 'button',
             className: `btn-compact !h-9 ${
-              w.kind === 'text' ? '!bg-[#0a0a0a] !text-white !border-[#0a0a0a]' : ''
+              w.kind === 'text' ? '!bg-[#1d1d1f] !text-white !border-[#1d1d1f]' : ''
             }`,
             onClick: () => {
               w.kind = 'text';
@@ -805,7 +876,7 @@ function buildToolBody(tabId) {
           {
             type: 'button',
             className: `btn-compact !h-9 ${
-              w.kind === 'image' ? '!bg-[#0a0a0a] !text-white !border-[#0a0a0a]' : ''
+              w.kind === 'image' ? '!bg-[#1d1d1f] !text-white !border-[#1d1d1f]' : ''
             }`,
             onClick: () => {
               w.kind = 'image';
@@ -924,7 +995,7 @@ function buildToolBody(tabId) {
                 type: 'file',
                 accept: 'image/png,image/jpeg',
                 className:
-                  'block w-full text-[13px] text-[#3a3a3a] file:mr-3 file:py-2 file:px-3 file:rounded-[8px] file:border file:border-[#e5e5e5] file:bg-[#faf5e8] file:text-[#0a0a0a] file:font-medium cursor-pointer',
+                  'block w-full text-[13px] text-[#424245] file:mr-3 file:py-2 file:px-3 file:rounded-[8px] file:border file:border-[#e5e5ea] file:bg-[#f2f2f7] file:text-[#1d1d1f] file:font-medium cursor-pointer',
                 onChange: async (e) => {
                   const file = /** @type {HTMLInputElement} */ (e.target).files?.[0];
                   if (!file) return;
@@ -940,7 +1011,7 @@ function buildToolBody(tabId) {
                 }
               }),
               w.imageName
-                ? el('p', { className: 'type-caption text-[#1a3a3a]' }, `Loaded stamp: ${w.imageName}`)
+                ? el('p', { className: 'type-caption text-[#0071e3]' }, `Loaded stamp: ${w.imageName}`)
                 : null
             ),
             el(
@@ -966,7 +1037,7 @@ function buildToolBody(tabId) {
               ),
               el(
                 'label',
-                { className: 'text-[12px] text-[#6a6a6a]' },
+                { className: 'text-[12px] text-[#6e6e73]' },
                 'Width Scale (',
                 scaleLabel,
                 ')',
@@ -976,7 +1047,7 @@ function buildToolBody(tabId) {
                   max: '0.85',
                   step: '0.02',
                   value: String(w.scale),
-                  className: 'w-full mt-2.5 accent-[#0a0a0a]',
+                  className: 'w-full mt-2.5 accent-[#1d1d1f]',
                   onInput: (e) => {
                     w.scale = Number(/** @type {HTMLInputElement} */ (e.target).value);
                     scaleLabel.textContent = `${Math.round(w.scale * 100)}%`;
@@ -987,7 +1058,7 @@ function buildToolBody(tabId) {
           ),
       el(
         'label',
-        { className: 'block text-[12px] text-[#6a6a6a]' },
+        { className: 'block text-[12px] text-[#6e6e73]' },
         'Opacity (',
         opacityLabel,
         ')',
@@ -997,7 +1068,7 @@ function buildToolBody(tabId) {
           max: '1',
           step: '0.05',
           value: String(w.opacity),
-          className: 'w-full mt-1.5 accent-[#0a0a0a]',
+          className: 'w-full mt-1.5 accent-[#1d1d1f]',
           onInput: (e) => {
             w.opacity = Number(/** @type {HTMLInputElement} */ (e.target).value);
             opacityLabel.textContent = `${Math.round(w.opacity * 100)}%`;
@@ -1025,13 +1096,13 @@ function buildToolBody(tabId) {
 
     const modeTabs = el(
       'div',
-      { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5]' },
+      { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea]' },
       el(
         'button',
         {
           type: 'button',
           className: `h-8 rounded-[9px] text-[12px] font-medium transition-colors ${
-            !isBates ? 'bg-[#0a0a0a] text-white' : 'text-[#555] hover:text-[#0a0a0a]'
+            !isBates ? 'bg-[#1d1d1f] text-white' : 'text-[#555] hover:text-[#1d1d1f]'
           }`,
           onClick: () => {
             n.mode = 'single';
@@ -1045,7 +1116,7 @@ function buildToolBody(tabId) {
         {
           type: 'button',
           className: `h-8 rounded-[9px] text-[12px] font-medium transition-colors ${
-            isBates ? 'bg-[#0a0a0a] text-white' : 'text-[#555] hover:text-[#0a0a0a]'
+            isBates ? 'bg-[#1d1d1f] text-white' : 'text-[#555] hover:text-[#1d1d1f]'
           }`,
           onClick: () => {
             n.mode = 'bates';
@@ -1060,7 +1131,7 @@ function buildToolBody(tabId) {
       const validQueue = n.batesQueue.filter((id) => workspace.sourceFiles.get(id)?.type === 'pdf');
       const firstEntry = validQueue.length > 0 ? workspace.sourceFiles.get(validQueue[0]) : null;
       const previewEl = el('code', {
-        className: 'text-[13px] font-semibold text-[#0a0a0a] break-all'
+        className: 'text-[13px] font-semibold text-[#1d1d1f] break-all'
       });
 
       const updateLivePreview = () => {
@@ -1135,7 +1206,7 @@ function buildToolBody(tabId) {
         queueContainer.appendChild(
           el(
             'div',
-            { className: 'p-3 rounded-[10px] border border-dashed border-[#d4d0c5] text-[12px] text-[#6a6a6a]' },
+            { className: 'p-3 rounded-[10px] border border-dashed border-[#d4d0c5] text-[12px] text-[#6e6e73]' },
             'No PDFs in the Batch Bates queue. Upload PDFs or click Sync Loaded PDFs.'
           )
         );
@@ -1161,13 +1232,13 @@ function buildToolBody(tabId) {
               'div',
               {
                 className:
-                  'flex items-center justify-between gap-2 px-2.5 py-2 rounded-[10px] bg-white border border-[#e5e5e5]'
+                  'flex items-center justify-between gap-2 px-2.5 py-2 rounded-[10px] bg-white border border-[#e5e5ea]'
               },
               el(
                 'div',
                 { className: 'min-w-0 flex-1' },
-                el('p', { className: 'text-[12px] font-medium text-[#0a0a0a] truncate' }, `${idx + 1}. ${src.name}`),
-                el('p', { className: 'text-[11px] text-[#6a6a6a] truncate' }, `${pagesInFile}p • starts at ${startLabel}`)
+                el('p', { className: 'text-[12px] font-medium text-[#1d1d1f] truncate' }, `${idx + 1}. ${src.name}`),
+                el('p', { className: 'text-[11px] text-[#6e6e73] truncate' }, `${pagesInFile}p • starts at ${startLabel}`)
               ),
               el(
                 'div',
@@ -1176,7 +1247,7 @@ function buildToolBody(tabId) {
                   'button',
                   {
                     type: 'button',
-                    className: 'w-6 h-6 rounded border border-[#e5e5e5] text-[11px] hover:bg-[#faf5e8] disabled:opacity-40',
+                    className: 'w-6 h-6 rounded border border-[#e5e5ea] text-[11px] hover:bg-[#f2f2f7] disabled:opacity-40',
                     disabled: idx === 0,
                     title: 'Move up',
                     onClick: () => workspace.moveBatesQueueItem(idx, idx - 1)
@@ -1187,7 +1258,7 @@ function buildToolBody(tabId) {
                   'button',
                   {
                     type: 'button',
-                    className: 'w-6 h-6 rounded border border-[#e5e5e5] text-[11px] hover:bg-[#faf5e8] disabled:opacity-40',
+                    className: 'w-6 h-6 rounded border border-[#e5e5ea] text-[11px] hover:bg-[#f2f2f7] disabled:opacity-40',
                     disabled: idx === validQueue.length - 1,
                     title: 'Move down',
                     onClick: () => workspace.moveBatesQueueItem(idx, idx + 1)
@@ -1198,7 +1269,7 @@ function buildToolBody(tabId) {
                   'button',
                   {
                     type: 'button',
-                    className: 'w-6 h-6 rounded border border-[#e5e5e5] text-[11px] text-[#ef4444] hover:bg-red-50',
+                    className: 'w-6 h-6 rounded border border-[#e5e5ea] text-[11px] text-[#ff3b30] hover:bg-red-50',
                     title: 'Remove from queue',
                     onClick: () => workspace.removeBatesQueueItem(id)
                   },
@@ -1220,7 +1291,7 @@ function buildToolBody(tabId) {
           el(
             'div',
             { className: 'flex items-center justify-between gap-2' },
-            el('span', { className: 'text-[12px] font-medium text-[#1a1a1a]' }, `PDF Queue (${validQueue.length})`),
+            el('span', { className: 'text-[12px] font-medium text-[#1d1d1f]' }, `PDF Queue (${validQueue.length})`),
             el(
               'div',
               { className: 'flex items-center gap-1.5' },
@@ -1252,8 +1323,8 @@ function buildToolBody(tabId) {
         ),
         el(
           'div',
-          { className: 'p-2.5 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-1' },
-          el('p', { className: 'text-[11px] font-medium text-[#6a6a6a]' }, 'Live Formatted Preview'),
+          { className: 'p-2.5 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-1' },
+          el('p', { className: 'text-[11px] font-medium text-[#6e6e73]' }, 'Live Formatted Preview'),
           previewEl
         ),
         el(
@@ -1335,11 +1406,11 @@ function buildToolBody(tabId) {
         ),
         el(
           'label',
-          { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+          { className: 'inline-flex items-center gap-2 text-[13px] text-[#1d1d1f] cursor-pointer' },
           el('input', {
             type: 'checkbox',
             checked: n.batesIncludeCsv,
-            className: 'w-4 h-4 accent-[#0a0a0a]',
+            className: 'w-4 h-4 accent-[#1d1d1f]',
             onChange: (e) => {
               n.batesIncludeCsv = /** @type {HTMLInputElement} */ (e.target).checked;
             }
@@ -1380,13 +1451,13 @@ function buildToolBody(tabId) {
         'label',
         {
           className:
-            'flex items-center justify-between gap-3 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
+            'flex items-center justify-between gap-3 p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer'
         },
-        el('span', { className: 'text-[14px] font-medium text-[#0a0a0a]' }, 'Include Page Numbers on Export'),
+        el('span', { className: 'text-[14px] font-medium text-[#1d1d1f]' }, 'Include Page Numbers on Export'),
         el('input', {
           type: 'checkbox',
           checked: n.enabled,
-          className: 'w-4 h-4 accent-[#0a0a0a]',
+          className: 'w-4 h-4 accent-[#1d1d1f]',
           onChange: (e) => {
             n.enabled = /** @type {HTMLInputElement} */ (e.target).checked;
           }
@@ -1505,11 +1576,11 @@ function buildToolBody(tabId) {
       ),
       el(
         'label',
-        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1d1d1f] cursor-pointer' },
         el('input', {
           type: 'checkbox',
           checked: n.skipCover,
-          className: 'w-4 h-4 accent-[#0a0a0a]',
+          className: 'w-4 h-4 accent-[#1d1d1f]',
           onChange: (e) => {
             n.skipCover = /** @type {HTMLInputElement} */ (e.target).checked;
           }
@@ -1540,7 +1611,7 @@ function buildToolBody(tabId) {
       el(
         'div',
         { className: 'space-y-2.5' },
-        el('p', { className: 'text-[13px] font-semibold text-[#0a0a0a]' }, 'PDF → Images (OffscreenCanvas)'),
+        el('p', { className: 'text-[13px] font-semibold text-[#1d1d1f]' }, 'PDF → Images (OffscreenCanvas)'),
         el(
           'div',
           { className: 'grid grid-cols-2 gap-2' },
@@ -1580,11 +1651,11 @@ function buildToolBody(tabId) {
         ),
         el(
           'label',
-          { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+          { className: 'inline-flex items-center gap-2 text-[13px] text-[#1d1d1f] cursor-pointer' },
           el('input', {
             type: 'checkbox',
             checked: c.selectedOnly,
-            className: 'w-4 h-4 accent-[#0a0a0a]',
+            className: 'w-4 h-4 accent-[#1d1d1f]',
             onChange: (e) => {
               c.selectedOnly = /** @type {HTMLInputElement} */ (e.target).checked;
             }
@@ -1601,13 +1672,13 @@ function buildToolBody(tabId) {
           `Export Pages as ${c.exportFormat.toUpperCase()}`
         )
       ),
-      el('hr', { className: 'border-[#e5e5e5]' }),
+      el('hr', { className: 'border-[#e5e5ea]' }),
       el(
         'div',
         { className: 'space-y-2.5' },
         el(
           'p',
-          { className: 'text-[13px] font-semibold text-[#0a0a0a]' },
+          { className: 'text-[13px] font-semibold text-[#1d1d1f]' },
           `Images → PDF (${imageCount} image file${imageCount === 1 ? '' : 's'} loaded)`
         ),
         labeledField(
@@ -1664,7 +1735,7 @@ function buildToolBody(tabId) {
       el(
         'div',
         { className: 'flex items-center justify-between text-[12px]' },
-        el('span', { className: 'text-[#6a6a6a]' }, label),
+        el('span', { className: 'text-[#6e6e73]' }, label),
         el(
           'span',
           {
@@ -1679,11 +1750,11 @@ function buildToolBody(tabId) {
     const makeScrubToggle = (key, labelText) =>
       el(
         'label',
-        { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+        { className: 'flex items-center gap-2 text-[12px] text-[#1d1d1f] cursor-pointer' },
         el('input', {
           type: 'checkbox',
           checked: Boolean(m.scrubOptions?.[key]),
-          className: 'w-4 h-4 accent-[#0a0a0a]',
+          className: 'w-4 h-4 accent-[#1d1d1f]',
           onChange: (e) => {
             if (!m.scrubOptions) {
               m.scrubOptions = {
@@ -1716,11 +1787,11 @@ function buildToolBody(tabId) {
       }),
       el(
         'div',
-        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
         el(
           'div',
           { className: 'flex items-center justify-between gap-2' },
-          el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Pre-Scrub Privacy Audit'),
+          el('span', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, 'Pre-Scrub Privacy Audit'),
           el(
             'button',
             {
@@ -1765,7 +1836,7 @@ function buildToolBody(tabId) {
             )
           : el(
               'p',
-              { className: 'text-[11px] text-[#6a6a6a]' },
+              { className: 'text-[11px] text-[#6e6e73]' },
               m.targetFileId
                 ? m.auditLoading
                   ? 'Inspecting catalog metadata, XMP, thumbnails & scripts...'
@@ -1775,8 +1846,8 @@ function buildToolBody(tabId) {
       ),
       el(
         'div',
-        { className: 'p-3 rounded-[12px] bg-white border border-[#e5e5e5] space-y-2' },
-        el('p', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Granular Scrub Targets'),
+        { className: 'p-3 rounded-[12px] bg-white border border-[#e5e5ea] space-y-2' },
+        el('p', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, 'Granular Scrub Targets'),
         makeScrubToggle('scrubInfo', 'Strip Info Dictionary (Title, Author, Dates)'),
         makeScrubToggle('purgeXmp', 'Purge Catalog XMP XML Stream (/Metadata)'),
         makeScrubToggle('removeThumbnails', 'Remove Embedded Page Thumbnails (/Thumb)'),
@@ -1798,11 +1869,11 @@ function buildToolBody(tabId) {
       ),
       el(
         'label',
-        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1d1d1f] cursor-pointer' },
         el('input', {
           type: 'checkbox',
           checked: m.applyOnExport,
-          className: 'w-4 h-4 accent-[#0a0a0a]',
+          className: 'w-4 h-4 accent-[#1d1d1f]',
           onChange: (e) => {
             m.applyOnExport = /** @type {HTMLInputElement} */ (e.target).checked;
           }
@@ -1836,7 +1907,7 @@ function buildToolBody(tabId) {
           'button',
           {
             type: 'button',
-            className: 'btn-secondary w-full !border-[#ef4444] !text-[#ef4444]',
+            className: 'btn-secondary w-full !border-[#ff3b30] !text-[#ff3b30]',
             disabled: !m.targetFileId,
             onClick: () => runMetadataJob('scrub-all')
           },
@@ -1860,13 +1931,13 @@ function buildToolBody(tabId) {
                   'label',
                   {
                     className:
-                      'flex items-center justify-between gap-2 p-2.5 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
+                      'flex items-center justify-between gap-2 p-2.5 rounded-[10px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer'
                   },
                   el('span', { className: 'text-[13px] font-medium truncate' }, field.name),
                   el('input', {
                     type: 'checkbox',
                     checked: Boolean(val),
-                    className: 'w-4 h-4 accent-[#0a0a0a]',
+                    className: 'w-4 h-4 accent-[#1d1d1f]',
                     onChange: (e) => {
                       f.values[field.name] = /** @type {HTMLInputElement} */ (e.target).checked;
                     }
@@ -1901,7 +1972,7 @@ function buildToolBody(tabId) {
           )
         : el(
             'p',
-            { className: 'type-caption text-[#6a6a6a]' },
+            { className: 'type-caption text-[#6e6e73]' },
             'Click "Inspect AcroForm Fields" to list editable text inputs, checkboxes, dropdowns, and radio groups.'
           );
 
@@ -1927,11 +1998,11 @@ function buildToolBody(tabId) {
       fieldsList,
       el(
         'label',
-        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1d1d1f] cursor-pointer' },
         el('input', {
           type: 'checkbox',
           checked: f.flatten,
-          className: 'w-4 h-4 accent-[#0a0a0a]',
+          className: 'w-4 h-4 accent-[#1d1d1f]',
           onChange: (e) => {
             f.flatten = /** @type {HTMLInputElement} */ (e.target).checked;
             workspace.emit('tool');
@@ -2000,7 +2071,7 @@ function buildToolBody(tabId) {
       el(
         'div',
         { className: 'space-y-1.5' },
-        el('label', { for: 'resize-preset', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Target Paper Size'),
+        el('label', { for: 'resize-preset', className: 'text-[13px] font-medium text-[#1d1d1f]' }, 'Target Paper Size'),
         selectControl(
           'resize-preset',
           'input-clay !h-10',
@@ -2024,7 +2095,7 @@ function buildToolBody(tabId) {
       isCustom
         ? el(
             'div',
-            { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2.5' },
+            { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2.5' },
             el(
               'div',
               { className: 'grid grid-cols-3 gap-2' },
@@ -2056,7 +2127,7 @@ function buildToolBody(tabId) {
             ),
             el(
               'p',
-              { className: 'text-[11px] text-[#6a6a6a]' },
+              { className: 'text-[11px] text-[#6e6e73]' },
               `PDF Points: ${Math.round(summaryW * 10) / 10} × ${Math.round(summaryH * 10) / 10} pt`
             )
           )
@@ -2139,13 +2210,13 @@ function buildToolBody(tabId) {
       { className: 'space-y-3.5' },
       el(
         'div',
-        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5]' },
+        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea]' },
         el(
           'button',
           {
             type: 'button',
             className: `h-8 rounded-[9px] text-[12px] font-medium transition-colors ${
-              !isBooklet ? 'bg-[#0a0a0a] text-white' : 'text-[#555] hover:text-[#0a0a0a]'
+              !isBooklet ? 'bg-[#1d1d1f] text-white' : 'text-[#555] hover:text-[#1d1d1f]'
             }`,
             onClick: () => {
               nup.mode = 'nup';
@@ -2159,7 +2230,7 @@ function buildToolBody(tabId) {
           {
             type: 'button',
             className: `h-8 rounded-[9px] text-[12px] font-medium transition-colors ${
-              isBooklet ? 'bg-[#0a0a0a] text-white' : 'text-[#555] hover:text-[#0a0a0a]'
+              isBooklet ? 'bg-[#1d1d1f] text-white' : 'text-[#555] hover:text-[#1d1d1f]'
             }`,
             onClick: () => {
               nup.mode = 'booklet';
@@ -2172,14 +2243,14 @@ function buildToolBody(tabId) {
       ),
       el(
         'div',
-        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
         el(
           'div',
           { className: 'flex items-center justify-between gap-2' },
-          el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Sheet Imposition Diagram'),
+          el('span', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, 'Sheet Imposition Diagram'),
           el(
             'span',
-            { className: 'text-[11px] text-[#6a6a6a]' },
+            { className: 'text-[11px] text-[#6e6e73]' },
             isBooklet
               ? `${totalPages}p${blankPadCount > 0 ? ` (+${blankPadCount} blank)` : ''} → ${plan.sheets.length} sheets`
               : `${totalPages}p → ${plan.sheets.length} sheet${plan.sheets.length === 1 ? '' : 's'}`
@@ -2205,8 +2276,8 @@ function buildToolBody(tabId) {
                   {
                     className: `h-8 rounded-[6px] border text-[11px] font-medium flex items-center justify-center ${
                       slot.pageNumber === null
-                        ? 'bg-[#f5f0e0] border-dashed border-[#c7c2b4] text-[#6a6a6a]'
-                        : 'bg-white border-[#0a0a0a]/20 text-[#0a0a0a]'
+                        ? 'bg-[#f5f5f7] border-dashed border-[#d1d1d6] text-[#6e6e73]'
+                        : 'bg-white border-[#1d1d1f]/20 text-[#1d1d1f]'
                     }`
                   },
                   slot.pageNumber === null
@@ -2217,10 +2288,10 @@ function buildToolBody(tabId) {
             }
             return el(
               'div',
-              { className: 'p-2 rounded-[10px] bg-white/80 border border-[#e5e5e5] space-y-1' },
+              { className: 'p-2 rounded-[10px] bg-white/80 border border-[#e5e5ea] space-y-1' },
               el(
                 'div',
-                { className: 'flex items-center justify-between text-[10px] text-[#6a6a6a]' },
+                { className: 'flex items-center justify-between text-[10px] text-[#6e6e73]' },
                 el(
                   'span',
                   {},
@@ -2228,7 +2299,7 @@ function buildToolBody(tabId) {
                     ? `S${Math.ceil(sheet.sheetIndex / 2)} ${sheet.side === 'front' ? 'Front' : 'Back'}`
                     : `Sheet ${sheet.sheetIndex}`
                 ),
-                sheet.flipped180 ? el('span', { className: 'font-semibold text-[#0a0a0a]' }, '180°') : null
+                sheet.flipped180 ? el('span', { className: 'font-semibold text-[#1d1d1f]' }, '180°') : null
               ),
               cellGrid
             );
@@ -2237,7 +2308,7 @@ function buildToolBody(tabId) {
         plan.sheets.length > 6
           ? el(
               'p',
-              { className: 'text-[11px] text-[#6a6a6a]' },
+              { className: 'text-[11px] text-[#6e6e73]' },
               `Showing first 6 of ${plan.sheets.length} imposed sheets.`
             )
           : null
@@ -2303,11 +2374,11 @@ function buildToolBody(tabId) {
             ),
             el(
               'label',
-              { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+              { className: 'inline-flex items-center gap-2 text-[13px] text-[#1d1d1f] cursor-pointer' },
               el('input', {
                 type: 'checkbox',
                 checked: Boolean(nup.flipBackSide),
-                className: 'w-4 h-4 accent-[#0a0a0a]',
+                className: 'w-4 h-4 accent-[#1d1d1f]',
                 onChange: (e) => {
                   nup.flipBackSide = /** @type {HTMLInputElement} */ (e.target).checked;
                   workspace.emit('tool');
@@ -2398,11 +2469,11 @@ function buildToolBody(tabId) {
       ),
       el(
         'label',
-        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1a1a1a] cursor-pointer' },
+        { className: 'inline-flex items-center gap-2 text-[13px] text-[#1d1d1f] cursor-pointer' },
         el('input', {
           type: 'checkbox',
           checked: Boolean(nup.drawBorders),
-          className: 'w-4 h-4 accent-[#0a0a0a]',
+          className: 'w-4 h-4 accent-[#1d1d1f]',
           onChange: (e) => {
             nup.drawBorders = /** @type {HTMLInputElement} */ (e.target).checked;
           }
@@ -2434,7 +2505,7 @@ function buildToolBody(tabId) {
     }
 
     const pct = Math.round((Number(sp.splitRatio) || 0.5) * 100);
-    const ratioBadge = el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, `${pct}% / ${100 - pct}%`);
+    const ratioBadge = el('span', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, `${pct}% / ${100 - pct}%`);
     const rangeSlider = /** @type {HTMLInputElement} */ (
       el('input', {
         id: 'spread-ratio-slider',
@@ -2443,7 +2514,7 @@ function buildToolBody(tabId) {
         max: '85',
         step: '1',
         value: String(pct),
-        className: 'w-full accent-[#0a0a0a] cursor-pointer'
+        className: 'w-full accent-[#1d1d1f] cursor-pointer'
       })
     );
     rangeSlider.value = String(pct);
@@ -2453,8 +2524,8 @@ function buildToolBody(tabId) {
       {
         className:
           sp.axis === 'horizontal'
-            ? 'absolute left-0 right-0 h-0.5 bg-[#ff4d8b] shadow-[0_0_0_2px_rgba(255,255,255,0.85)] cursor-ns-resize'
-            : 'absolute top-0 bottom-0 w-0.5 bg-[#ff4d8b] shadow-[0_0_0_2px_rgba(255,255,255,0.85)] cursor-ew-resize',
+            ? 'absolute left-0 right-0 h-0.5 bg-[#0071e3] shadow-[0_0_0_2px_rgba(255,255,255,0.85)] cursor-ns-resize'
+            : 'absolute top-0 bottom-0 w-0.5 bg-[#0071e3] shadow-[0_0_0_2px_rgba(255,255,255,0.85)] cursor-ew-resize',
         style:
           sp.axis === 'horizontal'
             ? { top: `${pct}%`, transform: 'translateY(-50%)' }
@@ -2464,7 +2535,7 @@ function buildToolBody(tabId) {
         'span',
         {
           className:
-            'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-[#ff4d8b] text-white text-[10px] font-semibold whitespace-nowrap shadow'
+            'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-[#0071e3] text-white text-[10px] font-semibold whitespace-nowrap shadow'
         },
         `${pct}%`
       )
@@ -2493,7 +2564,7 @@ function buildToolBody(tabId) {
       'div',
       {
         className:
-          'relative select-none touch-none rounded-[10px] border border-[#e5e5e5] bg-white overflow-hidden flex items-center justify-center min-h-[160px]',
+          'relative select-none touch-none rounded-[10px] border border-[#e5e5ea] bg-white overflow-hidden flex items-center justify-center min-h-[160px]',
         onPointerdown: (e) => {
           const boxEl = /** @type {HTMLElement} */ (e.currentTarget);
           boxEl.setPointerCapture?.(e.pointerId);
@@ -2516,7 +2587,7 @@ function buildToolBody(tabId) {
         }
       },
       sp.previewLoading
-        ? el('p', { className: 'text-[12px] text-[#6a6a6a] p-6' }, 'Rendering spread preview...')
+        ? el('p', { className: 'text-[12px] text-[#6e6e73] p-6' }, 'Rendering spread preview...')
         : sanitizeImageSrc(sp.previewUrl)
           ? el('img', {
               src: sanitizeImageSrc(sp.previewUrl),
@@ -2524,7 +2595,7 @@ function buildToolBody(tabId) {
               draggable: false,
               className: 'w-full h-auto max-h-56 object-contain pointer-events-none block'
             })
-          : el('p', { className: 'text-[12px] text-[#6a6a6a] p-6' }, 'Blank or pending page'),
+          : el('p', { className: 'text-[12px] text-[#6e6e73] p-6' }, 'Blank or pending page'),
       dividerLine
     );
 
@@ -2533,11 +2604,11 @@ function buildToolBody(tabId) {
       { className: 'space-y-3.5' },
       el(
         'div',
-        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
         el(
           'div',
           { className: 'flex items-center justify-between gap-2' },
-          el('span', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Drag Split Divider'),
+          el('span', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, 'Drag Split Divider'),
           ratioBadge
         ),
         previewFrame,
@@ -2595,11 +2666,11 @@ function buildToolBody(tabId) {
         { className: 'space-y-1.5' },
         el(
           'label',
-          { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+          { className: 'flex items-center gap-2 text-[12px] text-[#1d1d1f] cursor-pointer' },
           el('input', {
             type: 'checkbox',
             checked: Boolean(sp.skipFirstPage),
-            className: 'w-4 h-4 accent-[#0a0a0a]',
+            className: 'w-4 h-4 accent-[#1d1d1f]',
             onChange: (e) => {
               sp.skipFirstPage = /** @type {HTMLInputElement} */ (e.target).checked;
             }
@@ -2608,11 +2679,11 @@ function buildToolBody(tabId) {
         ),
         el(
           'label',
-          { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+          { className: 'flex items-center gap-2 text-[12px] text-[#1d1d1f] cursor-pointer' },
           el('input', {
             type: 'checkbox',
             checked: Boolean(sp.skipLastPage),
-            className: 'w-4 h-4 accent-[#0a0a0a]',
+            className: 'w-4 h-4 accent-[#1d1d1f]',
             onChange: (e) => {
               sp.skipLastPage = /** @type {HTMLInputElement} */ (e.target).checked;
             }
@@ -2621,11 +2692,11 @@ function buildToolBody(tabId) {
         ),
         el(
           'label',
-          { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+          { className: 'flex items-center gap-2 text-[12px] text-[#1d1d1f] cursor-pointer' },
           el('input', {
             type: 'checkbox',
             checked: Boolean(sp.landscapeOnly),
-            className: 'w-4 h-4 accent-[#0a0a0a]',
+            className: 'w-4 h-4 accent-[#1d1d1f]',
             onChange: (e) => {
               sp.landscapeOnly = /** @type {HTMLInputElement} */ (e.target).checked;
             }
@@ -2667,12 +2738,12 @@ function buildToolBody(tabId) {
 
     const contrastLabel = el(
       'span',
-      { className: 'text-[12px] font-medium text-[#0a0a0a]' },
+      { className: 'text-[12px] font-medium text-[#1d1d1f]' },
       `${Number(flt.contrast ?? 1.2).toFixed(2)}×`
     );
     const thresholdLabel = el(
       'span',
-      { className: 'text-[12px] font-medium text-[#0a0a0a]' },
+      { className: 'text-[12px] font-medium text-[#1d1d1f]' },
       String(flt.threshold ?? 185)
     );
 
@@ -2696,8 +2767,8 @@ function buildToolBody(tabId) {
               type: 'button',
               className: `h-9 rounded-[10px] text-[12px] font-medium border transition-colors ${
                 flt.preset === id
-                  ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
-                  : 'bg-white text-[#1a1a1a] border-[#e5e5e5] hover:border-[#0a0a0a]/40'
+                  ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
+                  : 'bg-white text-[#1d1d1f] border-[#e5e5ea] hover:border-[#1d1d1f]/40'
               }`,
               onClick: () => {
                 flt.preset = /** @type {'grayscale'|'invert'|'cleanup'} */ (id);
@@ -2734,11 +2805,11 @@ function buildToolBody(tabId) {
             { className: 'space-y-2' },
             el(
               'label',
-              { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+              { className: 'flex items-center gap-2 text-[12px] text-[#1d1d1f] cursor-pointer' },
               el('input', {
                 type: 'checkbox',
                 checked: Boolean(flt.binarize),
-                className: 'w-4 h-4 accent-[#0a0a0a]',
+                className: 'w-4 h-4 accent-[#1d1d1f]',
                 onChange: (e) => {
                   flt.binarize = /** @type {HTMLInputElement} */ (e.target).checked;
                   workspace.emit('tool');
@@ -2750,11 +2821,11 @@ function buildToolBody(tabId) {
             flt.binarize
               ? el(
                   'label',
-                  { className: 'flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+                  { className: 'flex items-center gap-2 text-[12px] text-[#1d1d1f] cursor-pointer' },
                   el('input', {
                     type: 'checkbox',
                     checked: flt.autoOtsu !== false,
-                    className: 'w-4 h-4 accent-[#0a0a0a]',
+                    className: 'w-4 h-4 accent-[#1d1d1f]',
                     onChange: (e) => {
                       flt.autoOtsu = /** @type {HTMLInputElement} */ (e.target).checked;
                       workspace.emit('tool');
@@ -2768,14 +2839,14 @@ function buildToolBody(tabId) {
         : null,
       el(
         'div',
-        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2.5' },
+        { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2.5' },
         el(
           'div',
           { className: 'space-y-1' },
           el(
             'div',
             { className: 'flex items-center justify-between' },
-            el('label', { for: 'filter-contrast', className: 'text-[12px] font-medium text-[#1a1a1a]' }, 'Contrast Boost'),
+            el('label', { for: 'filter-contrast', className: 'text-[12px] font-medium text-[#1d1d1f]' }, 'Contrast Boost'),
             contrastLabel
           ),
           el('input', {
@@ -2785,7 +2856,7 @@ function buildToolBody(tabId) {
             max: '2.5',
             step: '0.05',
             value: String(flt.contrast ?? 1.2),
-            className: 'w-full accent-[#0a0a0a] cursor-pointer',
+            className: 'w-full accent-[#1d1d1f] cursor-pointer',
             onInput: (e) => {
               const val = Number(/** @type {HTMLInputElement} */ (e.target).value) || 1.2;
               flt.contrast = val;
@@ -2803,7 +2874,7 @@ function buildToolBody(tabId) {
                 { className: 'flex items-center justify-between' },
                 el(
                   'label',
-                  { for: 'filter-threshold', className: 'text-[12px] font-medium text-[#1a1a1a]' },
+                  { for: 'filter-threshold', className: 'text-[12px] font-medium text-[#1d1d1f]' },
                   flt.binarize ? 'B&W Threshold' : 'Background Whiten Cutoff'
                 ),
                 thresholdLabel
@@ -2815,7 +2886,7 @@ function buildToolBody(tabId) {
                 max: '248',
                 step: '2',
                 value: String(flt.threshold ?? 185),
-                className: 'w-full accent-[#0a0a0a] cursor-pointer',
+                className: 'w-full accent-[#1d1d1f] cursor-pointer',
                 onInput: (e) => {
                   const val = Number(/** @type {HTMLInputElement} */ (e.target).value) || 185;
                   flt.threshold = val;
@@ -2829,7 +2900,7 @@ function buildToolBody(tabId) {
       el(
         'div',
         { className: 'space-y-1.5' },
-        el('span', { className: 'text-[12px] font-medium text-[#1a1a1a] block' }, 'Export Resolution (DPI)'),
+        el('span', { className: 'text-[12px] font-medium text-[#1d1d1f] block' }, 'Export Resolution (DPI)'),
         el(
           'div',
           { className: 'grid grid-cols-3 gap-1.5' },
@@ -2840,8 +2911,8 @@ function buildToolBody(tabId) {
                 type: 'button',
                 className: `h-8 rounded-[9px] text-[12px] font-medium border transition-colors ${
                   Number(flt.dpi) === dpi
-                    ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
-                    : 'bg-white text-[#1a1a1a] border-[#e5e5e5] hover:border-[#0a0a0a]/40'
+                    ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
+                    : 'bg-white text-[#1d1d1f] border-[#e5e5ea] hover:border-[#1d1d1f]/40'
                 }`,
                 onClick: () => {
                   flt.dpi = dpi;
@@ -2909,7 +2980,7 @@ function buildToolBody(tabId) {
         {
           type: 'button',
           id: 'open-redact-studio-btn',
-          className: 'btn-secondary w-full !border-[#1a3a3a] !text-[#1a3a3a]',
+          className: 'btn-secondary w-full !border-[#0071e3] !text-[#0071e3]',
           disabled: !r.targetFileId,
           onClick: () => {
             r.modalOpen = true;
@@ -2920,8 +2991,8 @@ function buildToolBody(tabId) {
       ),
       el(
         'div',
-        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
-        el('p', { className: 'text-[12px] font-semibold text-[#0a0a0a]' }, 'Search & Auto-Mark Text'),
+        { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
+        el('p', { className: 'text-[12px] font-semibold text-[#1d1d1f]' }, 'Search & Auto-Mark Text'),
         selectControl(
           'redact-search-mode',
           'input-clay !h-9',
@@ -2983,11 +3054,11 @@ function buildToolBody(tabId) {
       ),
       el(
         'label',
-        { className: 'flex items-start gap-2 p-2.5 rounded-[12px] bg-[#fef2f2] border border-[#ef4444]/30 cursor-pointer text-[12px]' },
+        { className: 'flex items-start gap-2 p-2.5 rounded-[12px] bg-[#fef2f2] border border-[#ff3b30]/30 cursor-pointer text-[12px]' },
         el('input', {
           type: 'checkbox',
           checked: Boolean(r.paranoidMode),
-          className: 'w-4 h-4 accent-[#ef4444] mt-0.5',
+          className: 'w-4 h-4 accent-[#ff3b30] mt-0.5',
           onChange: (e) => {
             r.paranoidMode = /** @type {HTMLInputElement} */ (e.target).checked;
           }
@@ -3035,7 +3106,7 @@ function buildToolBody(tabId) {
         {
           type: 'button',
           id: 'open-sign-studio-btn',
-          className: 'btn-secondary w-full !border-[#ff4d8b] !text-[#0a0a0a]',
+          className: 'btn-secondary w-full !border-[#0071e3] !text-[#1d1d1f]',
           disabled: !s.targetFileId,
           onClick: () => {
             s.modalOpen = true;
@@ -3047,17 +3118,17 @@ function buildToolBody(tabId) {
       s.overlays.length > 0
         ? el(
             'div',
-            { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-1.5 max-h-40 overflow-y-auto' },
+            { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-1.5 max-h-40 overflow-y-auto' },
             s.overlays.map((ov, idx) =>
               el(
                 'div',
-                { className: 'flex items-center justify-between gap-2 px-2 py-1 rounded bg-white border border-[#e5e5e5] text-[12px]' },
+                { className: 'flex items-center justify-between gap-2 px-2 py-1 rounded bg-white border border-[#e5e5ea] text-[12px]' },
                 el('span', { className: 'truncate' }, `${idx + 1}. P${ov.pageIndex + 1} • ${ov.kind}`),
                 el(
                   'button',
                   {
                     type: 'button',
-                    className: 'text-[#ef4444] font-bold',
+                    className: 'text-[#ff3b30] font-bold',
                     onClick: () => {
                       s.overlays = s.overlays.filter((item) => item.id !== ov.id);
                       workspace.emit('tool');
@@ -3095,7 +3166,7 @@ function buildToolBody(tabId) {
       ),
       el(
         'div',
-        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
         el('p', { className: 'text-[12px] font-semibold' }, `v1: ${cmp.fileA ? cmp.fileA.name : 'Not selected'}`),
         el(
           'div',
@@ -3129,7 +3200,7 @@ function buildToolBody(tabId) {
       ),
       el(
         'div',
-        { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-2' },
+        { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-2' },
         el('p', { className: 'text-[12px] font-semibold' }, `v2: ${cmp.fileB ? cmp.fileB.name : 'Not selected'}`),
         el(
           'div',
@@ -3238,11 +3309,11 @@ function buildToolBody(tabId) {
       ),
       el(
         'label',
-        { className: 'inline-flex items-center gap-2 text-[12px] text-[#1a1a1a] cursor-pointer' },
+        { className: 'inline-flex items-center gap-2 text-[12px] text-[#1d1d1f] cursor-pointer' },
         el('input', {
           type: 'checkbox',
           checked: Boolean(et.includePageMarkers),
-          className: 'w-4 h-4 accent-[#0a0a0a]',
+          className: 'w-4 h-4 accent-[#1d1d1f]',
           onChange: (e) => {
             et.includePageMarkers = /** @type {HTMLInputElement} */ (e.target).checked;
           }
@@ -3277,8 +3348,8 @@ function buildToolBody(tabId) {
       et.likelyScanned && et.resultText !== undefined
         ? el(
             'div',
-            { className: 'p-2.5 rounded-[10px] bg-[#fffbeb] border border-[#f59e0b]/40 text-[11px] text-[#92400e]' },
-            'Warning: Scanned/image-only PDF detected — no embedded vector text layer found.'
+            { className: 'p-2.5 rounded-[10px] bg-[#fffbeb] border border-[#ff9500]/40 text-[11px] text-[#92400e]' },
+            'Warning: Scanned/image-only PDF detected: no embedded vector text layer found.'
           )
         : null,
       et.resultText
@@ -3288,7 +3359,7 @@ function buildToolBody(tabId) {
             el(
               'div',
               { className: 'flex items-center justify-between gap-2' },
-              el('span', { className: 'text-[11px] font-medium text-[#6a6a6a]' }, `${et.totalChars} chars (${et.pagesExtracted}p)`),
+              el('span', { className: 'text-[11px] font-medium text-[#6e6e73]' }, `${et.totalChars} chars (${et.pagesExtracted}p)`),
               el(
                 'div',
                 { className: 'flex gap-1.5' },
@@ -3319,7 +3390,7 @@ function buildToolBody(tabId) {
               'pre',
               {
                 className:
-                  'p-2.5 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5] max-h-48 overflow-auto text-[11px] font-mono whitespace-pre-wrap break-words'
+                  'p-2.5 rounded-[10px] bg-[#f2f2f7] border border-[#e5e5ea] max-h-48 overflow-auto text-[11px] font-mono whitespace-pre-wrap break-words'
               },
               et.resultText.slice(0, 6000)
             )
@@ -3373,7 +3444,7 @@ function buildToolBody(tabId) {
             { className: 'space-y-2' },
             el(
               'div',
-              { className: 'flex items-center justify-between text-[11px] text-[#6a6a6a]' },
+              { className: 'flex items-center justify-between text-[11px] text-[#6e6e73]' },
               el('span', {}, `${ei.items.length} asset(s) • skipped ${ei.skippedSmall} small`),
               el(
                 'button',
@@ -3392,14 +3463,14 @@ function buildToolBody(tabId) {
               ei.items.map((img) =>
                 el(
                   'div',
-                  { className: 'p-2 rounded-[10px] bg-white border border-[#e5e5e5] space-y-1.5' },
+                  { className: 'p-2 rounded-[10px] bg-white border border-[#e5e5ea] space-y-1.5' },
                   sanitizeImageSrc(img.previewUrl)
                     ? el('img', {
                         src: sanitizeImageSrc(img.previewUrl),
                         alt: img.fileName,
-                        className: 'w-full h-20 object-contain rounded bg-[#faf5e8]'
+                        className: 'w-full h-20 object-contain rounded bg-[#f2f2f7]'
                       })
-                    : el('div', { className: 'w-full h-20 flex items-center justify-center bg-[#faf5e8] text-[10px]' }, img.format.toUpperCase()),
+                    : el('div', { className: 'w-full h-20 flex items-center justify-center bg-[#f2f2f7] text-[10px]' }, img.format.toUpperCase()),
                   el(
                     'div',
                     { className: 'flex items-center justify-between gap-1 text-[10px]' },
@@ -3408,7 +3479,7 @@ function buildToolBody(tabId) {
                       'button',
                       {
                         type: 'button',
-                        className: 'text-[#0a0a0a] underline font-medium',
+                        className: 'text-[#1d1d1f] underline font-medium',
                         onClick: () => downloadSingleExtractedImage(img)
                       },
                       'Save'
@@ -3466,7 +3537,7 @@ function buildToolBody(tabId) {
       ),
       el(
         'label',
-        { className: 'block p-3 rounded-[12px] border border-dashed border-[#c7c2b4] bg-[#faf5e8] text-center cursor-pointer text-[12px]' },
+        { className: 'block p-3 rounded-[12px] border border-dashed border-[#d1d1d6] bg-[#f2f2f7] text-center cursor-pointer text-[12px]' },
         '+ Attach Files (CSV, XML, ZIP, etc.)',
         el('input', {
           id: 'att-add-input',
@@ -3492,7 +3563,7 @@ function buildToolBody(tabId) {
       att.pendingAdd.length > 0
         ? el(
             'div',
-            { className: 'p-2 rounded-[10px] bg-[#f0fdf4] border border-[#22c55e]/30 space-y-1 text-[11px]' },
+            { className: 'p-2 rounded-[10px] bg-[#f0fdf4] border border-[#34c759]/30 space-y-1 text-[11px]' },
             el('p', { className: 'font-semibold text-[#166534]' }, `Queued to Attach (${att.pendingAdd.length})`),
             att.pendingAdd.map((f, idx) =>
               el(
@@ -3503,7 +3574,7 @@ function buildToolBody(tabId) {
                   'button',
                   {
                     type: 'button',
-                    className: 'text-[#ef4444] font-bold',
+                    className: 'text-[#ff3b30] font-bold',
                     onClick: () => {
                       att.pendingAdd.splice(idx, 1);
                       workspace.emit('tool');
@@ -3525,14 +3596,14 @@ function buildToolBody(tabId) {
                 'div',
                 {
                   className: `flex items-center justify-between gap-2 px-2.5 py-2 rounded-[10px] border text-[11px] ${
-                    markedRemove ? 'bg-[#fef2f2] border-[#ef4444]/40 line-through' : 'bg-white border-[#e5e5e5]'
+                    markedRemove ? 'bg-[#fef2f2] border-[#ff3b30]/40 line-through' : 'bg-white border-[#e5e5ea]'
                   }`
                 },
                 el(
                   'div',
                   { className: 'min-w-0 flex-1' },
                   el('p', { className: 'font-medium truncate' }, item.name),
-                  el('p', { className: 'text-[#6a6a6a] truncate' }, `${formatBytes(item.size)} • ${item.mimeType}`)
+                  el('p', { className: 'text-[#6e6e73] truncate' }, `${formatBytes(item.size)} • ${item.mimeType}`)
                 ),
                 el(
                   'div',
@@ -3550,7 +3621,7 @@ function buildToolBody(tabId) {
                     'button',
                     {
                       type: 'button',
-                      className: 'text-[#ef4444] font-semibold',
+                      className: 'text-[#ff3b30] font-semibold',
                       onClick: () => {
                         if (markedRemove) {
                           att.pendingRemove = att.pendingRemove.filter((n) => n !== item.name);
@@ -3566,7 +3637,7 @@ function buildToolBody(tabId) {
               );
             })
           )
-        : el('p', { className: 'text-[11px] text-[#6a6a6a]' }, att.loaded ? 'No embedded attachments found.' : 'Click Scan Attachments to list embedded files.'),
+        : el('p', { className: 'text-[11px] text-[#6e6e73]' }, att.loaded ? 'No embedded attachments found.' : 'Click Scan Attachments to list embedded files.'),
       el(
         'button',
         {
@@ -3648,12 +3719,12 @@ function buildToolBody(tabId) {
       { className: 'space-y-3.5' },
       el(
         'div',
-        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5]' },
+        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea]' },
         el(
           'button',
           {
             type: 'button',
-            className: `h-8 rounded-[9px] text-[12px] font-medium ${isCbzToPdf ? 'bg-[#0a0a0a] text-white' : 'text-[#555]'}`,
+            className: `h-8 rounded-[9px] text-[12px] font-medium ${isCbzToPdf ? 'bg-[#1d1d1f] text-white' : 'text-[#555]'}`,
             onClick: () => {
               cbz.mode = 'cbz-to-pdf';
               workspace.emit('tool');
@@ -3665,7 +3736,7 @@ function buildToolBody(tabId) {
           'button',
           {
             type: 'button',
-            className: `h-8 rounded-[9px] text-[12px] font-medium ${!isCbzToPdf ? 'bg-[#0a0a0a] text-white' : 'text-[#555]'}`,
+            className: `h-8 rounded-[9px] text-[12px] font-medium ${!isCbzToPdf ? 'bg-[#1d1d1f] text-white' : 'text-[#555]'}`,
             onClick: () => {
               cbz.mode = 'pdf-to-cbz';
               workspace.emit('tool');
@@ -3696,7 +3767,7 @@ function buildToolBody(tabId) {
             cbz.cbzEntries.length > 0
               ? el(
                   'div',
-                  { className: 'p-2.5 rounded-[10px] bg-[#faf5e8] border border-[#e5e5e5] max-h-32 overflow-y-auto space-y-0.5 text-[11px] font-mono' },
+                  { className: 'p-2.5 rounded-[10px] bg-[#f2f2f7] border border-[#e5e5ea] max-h-32 overflow-y-auto space-y-0.5 text-[11px] font-mono' },
                   cbz.cbzEntries.map((name, idx) => el('div', { className: 'truncate' }, `${idx + 1}. ${name}`))
                 )
               : null,
@@ -3706,7 +3777,7 @@ function buildToolBody(tabId) {
               el('input', {
                 type: 'checkbox',
                 checked: Boolean(cbz.uniformWidth),
-                className: 'w-4 h-4 accent-[#0a0a0a]',
+                className: 'w-4 h-4 accent-[#1d1d1f]',
                 onChange: (e) => {
                   cbz.uniformWidth = /** @type {HTMLInputElement} */ (e.target).checked;
                 }
@@ -3786,7 +3857,7 @@ function buildToolBody(tabId) {
   const preset = opt.preset || 'lossless';
   const qualityValueLabel = el(
     'span',
-    { className: 'text-[12px] font-medium text-[#0a0a0a]' },
+    { className: 'text-[12px] font-medium text-[#1d1d1f]' },
     `${Math.round((Number(opt.jpegQuality) || 0.75) * 100)}%`
   );
 
@@ -3796,7 +3867,7 @@ function buildToolBody(tabId) {
     el(
       'div',
       { className: 'space-y-1.5' },
-      el('label', { for: 'opt-preset', className: 'text-[13px] font-medium text-[#1a1a1a]' }, 'Compression Preset'),
+      el('label', { for: 'opt-preset', className: 'text-[13px] font-medium text-[#1d1d1f]' }, 'Compression Preset'),
       selectControl(
         'opt-preset',
         'input-clay !h-10',
@@ -3829,7 +3900,7 @@ function buildToolBody(tabId) {
           )
         : el(
             'div',
-            { className: 'p-3 rounded-[12px] bg-[#fffbeb] border border-[#f59e0b]/40 space-y-1' },
+            { className: 'p-3 rounded-[12px] bg-[#fffbeb] border border-[#ff9500]/40 space-y-1' },
             el('p', { className: 'text-[12px] font-semibold text-[#92400e]' }, 'Raster Mode Warning'),
             el(
               'p',
@@ -3840,11 +3911,11 @@ function buildToolBody(tabId) {
     preset !== 'lossless'
       ? el(
           'div',
-          { className: 'p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] space-y-3' },
+          { className: 'p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] space-y-3' },
           el(
             'div',
             { className: 'space-y-1.5' },
-            el('span', { className: 'text-[12px] font-medium text-[#1a1a1a] block' }, 'Target DPI'),
+            el('span', { className: 'text-[12px] font-medium text-[#1d1d1f] block' }, 'Target DPI'),
             el(
               'div',
               { className: 'grid grid-cols-3 gap-1.5' },
@@ -3855,8 +3926,8 @@ function buildToolBody(tabId) {
                     type: 'button',
                     className: `h-8 rounded-[9px] text-[12px] font-medium border transition-colors ${
                       Number(opt.targetDpi) === dpi
-                        ? 'bg-[#0a0a0a] text-white border-[#0a0a0a]'
-                        : 'bg-white text-[#1a1a1a] border-[#e5e5e5] hover:border-[#0a0a0a]/40'
+                        ? 'bg-[#1d1d1f] text-white border-[#1d1d1f]'
+                        : 'bg-white text-[#1d1d1f] border-[#e5e5ea] hover:border-[#1d1d1f]/40'
                     }`,
                     onClick: () => {
                       opt.targetDpi = dpi;
@@ -3874,7 +3945,7 @@ function buildToolBody(tabId) {
             el(
               'div',
               { className: 'flex items-center justify-between' },
-              el('label', { for: 'opt-jpeg-quality', className: 'text-[12px] font-medium text-[#1a1a1a]' }, 'JPEG Quality'),
+              el('label', { for: 'opt-jpeg-quality', className: 'text-[12px] font-medium text-[#1d1d1f]' }, 'JPEG Quality'),
               qualityValueLabel
             ),
             el('input', {
@@ -3884,7 +3955,7 @@ function buildToolBody(tabId) {
               max: '0.9',
               step: '0.05',
               value: String(opt.jpegQuality ?? 0.75),
-              className: 'w-full accent-[#0a0a0a] cursor-pointer',
+              className: 'w-full accent-[#1d1d1f] cursor-pointer',
               onInput: (e) => {
                 const val = Number(/** @type {HTMLInputElement} */ (e.target).value) || 0.75;
                 opt.jpegQuality = val;
@@ -3899,13 +3970,13 @@ function buildToolBody(tabId) {
           'label',
           {
             className:
-              'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
+              'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer'
           },
           el('span', { className: 'text-[13px] font-medium' }, 'Use PDF Object Streams'),
           el('input', {
             type: 'checkbox',
             checked: opt.useObjectStreams,
-            className: 'w-4 h-4 accent-[#0a0a0a]',
+            className: 'w-4 h-4 accent-[#1d1d1f]',
             onChange: (e) => {
               opt.useObjectStreams = /** @type {HTMLInputElement} */ (e.target).checked;
             }
@@ -3917,13 +3988,13 @@ function buildToolBody(tabId) {
           'label',
           {
             className:
-              'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
+              'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer'
           },
           el('span', { className: 'text-[13px] font-medium' }, 'Prune Orphan/Unused Objects'),
           el('input', {
             type: 'checkbox',
             checked: opt.rebuildCleanCopy,
-            className: 'w-4 h-4 accent-[#0a0a0a]',
+            className: 'w-4 h-4 accent-[#1d1d1f]',
             onChange: (e) => {
               opt.rebuildCleanCopy = /** @type {HTMLInputElement} */ (e.target).checked;
             }
@@ -3934,13 +4005,13 @@ function buildToolBody(tabId) {
       'label',
       {
         className:
-          'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5] cursor-pointer'
+          'flex items-center justify-between gap-2 p-3 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer'
       },
       el('span', { className: 'text-[13px] font-medium' }, 'Strip All Metadata'),
       el('input', {
         type: 'checkbox',
         checked: opt.stripMetadata,
-        className: 'w-4 h-4 accent-[#0a0a0a]',
+        className: 'w-4 h-4 accent-[#1d1d1f]',
         onChange: (e) => {
           opt.stripMetadata = /** @type {HTMLInputElement} */ (e.target).checked;
         }
@@ -3949,11 +4020,11 @@ function buildToolBody(tabId) {
     opt.lastStats
       ? el(
           'div',
-          { className: 'p-3 rounded-[12px] bg-white border border-[#e5e5e5] space-y-1.5' },
+          { className: 'p-3 rounded-[12px] bg-white border border-[#e5e5ea] space-y-1.5' },
           el(
             'div',
             { className: 'flex items-center justify-between gap-2' },
-            el('span', { className: 'text-[12px] font-medium text-[#6a6a6a]' }, 'Last Result'),
+            el('span', { className: 'text-[12px] font-medium text-[#6e6e73]' }, 'Last Result'),
             el(
               'span',
               {
@@ -3972,13 +4043,13 @@ function buildToolBody(tabId) {
           ),
           el(
             'p',
-            { className: 'text-[13px] font-semibold text-[#0a0a0a]' },
+            { className: 'text-[13px] font-semibold text-[#1d1d1f]' },
             `${formatBytes(opt.lastStats.originalSize)} → ${formatBytes(opt.lastStats.optimizedSize)}`
           ),
           opt.lastStats.preset === 'balanced'
             ? el(
                 'p',
-                { className: 'text-[11px] text-[#6a6a6a]' },
+                { className: 'text-[11px] text-[#6e6e73]' },
                 `Images recompressed: ${opt.lastStats.recompressedImages} • Skipped: ${opt.lastStats.skippedImages}`
               )
             : null

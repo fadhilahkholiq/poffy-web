@@ -12,9 +12,14 @@ import { renderHeroDropzone } from './ui/components/HeroDropzone.js';
 import { renderOverlays } from './ui/components/Overlays.js';
 import { renderPageGrid } from './ui/components/PageGrid.js';
 import { renderTopNav } from './ui/components/TopNav.js';
-import { renderToolInspector, updateFilterPreviewDom } from './ui/components/ToolInspector.js';
-import { ingestFiles } from './ui/interactions/file-ingestion.js';
+import {
+  renderToolInspector,
+  renderToolRail,
+  updateFilterPreviewDom
+} from './ui/components/ToolInspector.js';
+import { bindWindowDropOverlay, ingestFiles } from './ui/interactions/file-ingestion.js';
 import { el, mount, sanitizeExternalUrl, svgEl } from './ui/utils/dom.js';
+import { getToolStyleBySlug } from './ui/utils/tool-styles.js';
 
 /**
  * Registers the Workbox service worker for full offline capability.
@@ -61,32 +66,26 @@ function bootstrap() {
     })
   );
 
-  const shell = el(
-    'div',
-    { className: 'min-h-screen flex flex-col bg-[#fffaf0] text-[#0a0a0a]' },
-    navSlot,
-    overlaysSlot,
-    workspaceSlot,
+  const footerEl = el(
+    'footer',
+    { className: 'border-t border-black/[0.08] bg-white' },
     el(
-      'footer',
-      { className: 'border-t border-[#e5e5e5] bg-[#faf5e8] mt-16' },
-      el(
-        'div',
-        { className: 'max-w-[1360px] mx-auto px-4 sm:px-6 py-10 space-y-8' },
+      'div',
+      { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 py-10 space-y-8' },
         el(
           'div',
           { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-start' },
           el(
             'div',
-            { className: 'lg:col-span-4 space-y-3.5' },
+            { className: 'lg:col-span-4 space-y-3' },
             el(
               'a',
               {
                 href: '/',
-                className: 'inline-flex items-center gap-2.5 no-underline text-[#0a0a0a]'
+                className: 'inline-flex items-center gap-2 no-underline text-[#1d1d1f]'
               },
-              el('span', { className: 'type-title-md text-[#0a0a0a]' }, 'Poffy'),
-              el('span', { className: 'badge-pill text-[12px]' }, 'Offline PDF Studio')
+              el('span', { className: 'type-title-md text-[#1d1d1f]' }, 'Poffy'),
+              el('span', { className: 'badge-pill text-[11.5px]' }, 'Offline PDF Studio')
             ),
             el(
               'p',
@@ -95,10 +94,34 @@ function bootstrap() {
             ),
             el(
               'div',
-              { className: 'flex flex-wrap gap-1.5 pt-1' },
-              el('span', { className: 'badge-pill !bg-[#fffaf0] border border-[#e5e5e5] text-[11px]' }, 'Zero Uploads'),
-              el('span', { className: 'badge-pill !bg-[#fffaf0] border border-[#e5e5e5] text-[11px]' }, 'Works Offline'),
-              el('span', { className: 'badge-pill !bg-[#fffaf0] border border-[#e5e5e5] text-[11px]' }, `${FEATURE_PAGES.length} Tools`)
+              { className: 'flex flex-wrap gap-2 pt-1' },
+              el(
+                'span',
+                {
+                  className:
+                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e8f8ed] border border-[#34c759]/20 text-[11.5px] font-medium text-[#248a3d]'
+                },
+                el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#34c759] shrink-0', 'aria-hidden': 'true' }),
+                'Zero Uploads'
+              ),
+              el(
+                'span',
+                {
+                  className:
+                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e8f2ff] border border-[#0071e3]/15 text-[11.5px] font-medium text-[#0071e3]'
+                },
+                el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#0071e3] shrink-0', 'aria-hidden': 'true' }),
+                'Works Offline'
+              ),
+              el(
+                'span',
+                {
+                  className:
+                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-black/[0.07] text-[11.5px] font-medium text-[#424245]'
+                },
+                el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#86868b] shrink-0', 'aria-hidden': 'true' }),
+                `${FEATURE_PAGES.length} Tools`
+              )
             )
           ),
           el(
@@ -155,7 +178,7 @@ function bootstrap() {
                             className: `footer-dir-link ${isHome ? 'is-current' : ''}`
                           },
                           el('span', {
-                            className: `w-2 h-2 rounded-full shrink-0 ${isHome ? 'bg-white' : 'bg-[#0a0a0a]'}`,
+                            className: `w-2 h-2 rounded-full shrink-0 ${isHome ? 'bg-white' : 'bg-[#0071e3]'}`,
                             'aria-hidden': 'true'
                           }),
                           el('span', { className: 'truncate' }, 'Studio Home')
@@ -168,6 +191,7 @@ function bootstrap() {
                     const f = bySlug.get(slug);
                     if (!f) continue;
                     const isCurrent = activeFeature?.slug === f.slug;
+                    const st = getToolStyleBySlug(f.slug);
                     items.push(
                       el(
                         'li',
@@ -180,10 +204,8 @@ function bootstrap() {
                             className: `footer-dir-link ${isCurrent ? 'is-current' : ''}`
                           },
                           el('span', {
-                            className: `w-2 h-2 rounded-full shrink-0 ${
-                              isCurrent ? 'ring-1 ring-white/50' : 'border border-black/15'
-                            }`,
-                            style: { backgroundColor: f.accent },
+                            className: 'w-2 h-2 rounded-full shrink-0',
+                            style: { backgroundColor: isCurrent ? '#ffffff' : st.fg },
                             'aria-hidden': 'true'
                           }),
                           el('span', { className: 'truncate' }, f.shortName)
@@ -197,7 +219,7 @@ function bootstrap() {
                     { className: 'space-y-2' },
                     el(
                       'p',
-                      { className: 'text-[11px] font-semibold uppercase tracking-[1.1px] text-[#6a6a6a] px-2.5' },
+                      { className: 'text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] px-2' },
                       grp.title
                     ),
                     el('ul', { className: 'space-y-0.5 list-none p-0 m-0' }, items)
@@ -211,12 +233,12 @@ function bootstrap() {
           'div',
           {
             className:
-              'pt-6 border-t border-[#e5e5e5] flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left text-[13px] text-[#6a6a6a]'
+              'pt-6 border-t border-black/[0.08] flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left text-[13px] text-[#86868b]'
           },
           el(
             'div',
             { className: 'flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1' },
-            el('span', { className: 'font-medium text-[#0a0a0a]' }, 'Poffy'),
+            el('span', { className: 'font-semibold text-[#1d1d1f]' }, 'Poffy'),
             el('span', { 'aria-hidden': 'true' }, '•'),
             el('span', {}, 'Created by Kholiq Fadhilah')
           ),
@@ -226,8 +248,8 @@ function bootstrap() {
             el(
               'div',
               { className: 'flex flex-col items-center md:items-end leading-snug' },
-              el('span', { className: 'font-medium text-[#3a3a3a]' }, '100% Client-Side & Zero Telemetry'),
-              el('span', { className: 'text-[12px] text-[#6a6a6a]' }, 'Built with pdf-lib, pdfjs-dist & fflate')
+              el('span', { className: 'font-medium text-[#424245]' }, '100% Client-Side & Zero Telemetry'),
+              el('span', { className: 'text-[12px] text-[#86868b]' }, 'Built with pdf-lib, pdfjs-dist & fflate')
             ),
             el(
               'a',
@@ -236,7 +258,7 @@ function bootstrap() {
                 target: '_blank',
                 rel: 'noopener noreferrer',
                 className:
-                  'inline-flex items-center gap-1.5 self-center sm:self-auto w-fit px-3 py-1.5 rounded-full bg-[#fffaf0] border border-[#e5e5e5] text-[#0a0a0a] font-medium no-underline hover:bg-[#f5f0e0] hover:border-[#0a0a0a] transition-colors'
+                  'inline-flex items-center gap-1.5 self-center sm:self-auto w-fit px-3 py-1.5 rounded-full bg-[#f2f2f7] border border-black/[0.06] text-[#1d1d1f] font-medium no-underline hover:bg-[#e5e5ea] transition-colors'
               },
               svgEl(
                 'svg',
@@ -256,11 +278,20 @@ function bootstrap() {
           )
         )
       )
-    ),
+  );
+
+  const shell = el(
+    'div',
+    { className: 'min-h-screen flex flex-col bg-white text-[#1d1d1f]' },
+    navSlot,
+    overlaysSlot,
+    workspaceSlot,
+    footerEl,
     fileInput
   );
 
   mount(root, shell);
+  bindWindowDropOverlay();
 
   const openFilePicker = () => {
     fileInput.click();
@@ -295,6 +326,8 @@ function bootstrap() {
   /** @type {boolean|null} */
   let lastHasPages = null;
   /** @type {HTMLElement|null} */
+  let railSlot = null;
+  /** @type {HTMLElement|null} */
   let gridSlot = null;
   /** @type {HTMLElement|null} */
   let inspectorSlot = null;
@@ -306,8 +339,10 @@ function bootstrap() {
       cleanupGrid();
       cleanupGrid = () => {};
       cleanupHero();
+      railSlot = null;
       gridSlot = null;
       inspectorSlot = null;
+      footerEl.className = 'border-t border-black/[0.08] bg-white';
       cleanupHero = renderHeroDropzone(workspaceSlot, openFilePicker, activeFeature);
       lastHasPages = false;
       return;
@@ -316,14 +351,20 @@ function bootstrap() {
     if (lastHasPages !== true) {
       cleanupHero();
       cleanupHero = () => {};
+      footerEl.className = 'border-t border-black/[0.08] bg-white';
+      railSlot = el('section', {
+        id: 'tool-rail-slot',
+        className: 'studio-pane-left',
+        'aria-label': 'Studio tools'
+      });
       gridSlot = el('section', {
         id: 'grid-slot',
-        className: 'lg:col-span-8 min-w-0',
+        className: 'studio-pane-center',
         'aria-label': 'Workspace pages'
       });
       inspectorSlot = el('section', {
         id: 'inspector-slot',
-        className: 'lg:col-span-4 min-w-0',
+        className: 'studio-pane-right',
         'aria-label': 'PDF tools inspector'
       });
       mount(
@@ -331,10 +372,10 @@ function bootstrap() {
         el(
           'main',
           {
-            className:
-              'max-w-[1360px] mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'
+            className: 'studio-3pane border-b border-[#e5e5e5]'
           },
-          el('h1', { className: 'sr-only' }, 'Poffy — Offline PDF Studio Workspace'),
+          el('h1', { className: 'sr-only' }, 'Poffy · Offline PDF Studio Workspace'),
+          railSlot,
           gridSlot,
           inspectorSlot
         )
@@ -342,6 +383,9 @@ function bootstrap() {
       lastHasPages = true;
     }
 
+    if (railSlot) {
+      renderToolRail(railSlot);
+    }
     if (gridSlot) {
       cleanupGrid();
       cleanupGrid = renderPageGrid(gridSlot);
@@ -371,6 +415,9 @@ function bootstrap() {
 
     if (topic === 'tool') {
       renderOverlays(overlaysSlot);
+      if (railSlot) {
+        renderToolRail(railSlot);
+      }
       if (inspectorSlot) {
         renderToolInspector(inspectorSlot);
       }

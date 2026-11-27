@@ -21,15 +21,15 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer',
       manifest: {
-        name: 'Poffy — Offline PDF Studio',
+        name: 'Poffy · Offline PDF Studio',
         short_name: 'Poffy',
         description:
           '100% client-side, privacy-first, offline-capable PDF editor for merging, splitting, watermarking, scrubbing metadata, and converting PDFs.',
         lang: 'en',
         categories: ['productivity', 'utilities'],
         orientation: 'any',
-        theme_color: '#fffaf0',
-        background_color: '#fffaf0',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
         icons: [

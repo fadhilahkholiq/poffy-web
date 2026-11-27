@@ -51,27 +51,27 @@ export function renderPageGrid(container) {
 
   const sourcesStrip = el(
     'div',
-    { className: 'clay-card p-3.5 flex flex-wrap items-center gap-2' },
+    { className: 'clay-card p-3 flex flex-wrap items-center gap-2' },
     el(
       'span',
-      { className: 'type-caption-upper text-[#6a6a6a] mr-1' },
+      { className: 'type-caption-upper text-[#86868b] mr-1' },
       `Sources (${workspace.sourceFiles.size})`
     ),
     ...[...workspace.sourceFiles.values()].map((src) =>
       el(
         'div',
-        { className: 'badge-pill bg-[#faf5e8] border border-[#e5e5e5] max-w-full' },
-        el('span', { className: 'truncate max-w-[180px] font-medium' }, src.name),
+        { className: 'badge-pill bg-[#f2f2f7] border border-black/[0.06] max-w-full' },
+        el('span', { className: 'truncate max-w-[180px] font-medium text-[#1d1d1f]' }, src.name),
         el(
           'span',
-          { className: 'text-[#6a6a6a] text-[12px]' },
+          { className: 'text-[#6e6e73] text-[12px]' },
           `${src.pageCount}p • ${formatBytes(src.buffer.byteLength)}`
         ),
         el(
           'button',
           {
             type: 'button',
-            className: 'ml-1 text-[#6a6a6a] hover:text-[#ef4444] font-bold cursor-pointer leading-none',
+            className: 'ml-1 text-[#86868b] hover:text-[#ff3b30] font-bold cursor-pointer leading-none',
             title: `Remove ${src.name} from workspace`,
             'aria-label': `Remove ${src.name}`,
             onClick: () => workspace.removeSourceFile(src.id)
@@ -83,8 +83,8 @@ export function renderPageGrid(container) {
     workspace.sourceFiles.size === 0
       ? el(
           'span',
-          { className: 'type-caption text-[#6a6a6a]' },
-          'Blank workspace — drop PDFs or images anywhere on this grid'
+          { className: 'type-caption text-[#6e6e73]' },
+          'Blank workspace, drop PDFs or images anywhere on this grid!'
         )
       : null,
     el(
@@ -102,7 +102,7 @@ export function renderPageGrid(container) {
     'div',
     {
       className:
-        'clay-card p-3 md:sticky md:top-[72px] z-20 flex flex-wrap items-center justify-between gap-2 bg-[#fffaf0]'
+        'clay-card p-2.5 md:sticky md:top-[64px] z-20 flex flex-wrap items-center justify-between gap-2 bg-white/90 backdrop-blur-[12px]'
     },
     el(
       'div',
@@ -244,14 +244,14 @@ export function renderPageGrid(container) {
       'div',
       {
         className:
-          'relative w-full aspect-[3/4] rounded-[10px] bg-[#faf5e8] border border-[#f0f0f0] overflow-hidden flex items-center justify-center'
+          'relative w-full aspect-[3/4] rounded-[8px] bg-[#f2f2f7]/80 border border-black/[0.05] overflow-hidden flex items-center justify-center'
       },
       isBlank
         ? el(
             'div',
             {
               className:
-                'w-[78%] h-[88%] bg-white border border-[#e5e5e5] rounded-[4px] shadow-xs flex flex-col items-center justify-center text-[#9a9a9a] text-[12px] transition-transform duration-150',
+                'w-[78%] h-[88%] bg-white border border-black/[0.08] rounded-[4px] shadow-xs flex flex-col items-center justify-center text-[#86868b] text-[12px] transition-transform duration-150',
               style: { transform: `rotate(${page.rotation}deg)` }
             },
             el('span', {}, 'Blank Page'),
@@ -261,7 +261,7 @@ export function renderPageGrid(container) {
               (page.blankSpec?.preset || 'a4').toUpperCase()
             )
           )
-        : el('div', { className: 'text-[12px] text-[#9a9a9a]' }, 'Loading preview...')
+        : el('div', { className: 'text-[12px] text-[#86868b]' }, 'Loading preview...')
     );
 
     if (!isBlank && src) {
@@ -269,7 +269,7 @@ export function renderPageGrid(container) {
         if (!thumbSlot.isConnected) return;
         const safeUrl = sanitizeImageSrc(url);
         if (!safeUrl) {
-          mount(thumbSlot, el('span', { className: 'text-[11px] text-[#ef4444]' }, 'Blocked preview URL'));
+          mount(thumbSlot, el('span', { className: 'text-[11px] text-[#ff3b30]' }, 'Blocked preview URL'));
           return;
         }
         mount(
@@ -298,7 +298,7 @@ export function renderPageGrid(container) {
               if (thumbSlot.isConnected) {
                 mount(
                   thumbSlot,
-                  el('span', { className: 'text-[11px] text-[#ef4444]' }, 'Preview error')
+                  el('span', { className: 'text-[11px] text-[#ff3b30]' }, 'Preview error')
                 );
               }
             });
@@ -306,10 +306,102 @@ export function renderPageGrid(container) {
       }
     }
 
+    const quickDock = el(
+      'div',
+      {
+        className:
+          'page-quick-dock absolute bottom-2 inset-x-2 z-10 flex items-center justify-center pointer-events-none'
+      },
+      el(
+        'div',
+        {
+          className:
+            'pointer-events-auto inline-flex items-center gap-0.5 px-1.5 py-1 rounded-[10px] bg-white/95 backdrop-blur-[8px] border border-black/[0.08] shadow-[0_6px_16px_rgba(0,0,0,0.1)]'
+        },
+        el(
+          'button',
+          {
+            type: 'button',
+            className:
+              'w-7 h-7 rounded-[6px] hover:bg-[#f2f2f7] text-[#1d1d1f] text-[12px] font-medium cursor-pointer flex items-center justify-center',
+            title: 'Rotate Left (-90°)',
+            'aria-label': `Rotate page ${idx + 1} left`,
+            onClick: (e) => {
+              e.stopPropagation();
+              workspace.rotatePages([page.id], -90);
+            }
+          },
+          '↺'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className:
+              'w-7 h-7 rounded-[6px] hover:bg-[#f2f2f7] text-[#1d1d1f] text-[12px] font-medium cursor-pointer flex items-center justify-center',
+            title: 'Rotate Right (+90°)',
+            'aria-label': `Rotate page ${idx + 1} right`,
+            onClick: (e) => {
+              e.stopPropagation();
+              workspace.rotatePages([page.id], 90);
+            }
+          },
+          '↻'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className:
+              'w-7 h-7 rounded-[6px] hover:bg-[#f2f2f7] text-[#1d1d1f] text-[12px] font-medium cursor-pointer flex items-center justify-center',
+            title: 'Duplicate Page',
+            'aria-label': `Duplicate page ${idx + 1}`,
+            onClick: (e) => {
+              e.stopPropagation();
+              workspace.duplicatePages([page.id]);
+            }
+          },
+          '⧉'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className:
+              'w-7 h-7 rounded-[6px] hover:bg-[#f2f2f7] text-[#1d1d1f] text-[12px] font-medium cursor-pointer flex items-center justify-center',
+            title: 'High-res Zoom',
+            'aria-label': `Zoom page ${idx + 1}`,
+            onClick: (e) => {
+              e.stopPropagation();
+              openPagePreview(page);
+            }
+          },
+          '⤢'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className:
+              'w-7 h-7 rounded-[6px] hover:bg-[#ff3b30]/10 hover:text-[#ff3b30] text-[#86868b] text-[13px] font-semibold cursor-pointer flex items-center justify-center',
+            title: 'Delete Page',
+            'aria-label': `Delete page ${idx + 1}`,
+            onClick: (e) => {
+              e.stopPropagation();
+              workspace.deletePages([page.id]);
+            }
+          },
+          '×'
+        )
+      )
+    );
+
+    const thumbStage = el('div', { className: 'relative' }, thumbSlot, quickDock);
+
     const card = el(
       'article',
       {
-        className: `page-thumb-card p-3 flex flex-col gap-2.5 cursor-grab active:cursor-grabbing select-none ${
+        className: `page-thumb-card p-3 flex flex-col gap-2 cursor-grab active:cursor-grabbing select-none ${
           page.selected ? 'is-selected' : ''
         }`,
         draggable: true,
@@ -324,11 +416,11 @@ export function renderPageGrid(container) {
           el('input', {
             type: 'checkbox',
             checked: page.selected,
-            className: 'w-4 h-4 accent-[#0a0a0a] cursor-pointer',
+            className: 'w-4 h-4 accent-[#0071e3] cursor-pointer',
             onChange: (e) =>
               workspace.toggleSelectPage(page.id, /** @type {HTMLInputElement} */ (e.target).checked)
           }),
-          el('span', { className: 'text-[13px] font-semibold text-[#0a0a0a]' }, `Page ${idx + 1}`)
+          el('span', { className: 'text-[13px] font-semibold text-[#1d1d1f]' }, `Page ${idx + 1}`)
         ),
         el(
           'div',
@@ -338,7 +430,7 @@ export function renderPageGrid(container) {
                 'span',
                 {
                   className:
-                    'text-[11px] font-medium px-1.5 py-0.5 rounded bg-[#f5f0e0] text-[#0a0a0a]'
+                    'text-[11px] font-medium px-1.5 py-0.5 rounded bg-[#f2f2f7] text-[#1d1d1f]'
                 },
                 `${page.rotation}°`
               )
@@ -348,62 +440,32 @@ export function renderPageGrid(container) {
                 'span',
                 {
                   className:
-                    'text-[11px] font-medium px-1.5 py-0.5 rounded bg-[#b8a4ed] text-[#0a0a0a]'
+                    'text-[11px] font-medium px-1.5 py-0.5 rounded bg-[#f3ebff] text-[#af52de]'
                 },
                 'Crop'
               )
-            : null,
-          el(
-            'button',
-            {
-              type: 'button',
-              className:
-                'px-2 py-0.5 rounded-[6px] text-[11px] font-medium border border-[#e5e5e5] hover:bg-[#f5f0e0] cursor-pointer',
-              title: 'High-resolution preview',
-              onClick: () => openPagePreview(page)
-            },
-            'Zoom'
-          )
+            : null
         )
       ),
-      thumbSlot,
+      thumbStage,
       el(
         'div',
         { className: 'flex items-center justify-between gap-2 pt-0.5' },
-        el('span', { className: 'text-[12px] text-[#6a6a6a] truncate', title: sourceLabel }, sourceLabel),
-        el(
-          'div',
-          { className: 'flex items-center gap-1 shrink-0' },
-          el(
-            'button',
-            {
-              type: 'button',
-              className: 'w-7 h-7 rounded-[6px] border border-[#e5e5e5] hover:bg-[#f5f0e0] text-[12px] cursor-pointer',
-              title: 'Rotate +90°',
-              onClick: () => workspace.rotatePages([page.id], 90)
-            },
-            '↻'
-          ),
-          el(
-            'button',
-            {
-              type: 'button',
-              className:
-                'w-7 h-7 rounded-[6px] border border-[#e5e5e5] hover:border-[#ef4444] hover:text-[#ef4444] text-[12px] cursor-pointer',
-              title: 'Delete page',
-              onClick: () => workspace.deletePages([page.id])
-            },
-            '×'
-          )
-        )
+        el('span', { className: 'text-[11px] text-[#6e6e73] truncate', title: sourceLabel }, sourceLabel),
+        el('span', { className: 'text-[11px] text-[#86868b] shrink-0' }, `#${idx + 1}`)
       )
     );
 
     gridEl.appendChild(card);
   }
 
-  const draftingStage = el('div', { className: 'editor-drafting-stage' }, gridEl);
-  const dropArea = el('div', { id: 'workspace-drop-area', className: 'space-y-4' }, sourcesStrip, batchBar, draftingStage);
+  const dropArea = el(
+    'div',
+    { id: 'workspace-drop-area', className: 'p-4 sm:p-6 space-y-4' },
+    sourcesStrip,
+    batchBar,
+    gridEl
+  );
   mount(container, dropArea);
 
   const unbindSort = bindSortablePageGrid(gridEl);

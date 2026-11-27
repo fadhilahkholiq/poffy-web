@@ -57,7 +57,7 @@ export function renderBookmarkStudioModal() {
           type: 'text',
           value: node.title,
           className:
-            'flex-1 min-w-0 bg-transparent text-[12px] font-medium outline-none border-b border-transparent focus:border-[#0a0a0a]',
+            'flex-1 min-w-0 bg-transparent text-[12px] font-medium outline-none border-b border-transparent focus:border-[#1d1d1f]',
           onInput: (e) => {
             node.title = /** @type {HTMLInputElement} */ (e.target).value;
           }
@@ -72,7 +72,7 @@ export function renderBookmarkStudioModal() {
           max: String(maxPages),
           value: String((node.pageIndex || 0) + 1),
           title: 'Target page number',
-          className: 'w-14 h-7 rounded border border-[#e5e5e5] bg-white text-center text-[11px] shrink-0',
+          className: 'w-14 h-7 rounded border border-[#e5e5ea] bg-white text-center text-[11px] shrink-0',
           onChange: (e) => {
             const p1 = Math.max(1, Math.min(maxPages, Number(/** @type {HTMLInputElement} */ (e.target).value) || 1));
             node.pageIndex = p1 - 1;
@@ -89,8 +89,8 @@ export function renderBookmarkStudioModal() {
           {
             className: `flex items-center gap-2 px-2.5 py-1.5 rounded-[10px] border transition-colors ${
               isSelected
-                ? 'bg-[#faf5e8] border-[#0a0a0a]'
-                : 'bg-white border-[#e5e5e5] hover:border-[#0a0a0a]/40'
+                ? 'bg-[#f2f2f7] border-[#1d1d1f]'
+                : 'bg-white border-[#e5e5ea] hover:border-[#1d1d1f]/40'
             }`,
             style: { marginLeft: `${Math.min(depth, 5) * 16}px` },
             onClick: () => {
@@ -100,16 +100,16 @@ export function renderBookmarkStudioModal() {
               }
             }
           },
-          el('span', { className: 'text-[11px] text-[#6a6a6a] shrink-0' }, depth > 0 ? '↳' : '•'),
+          el('span', { className: 'text-[11px] text-[#6e6e73] shrink-0' }, depth > 0 ? '↳' : '•'),
           titleInput,
-          el('span', { className: 'text-[10px] text-[#6a6a6a] shrink-0' }, 'p.'),
+          el('span', { className: 'text-[10px] text-[#6e6e73] shrink-0' }, 'p.'),
           pageInput,
           el(
             'button',
             {
               type: 'button',
               title: 'Delete bookmark',
-              className: 'text-[#ef4444] font-bold text-[12px] px-1 shrink-0',
+              className: 'text-[#ff3b30] font-bold text-[12px] px-1 shrink-0',
               onClick: (e) => {
                 e.stopPropagation();
                 const loc = findNodeLocation(bm.tree, node.id);
@@ -150,16 +150,16 @@ export function renderBookmarkStudioModal() {
       'div',
       {
         className:
-          'w-full max-w-6xl max-h-[92vh] rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] shadow-2xl flex flex-col overflow-hidden'
+          'w-full max-w-6xl max-h-[92vh] rounded-[24px] bg-[#ffffff] border border-[#e5e5ea] shadow-2xl flex flex-col overflow-hidden'
       },
       el(
         'div',
-        { className: 'px-5 py-3.5 border-b border-[#e5e5e5] flex flex-wrap items-center justify-between gap-3 bg-white' },
+        { className: 'px-5 py-3.5 border-b border-[#e5e5ea] flex flex-wrap items-center justify-between gap-3 bg-white' },
         el(
           'div',
           { className: 'flex items-center gap-2.5' },
-          el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'Bookmark/Outline Editor'),
-          src ? el('span', { className: 'badge-pill bg-[#ffb084] text-[#0a0a0a]' }, `${src.name} (${maxPages}p)`) : null
+          el('h3', { className: 'type-title-md text-[#1d1d1f]' }, 'Bookmark/Outline Editor'),
+          src ? el('span', { className: 'badge-pill bg-[#fff1e5] text-[#1d1d1f]' }, `${src.name} (${maxPages}p)`) : null
         ),
         el(
           'div',
@@ -205,7 +205,7 @@ export function renderBookmarkStudioModal() {
         { className: 'flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden' },
         el(
           'div',
-          { className: 'lg:col-span-6 border-b lg:border-b-0 lg:border-r border-[#e5e5e5] p-4 flex flex-col gap-3 overflow-hidden' },
+          { className: 'lg:col-span-6 border-b lg:border-b-0 lg:border-r border-[#e5e5ea] p-4 flex flex-col gap-3 overflow-hidden' },
           el(
             'div',
             { className: 'flex flex-wrap gap-1.5' },
@@ -325,7 +325,7 @@ export function renderBookmarkStudioModal() {
             bm.tree.length === 0
               ? el(
                   'p',
-                  { className: 'p-4 rounded-[12px] border border-dashed border-[#d4d0c5] text-[12px] text-[#6a6a6a]' },
+                  { className: 'p-4 rounded-[12px] border border-dashed border-[#d4d0c5] text-[12px] text-[#6e6e73]' },
                   'No bookmarks yet. Click "+ Add Root" or "Load Existing" to inspect embedded outlines.'
                 )
               : renderTreeRows(bm.tree, 0)
@@ -333,7 +333,7 @@ export function renderBookmarkStudioModal() {
         ),
         el(
           'div',
-          { className: 'lg:col-span-6 bg-[#f5f0e0] p-4 overflow-auto flex flex-col items-center gap-3' },
+          { className: 'lg:col-span-6 bg-[#f5f5f7] p-4 overflow-auto flex flex-col items-center gap-3' },
           el(
             'div',
             { className: 'flex items-center gap-2' },
@@ -360,14 +360,14 @@ export function renderBookmarkStudioModal() {
             )
           ),
           bm.previewLoading
-            ? el('p', { className: 'text-[12px] text-[#6a6a6a] p-8' }, 'Rendering page preview...')
+            ? el('p', { className: 'text-[12px] text-[#6e6e73] p-8' }, 'Rendering page preview...')
             : sanitizeImageSrc(bm.previewUrl)
               ? el('img', {
                   src: sanitizeImageSrc(bm.previewUrl),
                   alt: `Bookmark destination page ${bm.previewPageIndex + 1}`,
                   className: 'max-h-[64vh] w-auto rounded-[8px] shadow bg-white'
                 })
-              : el('p', { className: 'text-[12px] text-[#6a6a6a] p-8' }, 'Select a PDF to preview destination pages.')
+              : el('p', { className: 'text-[12px] text-[#6e6e73] p-8' }, 'Select a PDF to preview destination pages.')
         )
       )
     )
@@ -402,11 +402,11 @@ export function renderCbzStudioModal() {
     },
     el(
       'div',
-      { className: 'w-full max-w-lg rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] p-6 shadow-2xl space-y-4' },
+      { className: 'w-full max-w-lg rounded-[24px] bg-[#ffffff] border border-[#e5e5ea] p-6 shadow-2xl space-y-4' },
       el(
         'div',
         { className: 'flex items-center justify-between gap-2' },
-        el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'CBZ ↔ PDF Converter'),
+        el('h3', { className: 'type-title-md text-[#1d1d1f]' }, 'CBZ ↔ PDF Converter'),
         el(
           'button',
           {
@@ -423,12 +423,12 @@ export function renderCbzStudioModal() {
       ),
       el(
         'div',
-        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#faf5e8] border border-[#e5e5e5]' },
+        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea]' },
         el(
           'button',
           {
             type: 'button',
-            className: `h-8 rounded-[9px] text-[12px] font-medium ${isCbzToPdf ? 'bg-[#0a0a0a] text-white' : 'text-[#555]'}`,
+            className: `h-8 rounded-[9px] text-[12px] font-medium ${isCbzToPdf ? 'bg-[#1d1d1f] text-white' : 'text-[#555]'}`,
             onClick: () => {
               cbz.mode = 'cbz-to-pdf';
               workspace.emit('tool');
@@ -440,7 +440,7 @@ export function renderCbzStudioModal() {
           'button',
           {
             type: 'button',
-            className: `h-8 rounded-[9px] text-[12px] font-medium ${!isCbzToPdf ? 'bg-[#0a0a0a] text-white' : 'text-[#555]'}`,
+            className: `h-8 rounded-[9px] text-[12px] font-medium ${!isCbzToPdf ? 'bg-[#1d1d1f] text-white' : 'text-[#555]'}`,
             onClick: () => {
               cbz.mode = 'pdf-to-cbz';
               workspace.emit('tool');
@@ -471,7 +471,7 @@ export function renderCbzStudioModal() {
             cbz.cbzEntries.length > 0
               ? el(
                   'div',
-                  { className: 'p-2.5 rounded-[10px] bg-white border border-[#e5e5e5] max-h-36 overflow-y-auto space-y-0.5 text-[11px] font-mono' },
+                  { className: 'p-2.5 rounded-[10px] bg-white border border-[#e5e5ea] max-h-36 overflow-y-auto space-y-0.5 text-[11px] font-mono' },
                   cbz.cbzEntries.map((name, idx) => el('div', { className: 'truncate' }, `${idx + 1}. ${name}`))
                 )
               : null,
@@ -481,7 +481,7 @@ export function renderCbzStudioModal() {
               el('input', {
                 type: 'checkbox',
                 checked: Boolean(cbz.uniformWidth),
-                className: 'w-4 h-4 accent-[#0a0a0a]',
+                className: 'w-4 h-4 accent-[#1d1d1f]',
                 onChange: (e) => {
                   cbz.uniformWidth = /** @type {HTMLInputElement} */ (e.target).checked;
                 }
@@ -504,13 +504,13 @@ export function renderCbzStudioModal() {
             'div',
             { className: 'space-y-3' },
             pdfSources.length === 0
-              ? el('p', { className: 'text-[13px] text-[#6a6a6a]' }, 'Close this dialog and drop a PDF into the workspace first.')
+              ? el('p', { className: 'text-[13px] text-[#6e6e73]' }, 'Close this dialog and drop a PDF into the workspace first.')
               : el(
                   'div',
                   { className: 'space-y-3' },
                   el(
                     'p',
-                    { className: 'text-[12px] text-[#1a1a1a]' },
+                    { className: 'text-[12px] text-[#1d1d1f]' },
                     `Target PDF: ${workspace.sourceFiles.get(cbz.targetFileId)?.name || pdfSources[0].name}`
                   ),
                   el(

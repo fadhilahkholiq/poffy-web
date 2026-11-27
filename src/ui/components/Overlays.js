@@ -31,7 +31,7 @@ export function renderOverlays(container) {
           'div',
           {
             className:
-              'rounded-[12px] bg-[#ffb084] text-[#0a0a0a] px-4 py-2.5 flex items-center justify-between gap-3 border border-[#e5e5e5]'
+              'rounded-[12px] bg-[#fff1e5] text-[#1d1d1f] px-4 py-2.5 flex items-center justify-between gap-3 border border-[#e5e5ea]'
           },
           el(
             'p',
@@ -46,12 +46,12 @@ export function renderOverlays(container) {
 
   const noticeClass =
     notice?.type === 'error'
-      ? 'bg-[#ef4444] text-white border-[#ef4444]'
+      ? 'bg-[#ff3b30] text-white border-[#ff3b30]'
       : notice?.type === 'warning'
-        ? 'bg-[#f59e0b] text-[#0a0a0a] border-[#f59e0b]'
+        ? 'bg-[#ff9500] text-[#1d1d1f] border-[#ff9500]'
         : notice?.type === 'success'
-          ? 'bg-[#1a3a3a] text-white border-[#1a3a3a]'
-          : 'bg-[#0a0a0a] text-white border-[#0a0a0a]';
+          ? 'bg-[#0071e3] text-white border-[#0071e3]'
+          : 'bg-[#1d1d1f] text-white border-[#1d1d1f]';
 
   const noticeToast = notice
     ? el(
@@ -98,24 +98,24 @@ export function renderOverlays(container) {
           'div',
           {
             className:
-              'w-full max-w-md rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] p-6 shadow-2xl space-y-4'
+              'w-full max-w-md rounded-[24px] bg-[#ffffff] border border-[#e5e5ea] p-6 shadow-2xl space-y-4'
           },
           el(
             'div',
             { className: 'flex items-center justify-between gap-3' },
-            el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'Processing Locally'),
+            el('h3', { className: 'type-title-md text-[#1d1d1f]' }, 'Processing Locally'),
             el(
               'span',
               { className: 'badge-pill' },
               job.total > 0 ? `${job.current}/${job.total} • ${job.percent}%` : `${job.percent}%`
             )
           ),
-          el('p', { className: 'type-body-sm text-[#3a3a3a]' }, job.stage || 'Working...'),
+          el('p', { className: 'type-body-sm text-[#424245]' }, job.stage || 'Working...'),
           el(
             'div',
-            { className: 'w-full h-2.5 rounded-full bg-[#f5f0e0] overflow-hidden' },
+            { className: 'w-full h-2.5 rounded-full bg-[#f5f5f7] overflow-hidden' },
             el('div', {
-              className: 'h-full bg-[#0a0a0a] transition-all duration-150',
+              className: 'h-full bg-[#1d1d1f] transition-all duration-150',
               style: { width: `${job.percent}%` }
             })
           ),
@@ -140,7 +140,7 @@ export function renderOverlays(container) {
 
   const safePreviewSrc = sanitizeImageSrc(preview.imageUrl);
   const previewBody = preview.loading
-    ? el('p', { className: 'type-body-sm text-[#6a6a6a]' }, 'Rendering high-resolution preview...')
+    ? el('p', { className: 'type-body-sm text-[#6e6e73]' }, 'Rendering high-resolution preview...')
     : safePreviewSrc
       ? el('img', {
           src: safePreviewSrc,
@@ -153,7 +153,7 @@ export function renderOverlays(container) {
           'div',
           {
             className:
-              'w-64 h-80 bg-white rounded-[8px] border border-[#e5e5e5] flex items-center justify-center text-[#6a6a6a] text-[13px]'
+              'w-64 h-80 bg-white rounded-[8px] border border-[#e5e5ea] flex items-center justify-center text-[#6e6e73] text-[13px]'
           },
           'Blank Page'
         );
@@ -176,18 +176,18 @@ export function renderOverlays(container) {
           'div',
           {
             className:
-              'w-full max-w-3xl max-h-[90vh] rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] flex flex-col overflow-hidden shadow-2xl'
+              'w-full max-w-3xl max-h-[90vh] rounded-[24px] bg-[#ffffff] border border-[#e5e5ea] flex flex-col overflow-hidden shadow-2xl'
           },
           el(
             'div',
             {
               className:
-                'px-5 py-3.5 border-b border-[#e5e5e5] flex items-center justify-between gap-3'
+                'px-5 py-3.5 border-b border-[#e5e5ea] flex items-center justify-between gap-3'
             },
             el(
               'div',
               { className: 'flex items-center gap-2' },
-              el('span', { className: 'type-title-sm text-[#0a0a0a]' }, 'Page Preview'),
+              el('span', { className: 'type-title-sm text-[#1d1d1f]' }, 'Page Preview'),
               previewPage
                 ? el('span', { className: 'badge-pill' }, `Rotation ${previewPage.rotation}°`)
                 : null
@@ -223,7 +223,7 @@ export function renderOverlays(container) {
             'div',
             {
               className:
-                'flex-1 overflow-auto p-6 bg-[#faf5e8] flex items-center justify-center min-h-[360px]'
+                'flex-1 overflow-auto p-6 bg-[#f2f2f7] flex items-center justify-center min-h-[360px]'
             },
             previewBody
           )
@@ -256,13 +256,13 @@ export function renderOverlays(container) {
           'div',
           {
             className:
-              'w-full max-w-md rounded-[24px] bg-[#fffaf0] border border-[#e5e5e5] p-6 shadow-2xl space-y-4'
+              'w-full max-w-md rounded-[24px] bg-[#ffffff] border border-[#e5e5ea] p-6 shadow-2xl space-y-4'
           },
           el(
             'div',
             { className: 'flex items-center justify-between gap-3' },
-            el('h3', { className: 'type-title-md text-[#0a0a0a]' }, 'Auto-Crop Whitespace'),
-            el('span', { className: 'badge-pill bg-[#b8a4ed] text-[#0a0a0a]' }, 'OffscreenCanvas')
+            el('h3', { className: 'type-title-md text-[#1d1d1f]' }, 'Auto-Crop Whitespace'),
+            el('span', { className: 'badge-pill bg-[#e8f2ff] text-[#1d1d1f]' }, 'OffscreenCanvas')
           ),
           el(
             'p',
@@ -274,7 +274,7 @@ export function renderOverlays(container) {
             { className: 'grid grid-cols-2 gap-3' },
             el(
               'label',
-              { className: 'text-[12px] text-[#6a6a6a] block' },
+              { className: 'text-[12px] text-[#6e6e73] block' },
               'Padding',
               el('input', {
                 id: 'autocrop-padding',
@@ -290,7 +290,7 @@ export function renderOverlays(container) {
             ),
             el(
               'label',
-              { className: 'text-[12px] text-[#6a6a6a] block' },
+              { className: 'text-[12px] text-[#6e6e73] block' },
               'Unit',
               createClaySelect({
                 id: 'autocrop-unit',
@@ -308,7 +308,7 @@ export function renderOverlays(container) {
           ),
           el(
             'label',
-            { className: 'block text-[12px] text-[#6a6a6a]' },
+            { className: 'block text-[12px] text-[#6e6e73]' },
             'Whiteness Threshold (',
             thresholdLabel,
             '/255)',
@@ -319,7 +319,7 @@ export function renderOverlays(container) {
               max: '254',
               step: '1',
               value: String(org.autoCropThreshold),
-              className: 'w-full mt-1.5 accent-[#0a0a0a]',
+              className: 'w-full mt-1.5 accent-[#1d1d1f]',
               onInput: (e) => {
                 org.autoCropThreshold = Number(/** @type {HTMLInputElement} */ (e.target).value) || 245;
                 thresholdLabel.textContent = String(org.autoCropThreshold);
@@ -331,7 +331,7 @@ export function renderOverlays(container) {
             { className: 'grid grid-cols-2 gap-3' },
             el(
               'label',
-              { className: 'text-[12px] text-[#6a6a6a] block' },
+              { className: 'text-[12px] text-[#6e6e73] block' },
               'Crop Mode',
               createClaySelect({
                 id: 'autocrop-mode',
@@ -348,7 +348,7 @@ export function renderOverlays(container) {
             ),
             el(
               'label',
-              { className: 'text-[12px] text-[#6a6a6a] block' },
+              { className: 'text-[12px] text-[#6e6e73] block' },
               'Target Pages',
               createClaySelect({
                 id: 'autocrop-scope',
