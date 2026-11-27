@@ -95,16 +95,13 @@ function fillRoundedRect(buf, w, h, rx, ry, rw, rh, radius, color) {
   }
 }
 
-// 1. PWA 192x192 & 512x512 PNG icons matching iOS / Apple Light Studio SVG emblem
+// 1. PWA 192x192 & 512x512 PNG icons matching simplified navbar squircle + two-sheet logo
 function buildAppIcon(size) {
   const buf = Buffer.alloc(size * size * 4);
   const s = size / 192;
-  fillRoundedRect(buf, size, size, 0, 0, size, size, 44 * s, '#0071e3');
-  fillRoundedRect(buf, size, size, 34 * s, 28 * s, 88 * s, 114 * s, 18 * s, '#73b5f4');
-  fillRoundedRect(buf, size, size, 70 * s, 50 * s, 88 * s, 114 * s, 18 * s, '#ffffff');
-  fillRoundedRect(buf, size, size, 88 * s, 76 * s, 44 * s, 10 * s, 5 * s, '#0071e3');
-  fillRoundedRect(buf, size, size, 88 * s, 98 * s, 52 * s, 8 * s, 4 * s, '#d1d1d6');
-  fillRoundedRect(buf, size, size, 88 * s, 116 * s, 38 * s, 8 * s, 4 * s, '#e5e5ea');
+  fillRoundedRect(buf, size, size, 0, 0, size, size, 54 * s, '#0071e3');
+  fillRoundedRect(buf, size, size, 32 * s, 24 * s, 88 * s, 112 * s, 22 * s, '#73b5f4');
+  fillRoundedRect(buf, size, size, 72 * s, 56 * s, 88 * s, 112 * s, 22 * s, '#ffffff');
   return encodePng(size, size, buf);
 }
 
@@ -116,13 +113,10 @@ function buildOgCard() {
   fillRoundedRect(buf, w, h, 0, 0, w, h, 0, '#ffffff');
   // Recessed studio showcase panel
   fillRoundedRect(buf, w, h, 48, 48, 1104, 534, 36, '#f5f5f7');
-  // iOS blue app tile + layered white document sheets on right
-  fillRoundedRect(buf, w, h, 720, 130, 340, 340, 76, '#0071e3');
-  fillRoundedRect(buf, w, h, 780, 182, 156, 202, 32, '#73b5f4');
-  fillRoundedRect(buf, w, h, 844, 222, 156, 202, 32, '#ffffff');
-  fillRoundedRect(buf, w, h, 874, 268, 80, 18, 9, '#0071e3');
-  fillRoundedRect(buf, w, h, 874, 306, 96, 14, 7, '#d1d1d6');
-  fillRoundedRect(buf, w, h, 874, 336, 70, 14, 7, '#e5e5ea');
+  // iOS blue app tile + simplified layered white document sheets on right
+  fillRoundedRect(buf, w, h, 720, 130, 340, 340, 96, '#0071e3');
+  fillRoundedRect(buf, w, h, 777, 173, 156, 198, 39, '#73b5f4');
+  fillRoundedRect(buf, w, h, 847, 229, 156, 198, 39, '#ffffff');
   // Status pill & clean typographic blocks on left
   fillRoundedRect(buf, w, h, 100, 120, 220, 44, 22, '#e8f8ed');
   fillRoundedRect(buf, w, h, 122, 134, 16, 16, 8, '#34c759');

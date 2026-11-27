@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" data-page="privacy-policy">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>Privacy Policy — Zero Uploads &amp; Local Browser Memory | Poffy</title>
+    <meta name="description" content="Poffy Privacy Policy: 100% client-side PDF processing with zero file uploads, zero telemetry cookies, strict connect-src self Content-Security-Policy, and local-only memory." />
+    <meta name="keywords" content="poffy privacy policy, zero upload pdf privacy, no cookie pdf editor, client-side pdf privacy, offline pdf zero telemetry, local browser storage pdf" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
+    <meta property="og:title" content="Privacy Policy — Zero Uploads &amp; Local Browser Memory | Poffy" />
+    <meta property="og:description" content="Poffy Privacy Policy: 100% client-side PDF processing with zero file uploads, zero telemetry cookies, strict connect-src self Content-Security-Policy, and local-only memory." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Privacy Policy · Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Privacy Policy — Zero Uploads &amp; Local Browser Memory | Poffy" />
+    <meta name="twitter:description" content="Poffy Privacy Policy: 100% client-side PDF processing with zero file uploads, zero telemetry cookies, strict connect-src self Content-Security-Policy, and local-only memory." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Privacy Policy · Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","name":"Privacy Policy — Zero Uploads & Local Browser Memory","url":"/privacy-policy/","description":"Poffy Privacy Policy: 100% client-side PDF processing with zero file uploads, zero telemetry cookies, strict connect-src self Content-Security-Policy, and local-only memory.","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"Poffy — Offline PDF Studio","url":"/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Studio Home","item":"/"},{"@type":"ListItem","position":2,"name":"Privacy Policy","item":"/privacy-policy/"}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Privacy Policy</h1>
+        <p>Zero uploads, zero analytics, and zero cookies. Your documents never leave your device.</p>
+        
+        <section>
+          <h2>1. Zero Uploads &amp; 100% Local Processing</h2>
+          <p>Every PDF, image, CBZ archive, filename, form field value, and signature processed in Poffy stays strictly inside your browser memory on your own device. No files or document contents are ever transmitted to our servers or any third-party API.</p>
+          <p>Poffy enforces a strict Content-Security-Policy (connect-src 'self'; object-src 'none'; frame-ancestors 'none') so browser runtime code cannot make outbound network requests to external servers.</p>
+          
+        </section>
+
+        <section>
+          <h2>2. No Analytics, Cookies, or Tracking</h2>
+          <p>Poffy does not set tracking cookies, run analytics scripts, collect usage telemetry, or load external fonts, CDNs, or advertising pixels.</p>
+          <ul><li>Zero cookies used for tracking or profiling</li><li>Zero third-party analytics or crash-reporting beacons</li><li>Zero outbound requests after static app assets load</li></ul>
+        </section>
+
+        <section>
+          <h2>3. How Browser Memory &amp; Local Storage Are Used</h2>
+          <p>While your documents never leave your device, browsers expose different local storage mechanisms for distinct purposes:</p>
+          <ul><li>Volatile RAM (ArrayBuffers &amp; Web Workers): Holds opened files, page previews, and active edits solely during your open session. Closing, refreshing, or clicking Reset immediately discards all document data.</li><li>Offline Service Worker Cache (Workbox): Stores static application scripts, WASM binaries, CMaps, and fonts locally so Poffy works offline. User PDFs and edits are never written into the Service Worker cache.</li><li>Optional Signature Tray (localStorage): Only if you explicitly draw or save a reusable signature in Sign &amp; Annotate does Poffy store that transparent PNG signature locally under poffy_saved_signatures in browser localStorage, which you can clear anytime in one click.</li><li>Zero IndexedDB Document Persistence: Uploaded files are never persisted to IndexedDB.</li></ul>
+        </section>
+
+        <section>
+          <h2>4. Static Website Hosting Logs</h2>
+          <p>When you initially load Poffy over the internet, standard static web hosting infrastructure (such as Cloudflare Pages or Vercel) may temporarily process standard HTTP request logs (such as IP address, user-agent, and page path) solely to deliver the static HTML, JS, CSS, and WASM assets. Once cached as an offline PWA, Poffy operates with zero network traffic.</p>
+          
+        </section>
+
+        <section>
+          <h2>5. Transparency &amp; Source Verification</h2>
+          <p>You can inspect Poffy's source code, security headers, worker isolation, and offline PWA manifest directly in the open-source repository on GitHub.</p>
+          
+        </section>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { FEATURE_PAGES } from './src/core/seo/features.js';
+import { INFO_PAGES } from './src/core/seo/info-pages.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -11,6 +12,9 @@ const mpaInputs = {
   main: path.resolve(__dirname, 'index.html'),
   ...Object.fromEntries(
     FEATURE_PAGES.map((f) => [f.slug, path.resolve(__dirname, f.slug, 'index.html')])
+  ),
+  ...Object.fromEntries(
+    INFO_PAGES.map((p) => [`info-${p.slug}`, path.resolve(__dirname, p.slug, 'index.html')])
   )
 };
 

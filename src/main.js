@@ -7,8 +7,10 @@ import { registerSW } from 'virtual:pwa-register';
 import { pdfOpsClient } from './core/pdf/worker-client.js';
 import { pdfRenderClient } from './core/render/pdfjs-client.js';
 import { FEATURE_PAGES, getFeatureBySlug } from './core/seo/features.js';
+import { getInfoPageBySlug, INFO_PAGES } from './core/seo/info-pages.js';
 import { workspace } from './state/workspace.js';
 import { renderHeroDropzone } from './ui/components/HeroDropzone.js';
+import { renderInfoPage } from './ui/components/InfoPage.js';
 import { renderOverlays } from './ui/components/Overlays.js';
 import { renderPageGrid } from './ui/components/PageGrid.js';
 import { renderTopNav } from './ui/components/TopNav.js';
@@ -49,6 +51,7 @@ function bootstrap() {
   if (!root) return;
 
   const activeFeature = getFeatureBySlug(document.documentElement.dataset.feature);
+  const activeInfoPage = !activeFeature ? getInfoPageBySlug(document.documentElement.dataset.page) : null;
   if (activeFeature) {
     workspace.setActiveTool(activeFeature.tool);
   }
@@ -66,68 +69,84 @@ function bootstrap() {
     })
   );
 
+  const preFooterHero = el(
+    'section',
+    {
+      'aria-label': 'Poffy Offline PDF Studio overview',
+      className: 'border-t border-black/[0.08] bg-white'
+    },
+    el(
+      'div',
+      { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 py-10 sm:py-12 text-center space-y-4' },
+      el(
+        'div',
+        { className: 'flex flex-wrap items-center justify-center gap-2.5' },
+        el(
+          'a',
+          {
+            href: '/',
+            className: 'inline-flex items-center gap-2.5 no-underline text-[#1d1d1f]'
+          },
+          el(
+            'h2',
+            {
+              className:
+                'text-[24px] sm:text-[28px] font-semibold tracking-[-0.025em] leading-[1.1] text-[#1d1d1f]'
+            },
+            'Poffy'
+          ),
+          el('span', { className: 'badge-pill text-[12px]' }, 'Offline PDF Studio')
+        )
+      ),
+      el(
+        'p',
+        { className: 'text-[14.5px] sm:text-[15.5px] leading-[1.55] text-[#6e6e73] max-w-[60ch] mx-auto' },
+        'Privacy-first PDF tools running 100% in browser memory via WebAssembly and Web Workers.'
+      ),
+      el(
+        'div',
+        { className: 'flex flex-wrap items-center justify-center gap-2 pt-1' },
+        el(
+          'span',
+          {
+            className:
+              'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e8f8ed] border border-[#34c759]/20 text-[12px] font-medium text-[#248a3d]'
+          },
+          el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#34c759] shrink-0', 'aria-hidden': 'true' }),
+          'Zero Uploads'
+        ),
+        el(
+          'span',
+          {
+            className:
+              'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e8f2ff] border border-[#0071e3]/15 text-[12px] font-medium text-[#0071e3]'
+          },
+          el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#0071e3] shrink-0', 'aria-hidden': 'true' }),
+          'Works Offline'
+        ),
+        el(
+          'span',
+          {
+            className:
+              'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f5f5f7] border border-black/[0.07] text-[12px] font-medium text-[#424245]'
+          },
+          el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#86868b] shrink-0', 'aria-hidden': 'true' }),
+          `${FEATURE_PAGES.length} Tools`
+        )
+      )
+    )
+  );
+
   const footerEl = el(
     'footer',
     { className: 'border-t border-black/[0.08] bg-white' },
     el(
       'div',
       { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 py-10 space-y-8' },
-        el(
-          'div',
-          { className: 'grid grid-cols-1 lg:grid-cols-12 gap-8 items-start' },
-          el(
-            'div',
-            { className: 'lg:col-span-4 space-y-3' },
-            el(
-              'a',
-              {
-                href: '/',
-                className: 'inline-flex items-center gap-2 no-underline text-[#1d1d1f]'
-              },
-              el('span', { className: 'type-title-md text-[#1d1d1f]' }, 'Poffy'),
-              el('span', { className: 'badge-pill text-[11.5px]' }, 'Offline PDF Studio')
-            ),
-            el(
-              'p',
-              { className: 'type-body-sm max-w-[36ch]' },
-              'Privacy-first PDF tools running 100% in browser memory via WebAssembly and Web Workers.'
-            ),
-            el(
-              'div',
-              { className: 'flex flex-wrap gap-2 pt-1' },
-              el(
-                'span',
-                {
-                  className:
-                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e8f8ed] border border-[#34c759]/20 text-[11.5px] font-medium text-[#248a3d]'
-                },
-                el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#34c759] shrink-0', 'aria-hidden': 'true' }),
-                'Zero Uploads'
-              ),
-              el(
-                'span',
-                {
-                  className:
-                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e8f2ff] border border-[#0071e3]/15 text-[11.5px] font-medium text-[#0071e3]'
-                },
-                el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#0071e3] shrink-0', 'aria-hidden': 'true' }),
-                'Works Offline'
-              ),
-              el(
-                'span',
-                {
-                  className:
-                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-black/[0.07] text-[11.5px] font-medium text-[#424245]'
-                },
-                el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#86868b] shrink-0', 'aria-hidden': 'true' }),
-                `${FEATURE_PAGES.length} Tools`
-              )
-            )
-          ),
-          el(
-            'nav',
-            { 'aria-label': 'All Offline PDF Tools', className: 'lg:col-span-8' },
-            (() => {
+      el(
+        'nav',
+        { 'aria-label': 'All Offline PDF Tools' },
+        (() => {
               const groups = [
                 {
                   title: 'Pages & Layout',
@@ -165,7 +184,7 @@ function bootstrap() {
                 groups.map((grp) => {
                   const items = [];
                   if (grp.includeHome) {
-                    const isHome = !activeFeature;
+                    const isHome = !activeFeature && !activeInfoPage;
                     items.push(
                       el(
                         'li',
@@ -219,16 +238,15 @@ function bootstrap() {
                     { className: 'space-y-2' },
                     el(
                       'p',
-                      { className: 'text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] px-2' },
+                      { className: 'text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] px-0.5 sm:px-2' },
                       grp.title
                     ),
-                    el('ul', { className: 'space-y-0.5 list-none p-0 m-0' }, items)
+                    el('ul', { className: 'flex flex-wrap gap-1.5 sm:block sm:space-y-0.5 list-none p-0 m-0' }, items)
                   );
                 })
               );
             })()
-          )
-        ),
+          ),
         el(
           'div',
           {
@@ -237,10 +255,34 @@ function bootstrap() {
           },
           el(
             'div',
-            { className: 'flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1' },
-            el('span', { className: 'font-semibold text-[#1d1d1f]' }, 'Poffy'),
-            el('span', { 'aria-hidden': 'true' }, '•'),
-            el('span', {}, 'Created by Kholiq Fadhilah')
+            { className: 'flex flex-col sm:flex-row flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2.5' },
+            el(
+              'div',
+              { className: 'flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1' },
+              el('span', { className: 'font-semibold text-[#1d1d1f]' }, 'Poffy'),
+              el('span', { 'aria-hidden': 'true' }, '•'),
+              el('span', {}, 'Created by Kholiq Fadhilah')
+            ),
+            el(
+              'nav',
+              { 'aria-label': 'About and legal pages', className: 'flex flex-wrap items-center justify-center gap-1.5' },
+              INFO_PAGES.map((p) => {
+                const isActive = activeInfoPage?.slug === p.slug;
+                return el(
+                  'a',
+                  {
+                    href: p.path,
+                    'aria-current': isActive ? 'page' : undefined,
+                    className: `px-2.5 py-1 rounded-full text-[12px] font-medium no-underline transition-colors ${
+                      isActive
+                        ? 'bg-[#0071e3] text-white font-semibold'
+                        : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#424245] border border-black/[0.05]'
+                    }`
+                  },
+                  p.navLabel
+                );
+              })
+            )
           ),
           el(
             'div',
@@ -286,6 +328,7 @@ function bootstrap() {
     navSlot,
     overlaysSlot,
     workspaceSlot,
+    preFooterHero,
     footerEl,
     fileInput
   );
@@ -343,7 +386,12 @@ function bootstrap() {
       gridSlot = null;
       inspectorSlot = null;
       footerEl.className = 'border-t border-black/[0.08] bg-white';
-      cleanupHero = renderHeroDropzone(workspaceSlot, openFilePicker, activeFeature);
+      if (activeInfoPage) {
+        renderInfoPage(workspaceSlot, activeInfoPage, openFilePicker);
+        cleanupHero = () => {};
+      } else {
+        cleanupHero = renderHeroDropzone(workspaceSlot, openFilePicker, activeFeature);
+      }
       lastHasPages = false;
       return;
     }

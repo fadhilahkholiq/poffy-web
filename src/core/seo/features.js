@@ -28,7 +28,7 @@ export const FEATURE_PAGES = [
     tool: 'organize',
     shortName: 'Merge PDF',
     badge: 'Merge & Interleave',
-    title: 'Merge PDF Offline · Combine & Interleave PDFs Locally | Poffy',
+    title: 'Merge PDF Offline — Combine & Interleave PDFs Locally | Poffy',
     description:
       'Combine multiple PDF files sequentially or interleave pages 100% offline in browser memory. Zero uploads, zero file limits, powered by pdf-lib Web Workers.',
     keywords:
@@ -61,7 +61,7 @@ export const FEATURE_PAGES = [
     tool: 'split',
     shortName: 'Split PDF',
     badge: 'Split & Burst ZIP',
-    title: 'Split PDF Offline · Extract Ranges or Burst to ZIP | Poffy',
+    title: 'Split PDF Offline — Extract Ranges or Burst to ZIP | Poffy',
     description:
       'Split PDFs by custom page ranges (1-3, 5, 8-end), split every N pages, extract selected pages, or burst every page into a client-side ZIP archive offline.',
     keywords:
@@ -94,7 +94,7 @@ export const FEATURE_PAGES = [
     tool: 'organize',
     shortName: 'Organize Pages',
     badge: 'Rotate, Reorder & Crop',
-    title: 'Organize PDF Pages Offline · Rotate, Reorder & Crop | Poffy',
+    title: 'Organize PDF Pages Offline — Rotate, Reorder & Crop | Poffy',
     description:
       'Drag-and-drop reorder PDF pages, rotate 90°/180°/270° instantly, duplicate or delete pages, insert blank A4/Letter/Legal pages, and crop MediaBox margins offline.',
     keywords:
@@ -127,7 +127,7 @@ export const FEATURE_PAGES = [
     tool: 'watermark',
     shortName: 'Watermark PDF',
     badge: 'Text & Image Stamps',
-    title: 'Watermark PDF Offline · Diagonal Text & PNG/JPG Stamps | Poffy',
+    title: 'Watermark PDF Offline — Diagonal Text & PNG/JPG Stamps | Poffy',
     description:
       'Add customizable text watermarks (center, corners, or diagonal tiled grid with local Unicode TTF fallback) or aspect-locked PNG/JPG stamps 100% offline.',
     keywords:
@@ -160,7 +160,7 @@ export const FEATURE_PAGES = [
     tool: 'numbering',
     shortName: 'Page Numbers',
     badge: 'Headers & Footers',
-    title: 'Add Page Numbers to PDF Offline · Custom Templates | Poffy',
+    title: 'Add Page Numbers to PDF Offline — Custom Templates | Poffy',
     description:
       'Stamp dynamic {n} of {total} page numbers, headers, or footers onto PDFs offline with custom start numbers, cover-page skip, alignment, and margin offsets.',
     keywords:
@@ -193,7 +193,7 @@ export const FEATURE_PAGES = [
     tool: 'convert',
     shortName: 'Images to PDF',
     badge: 'JPG, PNG, WebP → PDF',
-    title: 'Images to PDF Offline · Convert JPG, PNG & WebP | Poffy',
+    title: 'Images to PDF Offline — Convert JPG, PNG & WebP | Poffy',
     description:
       'Batch convert JPG, PNG, and WebP images into a single PDF document offline. Fit images cleanly to A4, US Letter, or preserve original pixel dimensions.',
     keywords:
@@ -226,7 +226,7 @@ export const FEATURE_PAGES = [
     tool: 'convert',
     shortName: 'PDF to Images',
     badge: 'PDF → PNG, JPG, WebP',
-    title: 'PDF to Images Offline · Export PNG, JPG & WebP | Poffy',
+    title: 'PDF to Images Offline — Export PNG, JPG & WebP | Poffy',
     description:
       'Rasterize PDF pages into high-resolution PNG, JPEG, or WebP images 100% client-side using pdfjs-dist WebAssembly and OffscreenCanvas. Single download or ZIP.',
     keywords:
@@ -292,7 +292,7 @@ export const FEATURE_PAGES = [
     tool: 'forms',
     shortName: 'Forms & Flatten',
     badge: 'AcroForm & Flatten',
-    title: 'Fill & Flatten PDF Forms Offline · AcroForm Inspector | Poffy',
+    title: 'Fill & Flatten PDF Forms Offline — AcroForm Inspector | Poffy',
     description:
       'Inspect AcroForm text fields, checkboxes, dropdowns, and radio groups, update values, and flatten interactive PDF forms into static read-only pages offline.',
     keywords:
@@ -325,7 +325,7 @@ export const FEATURE_PAGES = [
     tool: 'optimize',
     shortName: 'Optimize PDF',
     badge: 'Compress & Prune',
-    title: 'Optimize & Compress PDF Offline · Object Streams | Poffy',
+    title: 'Optimize & Compress PDF Offline — Object Streams | Poffy',
     description:
       'Reduce PDF file size locally by pruning orphaned/unused objects, stripping metadata, and re-saving with compressed PDF object streams inside a Web Worker.',
     keywords:
@@ -358,7 +358,7 @@ export const FEATURE_PAGES = [
     tool: 'resize',
     shortName: 'Resize PDF',
     badge: 'Standardize Paper Size',
-    title: 'Resize PDF Pages Offline · A4, Letter, Legal, F4 & Custom | Poffy',
+    title: 'Resize PDF Pages Offline — A4, Letter, Legal, F4 & Custom | Poffy',
     description:
       'Standardize mixed PDF page sizes to uniform A4, A3, A5, US Letter, Legal, F4/Folio, or custom mm/cm/in/pt dimensions locally via embedPage().',
     keywords:
@@ -391,7 +391,7 @@ export const FEATURE_PAGES = [
     tool: 'nup',
     shortName: 'N-Up & Booklet',
     badge: 'N-Up & Saddle-Stitch',
-    title: 'PDF N-Up Grid & Booklet Maker Offline · Saddle-Stitch | Poffy',
+    title: 'PDF N-Up Grid & Booklet Maker Offline — Saddle-Stitch | Poffy',
     description:
       'Combine 2, 4, 6, or 9 PDF pages per sheet or impose saddle-stitch folded booklets with automatic 4-page blank padding and duplex flip offline.',
     keywords:
@@ -424,7 +424,7 @@ export const FEATURE_PAGES = [
     tool: 'spreads',
     shortName: 'Split Spreads',
     badge: 'Half-Page Book Splitter',
-    title: 'Split PDF Book Spreads Offline · Cut 2-Up Scans in Half | Poffy',
+    title: 'Split PDF Book Spreads Offline — Cut 2-Up Scans in Half | Poffy',
     description:
       'Slice 2-page scanned book spreads cleanly into single pages by updating CropBox and MediaBox offline with draggable split preview and cover skip.',
     keywords:
@@ -490,7 +490,7 @@ export const FEATURE_PAGES = [
     tool: 'redact',
     shortName: 'Redact PDF',
     badge: 'True Raster Redaction',
-    title: 'True PDF Redaction Offline · Permanently Burn Sensitive Data | Poffy',
+    title: 'True PDF Redaction Offline — Permanently Burn Sensitive Data | Poffy',
     description:
       'Permanently destroy sensitive text and regions in PDFs via Selective Raster-Burn or Paranoid Mode with deep XMP/Info scrubbing inside local Web Workers.',
     keywords:
@@ -523,7 +523,7 @@ export const FEATURE_PAGES = [
     tool: 'sign',
     shortName: 'Sign & Annotate',
     badge: 'e-Signature & Markup',
-    title: 'Sign & Annotate PDF Offline · Draw Signatures & Vector Markup | Poffy',
+    title: 'Sign & Annotate PDF Offline — Draw Signatures & Vector Markup | Poffy',
     description:
       'Sign PDFs offline using drawn Bezier canvas signatures, styled typed signatures, or transparent PNG/WebP uploads, plus native vector highlights, shapes, and arrows.',
     keywords:
@@ -556,7 +556,7 @@ export const FEATURE_PAGES = [
     tool: 'compare',
     shortName: 'Compare PDF',
     badge: 'Visual & Text Diff',
-    title: 'Compare Two PDFs Offline · Pixel Visual Diff & Text Myers Diff | Poffy',
+    title: 'Compare Two PDFs Offline — Pixel Visual Diff & Text Myers Diff | Poffy',
     description:
       'Compare original and revised PDF versions locally with worker RGBA pixel diffs, side-by-side sync scroll, split-slider curtain, and Myers text diff.',
     keywords:
@@ -589,7 +589,7 @@ export const FEATURE_PAGES = [
     tool: 'extract-text',
     shortName: 'Extract Text',
     badge: 'TXT, Markdown & JSON',
-    title: 'Extract PDF Text Offline · Reading Order TXT, Markdown & JSON | Poffy',
+    title: 'Extract PDF Text Offline — Reading Order TXT, Markdown & JSON | Poffy',
     description:
       'Extract ordered text, inferred Markdown headings, and JSON bounding coordinates from PDFs locally via pdfjs-dist getTextContent() or batch ZIP.',
     keywords:
@@ -622,7 +622,7 @@ export const FEATURE_PAGES = [
     tool: 'extract-images',
     shortName: 'Extract Images',
     badge: 'Raw Embedded Assets',
-    title: 'Extract Embedded Images from PDF Offline · JPG, PNG & ZIP | Poffy',
+    title: 'Extract Embedded Images from PDF Offline — JPG, PNG & ZIP | Poffy',
     description:
       'Extract raw embedded JPEG, JP2, and Flate PNG images (including CMYK to RGB and SMask alpha transparency) directly from PDF streams locally.',
     keywords:
@@ -655,7 +655,7 @@ export const FEATURE_PAGES = [
     tool: 'attachments',
     shortName: 'PDF Attachments',
     badge: 'EmbeddedFiles Manager',
-    title: 'PDF Attachments Manager Offline · Extract, Add & Remove Files | Poffy',
+    title: 'PDF Attachments Manager Offline — Extract, Add & Remove Files | Poffy',
     description:
       'Inspect, extract (single or ZIP), attach new files via pdfDoc.attach(), and remove embedded XML/CSV/archive attachments from PDFs locally.',
     keywords:
@@ -688,7 +688,7 @@ export const FEATURE_PAGES = [
     tool: 'bookmarks',
     shortName: 'Bookmark Editor',
     badge: 'Outlines & Auto-TOC',
-    title: 'PDF Bookmark & Outline Editor Offline · Nested TOC Tree | Poffy',
+    title: 'PDF Bookmark & Outline Editor Offline — Nested TOC Tree | Poffy',
     description:
       'Read, create, nest, reorder, and rename PDF bookmarks (Table of Contents) with full Unicode/CJK PDFHexString support locally in browser memory.',
     keywords:
@@ -721,7 +721,7 @@ export const FEATURE_PAGES = [
     tool: 'cbz',
     shortName: 'CBZ ↔ PDF',
     badge: 'Comic Archive Converter',
-    title: 'CBZ to PDF & PDF to CBZ Converter Offline · Natural Page Sort | Poffy',
+    title: 'CBZ to PDF & PDF to CBZ Converter Offline — Natural Page Sort | Poffy',
     description:
       'Convert CBZ comic archives to PDF with natural numeric page sorting and optional uniform width, or export PDFs to store-mode CBZ archives offline.',
     keywords:

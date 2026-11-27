@@ -53,7 +53,7 @@ function buildCompactPdfStack() {
  * @returns {HTMLElement}
  */
 function buildDropzoneBar(onOpenFilePicker, opts = {}) {
-  const headline = opts.headline || 'Drop PDFs or images to start';
+  const headline = opts.headline || 'Drop PDFs to start';
   const subtitle =
     opts.subtitle || 'Everything runs offline in your browser. Zero uploads, zero file limits.';
   const primaryCta = opts.primaryCta || '+ Choose Files';

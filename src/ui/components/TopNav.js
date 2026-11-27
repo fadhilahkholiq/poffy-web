@@ -50,7 +50,7 @@ export function renderTopNav(container, onOpenFilePicker) {
           'a',
           {
             href: '/',
-            className: 'flex items-center gap-2 shrink-0 no-underline text-[#1d1d1f]',
+            className: 'flex items-center gap-2.5 min-w-0 shrink-0 no-underline text-[#1d1d1f]',
             'aria-label': 'Poffy Home'
           },
           el(
@@ -63,26 +63,29 @@ export function renderTopNav(container, onOpenFilePicker) {
             logoSvg
           ),
           el(
-            'span',
-            { className: 'text-[16px] sm:text-[17px] font-semibold tracking-[-0.02em] text-[#1d1d1f]' },
-            'Poffy'
-          )
-        ),
-        !hasPages
-          ? el(
+            'div',
+            { className: 'flex flex-col justify-center min-w-0' },
+            el(
               'span',
               {
                 className:
-                  'hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f2f2f7] text-[12px] font-medium text-[#424245]',
-                title: 'All PDF processing runs locally inside your browser'
+                  'text-[15.5px] sm:text-[16.5px] font-semibold tracking-[-0.02em] leading-[1.08] text-[#1d1d1f]'
               },
-              el('span', {
-                className: `w-2 h-2 rounded-full ${isOffline ? 'bg-[#ff9500]' : 'bg-[#34c759]'}`,
-                'aria-hidden': 'true'
-              }),
-              isOffline ? 'Offline' : '100% Local'
+              'Poffy'
+            ),
+            el(
+              'span',
+              {
+                className: `${
+                  hasPages ? 'hidden sm:block' : 'block'
+                } text-[9.5px] sm:text-[10.5px] font-medium tracking-[-0.01em] leading-[1.15] text-[#6e6e73] whitespace-nowrap`
+              },
+              'PDFs, Powered by Your Browser'
             )
-          : el(
+          )
+        ),
+        hasPages
+          ? el(
               'div',
               { className: 'hidden sm:flex items-center gap-2 min-w-0' },
               el(
@@ -112,10 +115,26 @@ export function renderTopNav(container, onOpenFilePicker) {
                 `RAM: ${formatBytes(mem.totalBytes)}`
               )
             )
+          : null
       ),
       el(
         'div',
         { className: 'flex items-center gap-1.5 sm:gap-2 shrink-0' },
+        !hasPages
+          ? el(
+              'span',
+              {
+                className:
+                  'hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-[#f2f2f7] text-[12px] font-medium text-[#424245] whitespace-nowrap',
+                title: 'All PDF processing runs locally inside your browser'
+              },
+              el('span', {
+                className: `w-2 h-2 rounded-full ${isOffline ? 'bg-[#ff9500]' : 'bg-[#34c759]'}`,
+                'aria-hidden': 'true'
+              }),
+              isOffline ? 'Offline' : '100% Local'
+            )
+          : null,
         el(
           'button',
           {

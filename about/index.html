@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" data-page="about">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>About Poffy — Offline Client-Side PDF Studio, WebAssembly &amp; Privacy Architecture</title>
+    <meta name="description" content="Discover how Poffy edits, merges, splits, signs, and redacts PDFs 100% locally in browser memory using pdf-lib, pdfjs-dist WebAssembly, fflate, and Web Workers with zero uploads." />
+    <meta name="keywords" content="about poffy, offline pdf studio, client-side pdf editor architecture, pdf-lib web workers, pdfjs-dist webassembly, fflate pdf zip, privacy-first pdf tools, offline pwa pdf" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
+    <meta property="og:title" content="About Poffy — Offline Client-Side PDF Studio, WebAssembly &amp; Privacy Architecture" />
+    <meta property="og:description" content="Discover how Poffy edits, merges, splits, signs, and redacts PDFs 100% locally in browser memory using pdf-lib, pdfjs-dist WebAssembly, fflate, and Web Workers with zero uploads." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="About Poffy · Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="About Poffy — Offline Client-Side PDF Studio, WebAssembly &amp; Privacy Architecture" />
+    <meta name="twitter:description" content="Discover how Poffy edits, merges, splits, signs, and redacts PDFs 100% locally in browser memory using pdf-lib, pdfjs-dist WebAssembly, fflate, and Web Workers with zero uploads." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="About Poffy · Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"AboutPage","name":"About Poffy — Offline Client-Side PDF Studio, WebAssembly & Privacy Architecture","url":"/about/","description":"Discover how Poffy edits, merges, splits, signs, and redacts PDFs 100% locally in browser memory using pdf-lib, pdfjs-dist WebAssembly, fflate, and Web Workers with zero uploads.","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"Poffy — Offline PDF Studio","url":"/"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Studio Home","item":"/"},{"@type":"ListItem","position":2,"name":"About","item":"/about/"}]},{"@type":"WebApplication","name":"Poffy — Offline PDF Studio","url":"/","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Discover how Poffy edits, merges, splits, signs, and redacts PDFs 100% locally in browser memory using pdf-lib, pdfjs-dist WebAssembly, fflate, and Web Workers with zero uploads.","author":{"@type":"Person","name":"Kholiq Fadhilah"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["pdf-lib & @pdf-lib/fontkit: PDF Assembly, Forms & Metadata Engine","pdfjs-dist & WebAssembly: High-Fidelity Rendering & Rasterization","fflate: Streaming ZIP & CBZ Compression","Web Workers & Virtual Page Graph: Zero-Copy Concurrency & Responsive Abort","Vite MPA, Tailwind CSS v4 & Workbox PWA: Offline Precaching & Strict Security Shell"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How does Poffy edit PDFs without uploading files to a server?","acceptedAnswer":{"@type":"Answer","text":"Poffy reads selected PDFs into volatile browser ArrayBuffers and processes rendering with pdfjs-dist WebAssembly and document assembly with pdf-lib inside dedicated background Web Workers."}},{"@type":"Question","name":"Can Poffy work completely offline or in airplane mode?","acceptedAnswer":{"@type":"Answer","text":"Yes. Workbox precaches all 22 tool routes, info pages, JavaScript bundles, Web Workers, WASM binaries, CMaps, and Inter fonts locally for instant offline execution."}},{"@type":"Question","name":"What makes Poffy feel fast when reordering or rotating large PDFs?","acceptedAnswer":{"@type":"Answer","text":"Poffy uses an in-memory Virtual Page Graph that applies page reordering, rotation, and crop transforms at 60fps and renders only visible thumbnails lazily via IntersectionObserver."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>About Poffy</h1>
+        <p>A privacy-first, offline-capable PDF studio running 100% inside your browser memory with WebAssembly and Web Workers.</p>
+        
+        <section>
+          <h2>Core Pillars</h2>
+          <ul>
+            <li><strong>100% Local Execution:</strong> Files stay inside volatile browser ArrayBuffers from open to export.</li>
+            <li><strong>Unified 3-Pane Studio:</strong> Merge, split, sign, redact, impose, convert, extract, and inspect in one workspace.</li>
+            <li><strong>Full Offline PWA:</strong> All scripts, WASM binaries, CMaps, and fonts are precached via Workbox.</li>
+            <li><strong>Zero Tracking:</strong> connect-src 'self' blocks external APIs, analytics, and third-party CDNs.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>How Poffy Works</h2>
+          <ol>
+            <li><strong>Local File Ingestion:</strong> Dropped or selected PDFs, images, and CBZ archives are read straight into local RAM via FileReader/ArrayBuffer APIs, with nothing uploaded over the network.</li>
+            <li><strong>60fps Virtual Page Graph:</strong> Reordering, rotating, duplicating, deleting, and margin-cropping mutate lightweight page descriptors and CSS transforms instantaneously without rewriting binary PDFs on every click.</li>
+            <li><strong>Dual Web Worker Pipeline:</strong> UI responsiveness stays smooth because page thumbnails render off-thread via pdfjs-dist OffscreenCanvas, while heavy PDF serialization, redaction, and ZIP packing run in a separate pdf-lib Worker.</li>
+            <li><strong>Direct Blob Export &amp; Cleanup:</strong> When you export, a compiled Uint8Array becomes a short-lived local blob: download URL that saves straight to disk and is immediately revoked, alongside bounded LRU bitmap cleanup.</li>
+          </ol>
+        </section>
+        <section>
+          <h2>The Technology Behind Poffy</h2>
+          <ul>
+            <li><strong>pdf-lib &amp; @pdf-lib/fontkit (PDF Assembly, Forms &amp; Metadata Engine):</strong> Handles structural PDF merging, page copying, CropBox/MediaBox imposition, AcroForm flattening, PDFHexString Unicode bookmarks, /EmbeddedFiles attachments, and deep metadata scrubbing cleanly in JavaScript.</li>
+            <li><strong>pdfjs-dist &amp; WebAssembly (High-Fidelity Rendering &amp; Rasterization):</strong> Runs Mozilla PDF.js inside render.worker.js with bundled local WASM decoders, JPEG2000/CMaps, and OffscreenCanvas (with isEvalSupported: false) for lazy IntersectionObserver thumbnails, color filters, and visual pixel diffing.</li>
+            <li><strong>fflate (Streaming ZIP &amp; CBZ Compression):</strong> Packages burst-split PDFs, extracted embedded images, batch numbered outputs, and zero-compression store-mode .cbz comic archives locally without main-thread stalls.</li>
+            <li><strong>Web Workers &amp; Virtual Page Graph (Zero-Copy Concurrency &amp; Responsive Abort):</strong> Transfers ArrayBuffers between the workspace store and background workers with cooperative ABORT_JOB signaling and hard worker-terminate respawn fallback so long jobs cancel immediately.</li>
+            <li><strong>Vite MPA, Tailwind CSS v4 &amp; Workbox PWA (Offline Precaching &amp; Strict Security Shell):</strong> Bundles dedicated SEO HTML entry points per route alongside @fontsource/inter and Inter-Regular.ttf fallback fonts into a static Workbox precache with strict Content-Security-Policy headers.</li>
+          </ul>
+        </section>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
