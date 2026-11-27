@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="pdf-to-markdown">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>PDF to Markdown (.md) Offline — Headings, Lists &amp; Tables | Poffy</title>
+    <meta name="description" content="Convert PDF documents into clean CommonMark and GitHub-Flavored Markdown (.md) with headings, bold/italic text, lists, and pipe tables 100% locally." />
+    <meta name="keywords" content="pdf to markdown offline, convert pdf to md, pdf to gfm markdown tables, client-side pdf markdown converter" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
+    <meta property="og:title" content="PDF to Markdown (.md) Offline — Headings, Lists &amp; Tables | Poffy" />
+    <meta property="og:description" content="Convert PDF documents into clean CommonMark and GitHub-Flavored Markdown (.md) with headings, bold/italic text, lists, and pipe tables 100% locally." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PDF → Markdown · Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PDF to Markdown (.md) Offline — Headings, Lists &amp; Tables | Poffy" />
+    <meta name="twitter:description" content="Convert PDF documents into clean CommonMark and GitHub-Flavored Markdown (.md) with headings, bold/italic text, lists, and pipe tables 100% locally." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="PDF → Markdown · Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"PDF to Markdown (.md) Offline — Headings, Lists & Tables","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Convert PDF documents into clean CommonMark and GitHub-Flavored Markdown (.md) with headings, bold/italic text, lists, and pipe tables 100% locally.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Detects headings, bold/italic text, lists & GFM pipe tables","Configurable page separators (---, comments, or continuous flow)","Zero uploads · runs offline in Web Workers"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does PDF to Markdown preserve tables and headings?","acceptedAnswer":{"@type":"Answer","text":"Yes. Poffy computes document-wide font sizes for # to ### headings and clusters aligned column coordinates into GitHub-Flavored Markdown tables."}},{"@type":"Question","name":"Are uploaded files ever sent to an AI or cloud API?","acceptedAnswer":{"@type":"Answer","text":"Never. Layout reconstruction and Markdown encoding run 100% deterministically in your browser memory."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Convert PDFs into clean Markdown locally.</h1>
+        <p>Reconstruct headings, lists, emphasis, and aligned tables from any text PDF into portable Markdown without uploading files.</p>
+        <ul>
+          <li>Detects headings, bold/italic text, lists &amp; GFM pipe tables</li>
+          <li>Configurable page separators (---, comments, or continuous flow)</li>
+          <li>Zero uploads · runs offline in Web Workers</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use PDF → Markdown offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

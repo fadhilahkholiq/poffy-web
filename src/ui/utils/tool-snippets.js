@@ -320,6 +320,144 @@ export function buildToolSnippet(slug) {
       );
       break;
 
+    case 'pdf-to-markdown':
+      diagram = el(
+        'div',
+        { className: 'flex items-center justify-center gap-2 w-full' },
+        miniSheet(
+          'w-10 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#f2f2f7] text-[#1d1d1f] self-start' }, '.PDF'),
+          line('w-full'),
+          line('w-5')
+        ),
+        el('span', { className: 'text-[11px] font-medium text-[#86868b]' }, '→'),
+        miniSheet(
+          'w-12 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#f3ebff] text-[#af52de] self-start' }, '.MD'),
+          line('w-7', 'bg-[#af52de]/70'),
+          line('w-full')
+        )
+      );
+      break;
+
+    case 'pdf-to-docx':
+      diagram = el(
+        'div',
+        { className: 'flex items-center justify-center gap-2 w-full' },
+        miniSheet(
+          'w-10 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#f2f2f7] text-[#1d1d1f] self-start' }, '.PDF'),
+          line('w-full'),
+          line('w-5')
+        ),
+        el('span', { className: 'text-[11px] font-medium text-[#86868b]' }, '→'),
+        miniSheet(
+          'w-13 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#e8f2ff] text-[#007aff] self-start' }, '.DOCX'),
+          line('w-8', 'bg-[#007aff]/75'),
+          line('w-full')
+        )
+      );
+      break;
+
+    case 'pdf-to-xlsx':
+      diagram = el(
+        'div',
+        { className: 'flex items-center justify-center gap-2 w-full' },
+        miniSheet(
+          'w-10 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#f2f2f7] text-[#1d1d1f] self-start' }, '.PDF'),
+          line('w-full'),
+          line('w-5')
+        ),
+        el('span', { className: 'text-[11px] font-medium text-[#86868b]' }, '→'),
+        miniSheet(
+          'w-13 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#e8f8ed] text-[#248a3d] self-start' }, '.XLSX'),
+          el('div', { className: 'grid grid-cols-2 gap-0.5 mt-0.5' }, line('w-full', 'bg-[#34c759]/45'), line('w-full'), line('w-full'), line('w-full'))
+        )
+      );
+      break;
+
+    case 'pdf-to-pptx':
+      diagram = el(
+        'div',
+        { className: 'flex items-center justify-center gap-2 w-full' },
+        miniSheet(
+          'w-10 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#f2f2f7] text-[#1d1d1f] self-start' }, '.PDF'),
+          line('w-full'),
+          line('w-5')
+        ),
+        el('span', { className: 'text-[11px] font-medium text-[#86868b]' }, '→'),
+        miniSheet(
+          'w-14 h-11 justify-between',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#fff1e5] text-[#c96a00] self-start' }, '.PPTX'),
+          line('w-8', 'bg-[#ff9500]/75'),
+          line('w-full')
+        )
+      );
+      break;
+
+    case 'docx-to-pdf':
+      diagram = el(
+        'div',
+        { className: 'flex items-center justify-center gap-2 w-full' },
+        miniSheet(
+          'w-13 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#e8f2ff] text-[#007aff] self-start' }, '.DOCX'),
+          line('w-8', 'bg-[#007aff]/70'),
+          line('w-full')
+        ),
+        el('span', { className: 'text-[11px] font-medium text-[#86868b]' }, '→'),
+        miniSheet(
+          'w-10 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#f2f2f7] text-[#1d1d1f] self-start' }, '.PDF'),
+          line('w-full'),
+          line('w-5')
+        )
+      );
+      break;
+
+    case 'xlsx-to-pdf':
+      diagram = el(
+        'div',
+        { className: 'flex items-center justify-center gap-2 w-full' },
+        miniSheet(
+          'w-13 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#e8f8ed] text-[#248a3d] self-start' }, '.XLSX'),
+          el('div', { className: 'grid grid-cols-2 gap-0.5 mt-0.5' }, line('w-full', 'bg-[#34c759]/45'), line('w-full'), line('w-full'), line('w-full'))
+        ),
+        el('span', { className: 'text-[11px] font-medium text-[#86868b]' }, '→'),
+        miniSheet(
+          'w-10 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#f2f2f7] text-[#1d1d1f] self-start' }, '.PDF'),
+          line('w-full'),
+          line('w-5')
+        )
+      );
+      break;
+
+    case 'pptx-to-pdf':
+      diagram = el(
+        'div',
+        { className: 'flex items-center justify-center gap-2 w-full' },
+        miniSheet(
+          'w-14 h-11 justify-between',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#fff1e5] text-[#c96a00] self-start' }, '.PPTX'),
+          line('w-8', 'bg-[#ff9500]/75'),
+          line('w-full')
+        ),
+        el('span', { className: 'text-[11px] font-medium text-[#86868b]' }, '→'),
+        miniSheet(
+          'w-10 h-12',
+          el('span', { className: 'text-[8px] font-semibold px-1 rounded bg-[#f2f2f7] text-[#1d1d1f] self-start' }, '.PDF'),
+          line('w-full'),
+          line('w-5')
+        )
+      );
+      break;
+
     case 'optimize-pdf':
       diagram = el(
         'div',

@@ -14,6 +14,7 @@ import {
   runCbzToPdfJob,
   runColorFiltersJob,
   runComparePdfJob,
+  runDocxToPdfJob,
   runDownloadAllExtractedImagesZipJob,
   runExtractImagesJob,
   runExtractTextJob,
@@ -26,7 +27,12 @@ import {
   runOptimizeJob,
   runPackageAttachmentsZipJob,
   runPdfToCbzJob,
+  runPdfToDocxJob,
   runPdfToImagesJob,
+  runPdfToMarkdownJob,
+  runPdfToPptxJob,
+  runPdfToXlsxJob,
+  runPptxToPdfJob,
   runPrivacyAuditForTarget,
   runReadOutlinesJob,
   runRedactPdfJob,
@@ -36,6 +42,7 @@ import {
   runSplitSpreadsJob,
   runUpdateAttachmentsJob,
   runWriteOutlinesJob,
+  runXlsxToPdfJob,
   downloadExtractedTextFile,
   downloadSingleAttachment,
   downloadSingleExtractedImage,
@@ -43,6 +50,7 @@ import {
   setCompareFile,
   useWorkspacePdfForCompare
 } from '../actions/export-runner.js';
+import { ingestFiles } from '../interactions/file-ingestion.js';
 import { el, mount, sanitizeImageSrc } from '../utils/dom.js';
 import { getToolIcon } from '../utils/tool-icons.js';
 import { getToolStyleBySlug } from '../utils/tool-styles.js';
@@ -68,6 +76,13 @@ const TOOL_TABS = [
   { id: 'convert', slug: 'images-to-pdf', label: 'Images to PDF', group: 'convert' },
   { id: 'convert', slug: 'pdf-to-images', label: 'PDF to Images', group: 'convert' },
   { id: 'cbz', slug: 'cbz-pdf', label: 'CBZ ↔ PDF', group: 'convert' },
+  { id: 'docx-to-pdf', slug: 'docx-to-pdf', label: 'Word → PDF', group: 'convert' },
+  { id: 'xlsx-to-pdf', slug: 'xlsx-to-pdf', label: 'Excel → PDF', group: 'convert' },
+  { id: 'pptx-to-pdf', slug: 'pptx-to-pdf', label: 'PowerPoint → PDF', group: 'convert' },
+  { id: 'pdf-to-markdown', slug: 'pdf-to-markdown', label: 'PDF → Markdown', group: 'convert' },
+  { id: 'pdf-to-docx', slug: 'pdf-to-docx', label: 'PDF → Word', group: 'convert' },
+  { id: 'pdf-to-xlsx', slug: 'pdf-to-xlsx', label: 'PDF → Excel', group: 'convert' },
+  { id: 'pdf-to-pptx', slug: 'pdf-to-pptx', label: 'PDF → PowerPoint', group: 'convert' },
   { id: 'extract-text', slug: 'extract-text', label: 'Extract Text', group: 'convert' },
   { id: 'extract-images', slug: 'extract-images', label: 'Extract Images', group: 'convert' },
   { id: 'optimize', slug: 'optimize-pdf', label: 'Compress PDF', group: 'docs' },
@@ -3850,6 +3865,657 @@ function buildToolBody(tabId) {
             )
           )
     );
+  }
+
+  /**
+   * Shared iOS-style non-blocking banner shown when near-zero vector text is found (`isLikelyScanned`).
+   * @param {{ allowVisualSlides?: boolean, onSwitchVisualSlides?: () => void }} [opts={}]
+   */
+  const buildScannedPdfInfoBanner = (opts = {}) =>
+    el(
+      'div',
+      {
+        className:
+          'p-3 rounded-[12px] bg-[#e8f2ff] border border-[#0071e3]/25 space-y-2 text-[11.5px] leading-[1.45] text-[#1d1d1f]'
+      },
+      el(
+        'p',
+        { className: 'font-semibold text-[#0071e3]' },
+        'Scanned / Image-Only PDF Detected'
+      ),
+      el(
+        'p',
+        { className: 'text-[#424245]' },
+        'Near-zero embedded text was found on the selected pages. Switch to an image-based export for crisp visual fidelity.'
+      ),
+      el(
+        'div',
+        { className: 'flex flex-wrap gap-1.5 pt-0.5' },
+        opts.allowVisualSlides && opts.onSwitchVisualSlides
+          ? el(
+              'button',
+              {
+                type: 'button',
+                className: 'btn-compact !h-7 !bg-[#0071e3] !text-white !border-transparent',
+                onClick: opts.onSwitchVisualSlides
+              },
+              'Use High-Fidelity Visual Slides'
+            )
+          : null,
+        el(
+          'button',
+          {
+            type: 'button',
+            className: 'btn-compact !h-7',
+            onClick: () => selectStudioTool('convert', 'pdf-to-images')
+          },
+          'Switch to PDF to Images'
+        )
+      )
+    );
+
+  if (tabId === 'pdf-to-markdown') {
+    const md = t.pdfToMarkdown;
+    const rangeInp = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'pdf-md-range',
+        type: 'text',
+        value: md.rangeExpression,
+        placeholder: 'all or e.g. 1-3, 5',
+        className: 'input-clay !h-9 mt-1',
+        onInput: (e) => {
+          md.rangeExpression = /** @type {HTMLInputElement} */ (e.target).value;
+        }
+      })
+    );
+    rangeInp.value = md.rangeExpression;
+
+    return el(
+      'div',
+      { className: 'space-y-3' },
+      buildPdfSourceSelect('pdf-md-target', md.targetFileId, (id) => {
+        md.targetFileId = id;
+        md.isLikelyScanned = false;
+        md.markdownPreview = '';
+        md.warnings = [];
+        workspace.emit('tool');
+      }),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Page Separator',
+          selectControl(
+            'pdf-md-sep',
+            'input-clay !h-9 mt-1',
+            md.pageBreakSeparator,
+            [
+              ['hr', 'Horizontal Rule (---)'],
+              ['comment', 'HTML Comment'],
+              ['none', 'Continuous Flow']
+            ],
+            (val) => {
+              md.pageBreakSeparator = val;
+            }
+          )
+        ),
+        labeledField('Page Range', rangeInp)
+      ),
+      el(
+        'div',
+        { className: 'space-y-2' },
+        el(
+          'label',
+          { className: 'flex items-center justify-between gap-2 p-2.5 rounded-[11px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer' },
+          el('span', { className: 'text-[12.5px] font-medium text-[#1d1d1f]' }, 'Include Page Numbers'),
+          el('input', {
+            type: 'checkbox',
+            checked: Boolean(md.includePageNumbers),
+            className: 'w-4 h-4 accent-[#0071e3]',
+            onChange: (e) => {
+              md.includePageNumbers = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          })
+        ),
+        el(
+          'label',
+          { className: 'flex items-center justify-between gap-2 p-2.5 rounded-[11px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer' },
+          el('span', { className: 'text-[12.5px] font-medium text-[#1d1d1f]' }, 'Detect Markdown Tables'),
+          el('input', {
+            type: 'checkbox',
+            checked: Boolean(md.detectTables),
+            className: 'w-4 h-4 accent-[#0071e3]',
+            onChange: (e) => {
+              md.detectTables = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          })
+        )
+      ),
+      md.isLikelyScanned ? buildScannedPdfInfoBanner() : null,
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'pdf-md-run-btn',
+          className: 'btn-primary w-full',
+          disabled: !md.targetFileId,
+          onClick: runPdfToMarkdownJob
+        },
+        'Convert & Download .md'
+      ),
+      md.markdownPreview
+        ? el(
+            'div',
+            { className: 'space-y-1.5' },
+            el(
+              'div',
+              { className: 'flex items-center justify-between gap-2' },
+              el('span', { className: 'text-[11px] font-medium text-[#6e6e73]' }, 'Markdown Preview'),
+              el(
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn-compact !h-7',
+                  onClick: async () => {
+                    await navigator.clipboard?.writeText(md.markdownPreview);
+                    workspace.showNotice('success', 'Copied', 'Markdown copied to clipboard.');
+                  }
+                },
+                'Copy'
+              )
+            ),
+            el(
+              'pre',
+              {
+                className:
+                  'p-2.5 rounded-[10px] bg-[#f2f2f7] border border-[#e5e5ea] max-h-40 overflow-auto text-[11px] font-mono whitespace-pre-wrap break-words'
+              },
+              md.markdownPreview.slice(0, 6000)
+            )
+          )
+        : null
+    );
+  }
+
+  if (tabId === 'pdf-to-docx') {
+    const docCfg = t.pdfToDocx;
+    const rangeInp = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'pdf-docx-range',
+        type: 'text',
+        value: docCfg.rangeExpression,
+        placeholder: 'all or e.g. 1-3, 5',
+        className: 'input-clay !h-9 mt-1',
+        onInput: (e) => {
+          docCfg.rangeExpression = /** @type {HTMLInputElement} */ (e.target).value;
+        }
+      })
+    );
+    rangeInp.value = docCfg.rangeExpression;
+
+    return el(
+      'div',
+      { className: 'space-y-3' },
+      buildPdfSourceSelect('pdf-docx-target', docCfg.targetFileId, (id) => {
+        docCfg.targetFileId = id;
+        docCfg.isLikelyScanned = false;
+        docCfg.warnings = [];
+        workspace.emit('tool');
+      }),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Layout Mode',
+          selectControl(
+            'pdf-docx-layout',
+            'input-clay !h-9 mt-1',
+            docCfg.layoutMode,
+            [
+              ['flowing', 'Flowing Document'],
+              ['preserve-lines', 'Preserve Line Breaks']
+            ],
+            (val) => {
+              docCfg.layoutMode = val;
+            }
+          )
+        ),
+        labeledField('Page Range', rangeInp)
+      ),
+      el(
+        'div',
+        { className: 'space-y-2' },
+        el(
+          'label',
+          { className: 'flex items-center justify-between gap-2 p-2.5 rounded-[11px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer' },
+          el('span', { className: 'text-[12.5px] font-medium text-[#1d1d1f]' }, 'Preserve Page Breaks'),
+          el('input', {
+            type: 'checkbox',
+            checked: Boolean(docCfg.preservePageBreaks),
+            className: 'w-4 h-4 accent-[#0071e3]',
+            onChange: (e) => {
+              docCfg.preservePageBreaks = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          })
+        ),
+        el(
+          'label',
+          { className: 'flex items-center justify-between gap-2 p-2.5 rounded-[11px] bg-[#f2f2f7] border border-[#e5e5ea] cursor-pointer' },
+          el('span', { className: 'text-[12.5px] font-medium text-[#1d1d1f]' }, 'Detect Word Tables'),
+          el('input', {
+            type: 'checkbox',
+            checked: Boolean(docCfg.detectTables),
+            className: 'w-4 h-4 accent-[#0071e3]',
+            onChange: (e) => {
+              docCfg.detectTables = /** @type {HTMLInputElement} */ (e.target).checked;
+            }
+          })
+        )
+      ),
+      docCfg.isLikelyScanned ? buildScannedPdfInfoBanner() : null,
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'pdf-docx-run-btn',
+          className: 'btn-primary w-full',
+          disabled: !docCfg.targetFileId,
+          onClick: runPdfToDocxJob
+        },
+        'Convert & Download .docx'
+      )
+    );
+  }
+
+  if (tabId === 'pdf-to-xlsx') {
+    const xlsCfg = t.pdfToXlsx;
+    const rangeInp = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'pdf-xlsx-range',
+        type: 'text',
+        value: xlsCfg.rangeExpression,
+        placeholder: 'all or e.g. 1-3, 5',
+        className: 'input-clay !h-9 mt-1',
+        onInput: (e) => {
+          xlsCfg.rangeExpression = /** @type {HTMLInputElement} */ (e.target).value;
+        }
+      })
+    );
+    rangeInp.value = xlsCfg.rangeExpression;
+
+    return el(
+      'div',
+      { className: 'space-y-3' },
+      buildPdfSourceSelect('pdf-xlsx-target', xlsCfg.targetFileId, (id) => {
+        xlsCfg.targetFileId = id;
+        xlsCfg.isLikelyScanned = false;
+        xlsCfg.warnings = [];
+        workspace.emit('tool');
+      }),
+      labeledField(
+        'Workbook Sheet Mode',
+        selectControl(
+          'pdf-xlsx-sheet-mode',
+          'input-clay !h-9 mt-1',
+          xlsCfg.sheetMode,
+          [
+            ['per-page', 'One Sheet per Page'],
+            ['combined', 'Combine All Pages into Single Sheet']
+          ],
+          (val) => {
+            xlsCfg.sheetMode = val;
+          }
+        )
+      ),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Extraction Mode',
+          selectControl(
+            'pdf-xlsx-extract-mode',
+            'input-clay !h-9 mt-1',
+            xlsCfg.extractionMode,
+            [
+              ['all-rows', 'All Text Rows'],
+              ['tables-only', 'Detected Tables Only']
+            ],
+            (val) => {
+              xlsCfg.extractionMode = val;
+            }
+          )
+        ),
+        labeledField('Page Range', rangeInp)
+      ),
+      xlsCfg.isLikelyScanned ? buildScannedPdfInfoBanner() : null,
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'pdf-xlsx-run-btn',
+          className: 'btn-primary w-full',
+          disabled: !xlsCfg.targetFileId,
+          onClick: runPdfToXlsxJob
+        },
+        'Convert & Download .xlsx'
+      )
+    );
+  }
+
+  if (tabId === 'pdf-to-pptx') {
+    const pptCfg = t.pdfToPptx;
+    const isVisual = pptCfg.mode !== 'editable';
+    const rangeInp = /** @type {HTMLInputElement} */ (
+      el('input', {
+        id: 'pdf-pptx-range',
+        type: 'text',
+        value: pptCfg.rangeExpression,
+        placeholder: 'all or e.g. 1-3, 5',
+        className: 'input-clay !h-9 mt-1',
+        onInput: (e) => {
+          pptCfg.rangeExpression = /** @type {HTMLInputElement} */ (e.target).value;
+        }
+      })
+    );
+    rangeInp.value = pptCfg.rangeExpression;
+
+    return el(
+      'div',
+      { className: 'space-y-3' },
+      buildPdfSourceSelect('pdf-pptx-target', pptCfg.targetFileId, (id) => {
+        pptCfg.targetFileId = id;
+        pptCfg.isLikelyScanned = false;
+        pptCfg.warnings = [];
+        workspace.emit('tool');
+      }),
+      el(
+        'div',
+        { className: 'grid grid-cols-2 gap-1.5 p-1 rounded-[12px] bg-[#f2f2f7] border border-[#e5e5ea]' },
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `h-8 rounded-[9px] text-[12px] font-medium ${isVisual ? 'bg-[#1d1d1f] text-white' : 'text-[#555]'}`,
+            onClick: () => {
+              pptCfg.mode = 'visual';
+              workspace.emit('tool');
+            }
+          },
+          'Visual Slides'
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `h-8 rounded-[9px] text-[12px] font-medium ${!isVisual ? 'bg-[#1d1d1f] text-white' : 'text-[#555]'}`,
+            onClick: () => {
+              pptCfg.mode = 'editable';
+              workspace.emit('tool');
+            }
+          },
+          'Editable Text'
+        )
+      ),
+      isVisual
+        ? el(
+            'div',
+            { className: 'grid grid-cols-2 gap-2' },
+            labeledField(
+              'Slide Format',
+              selectControl(
+                'pdf-pptx-img-fmt',
+                'input-clay !h-9 mt-1',
+                pptCfg.imageFormat,
+                [
+                  ['jpeg', 'JPEG (Fast)'],
+                  ['png', 'PNG (Lossless)']
+                ],
+                (val) => {
+                  pptCfg.imageFormat = val;
+                }
+              )
+            ),
+            labeledField(
+              'Resolution Scale',
+              selectControl(
+                'pdf-pptx-scale',
+                'input-clay !h-9 mt-1',
+                pptCfg.scale,
+                [
+                  [1.5, '1.5× (Compact)'],
+                  [2, '2.0× (Crisp)'],
+                  [3, '3.0× (HD)']
+                ],
+                (val) => {
+                  pptCfg.scale = Number(val) || 2;
+                }
+              )
+            )
+          )
+        : null,
+      labeledField('Page Range', rangeInp),
+      pptCfg.isLikelyScanned && !isVisual
+        ? buildScannedPdfInfoBanner({
+            allowVisualSlides: true,
+            onSwitchVisualSlides: () => {
+              pptCfg.mode = 'visual';
+              pptCfg.isLikelyScanned = false;
+              workspace.emit('tool');
+            }
+          })
+        : null,
+      el(
+        'button',
+        {
+          type: 'button',
+          id: 'pdf-pptx-run-btn',
+          className: 'btn-primary w-full',
+          disabled: !pptCfg.targetFileId,
+          onClick: runPdfToPptxJob
+        },
+        'Convert & Download .pptx'
+      )
+    );
+  }
+
+  /**
+   * Shared Office-to-PDF inspector renderer for Word, Excel/CSV, and PowerPoint.
+   */
+  const buildOfficeToPdfPanel = ({
+    inputId,
+    runBtnId,
+    accept,
+    pickLabel,
+    runLabel,
+    stateObj,
+    optionsNode,
+    onRun
+  }) =>
+    el(
+      'div',
+      { className: 'space-y-3' },
+      el(
+        'label',
+        { className: 'btn-secondary w-full cursor-pointer inline-flex items-center justify-center truncate px-3' },
+        stateObj.file ? `${stateObj.fileName} (${formatBytes(stateObj.file.size)})` : pickLabel,
+        el('input', {
+          id: inputId,
+          type: 'file',
+          accept,
+          className: 'hidden',
+          onChange: (e) => {
+            const f = /** @type {HTMLInputElement} */ (e.target).files?.[0];
+            if (f) {
+              stateObj.file = f;
+              stateObj.fileName = f.name;
+              stateObj.warnings = [];
+              stateObj.lastBuffer = null;
+              workspace.emit('tool');
+            }
+          }
+        })
+      ),
+      optionsNode,
+      el(
+        'div',
+        {
+          className:
+            'px-3 py-2 rounded-[10px] bg-[#f5f5f7] border border-black/[0.05] text-[11px] leading-[1.4] text-[#6e6e73]'
+        },
+        '100% local vector conversion — complex charts, macros, and animations are simplified.'
+      ),
+      stateObj.warnings?.length
+        ? el(
+            'div',
+            { className: 'p-2.5 rounded-[10px] bg-[#fffbeb] border border-[#ff9500]/30 text-[11px] text-[#92400e] space-y-1' },
+            stateObj.warnings.slice(0, 3).map((w) => el('p', {}, `• ${w}`))
+          )
+        : null,
+      el(
+        'button',
+        {
+          type: 'button',
+          id: runBtnId,
+          className: 'btn-primary w-full',
+          disabled: !stateObj.file,
+          onClick: onRun
+        },
+        runLabel
+      ),
+      stateObj.lastBuffer
+        ? el(
+            'div',
+            { className: 'p-2.5 rounded-[11px] bg-[#e8f8ed] border border-[#34c759]/25 flex items-center justify-between gap-2' },
+            el(
+              'span',
+              { className: 'text-[11.5px] font-medium text-[#248a3d] truncate' },
+              `${stateObj.lastFileName} (${stateObj.lastPageCount}p)`
+            ),
+            el(
+              'button',
+              {
+                type: 'button',
+                className: 'btn-compact !h-7 !bg-white shrink-0',
+                onClick: async () => {
+                  const pdfFile = new File([stateObj.lastBuffer], stateObj.lastFileName || 'converted.pdf', {
+                    type: 'application/pdf'
+                  });
+                  await ingestFiles([pdfFile]);
+                }
+              },
+              'Open in Studio'
+            )
+          )
+        : null
+    );
+
+  if (tabId === 'docx-to-pdf') {
+    const cfg = t.docxToPdf;
+    return buildOfficeToPdfPanel({
+      inputId: 'docx-pdf-input',
+      runBtnId: 'docx-pdf-run-btn',
+      accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      pickLabel: 'Select Word (.docx) File',
+      runLabel: 'Convert Word to PDF',
+      stateObj: cfg,
+      onRun: runDocxToPdfJob,
+      optionsNode: el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Paper Size',
+          selectControl(
+            'docx-paper-size',
+            'input-clay !h-9 mt-1',
+            cfg.paperSize,
+            [
+              ['a4', 'A4'],
+              ['letter', 'US Letter']
+            ],
+            (val) => {
+              cfg.paperSize = val;
+            }
+          )
+        ),
+        labeledField(
+          'Margins',
+          selectControl(
+            'docx-margins',
+            'input-clay !h-9 mt-1',
+            cfg.margins,
+            [
+              ['normal', 'Normal (56 pt)'],
+              ['compact', 'Compact (34 pt)']
+            ],
+            (val) => {
+              cfg.margins = val;
+            }
+          )
+        )
+      )
+    });
+  }
+
+  if (tabId === 'xlsx-to-pdf') {
+    const cfg = t.xlsxToPdf;
+    return buildOfficeToPdfPanel({
+      inputId: 'xlsx-pdf-input',
+      runBtnId: 'xlsx-pdf-run-btn',
+      accept:
+        '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv',
+      pickLabel: 'Select Excel or CSV File',
+      runLabel: 'Convert Spreadsheet to PDF',
+      stateObj: cfg,
+      onRun: runXlsxToPdfJob,
+      optionsNode: el(
+        'div',
+        { className: 'grid grid-cols-2 gap-2' },
+        labeledField(
+          'Orientation',
+          selectControl(
+            'xlsx-orientation',
+            'input-clay !h-9 mt-1',
+            cfg.orientation,
+            [
+              ['landscape', 'Landscape'],
+              ['portrait', 'Portrait']
+            ],
+            (val) => {
+              cfg.orientation = val;
+            }
+          )
+        ),
+        labeledField(
+          'Sheets',
+          selectControl(
+            'xlsx-sheets',
+            'input-clay !h-9 mt-1',
+            cfg.sheetSelection,
+            [
+              ['all', 'All Sheets'],
+              ['first', 'First Sheet Only']
+            ],
+            (val) => {
+              cfg.sheetSelection = val;
+            }
+          )
+        )
+      )
+    });
+  }
+
+  if (tabId === 'pptx-to-pdf') {
+    const cfg = t.pptxToPdf;
+    return buildOfficeToPdfPanel({
+      inputId: 'pptx-pdf-input',
+      runBtnId: 'pptx-pdf-run-btn',
+      accept: '.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      pickLabel: 'Select PowerPoint (.pptx) File',
+      runLabel: 'Convert PowerPoint to PDF',
+      stateObj: cfg,
+      onRun: runPptxToPdfJob,
+      optionsNode: null
+    });
   }
 
   // Optimize tab

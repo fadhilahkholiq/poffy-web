@@ -201,7 +201,7 @@ export function renderTopNav(container, onOpenFilePicker) {
             id: 'nav-add-files',
             className: hasPages
               ? 'btn-secondary !h-8 sm:!h-9 !px-2.5 sm:!px-3.5 text-[12.5px] sm:text-[13px] whitespace-nowrap'
-              : 'btn-primary !h-8 sm:!h-9 !px-3.5 sm:!px-4 text-[13px] whitespace-nowrap',
+              : 'btn-primary !h-8 sm:!h-9 !px-3 sm:!px-4 text-[12.5px] sm:text-[13px] whitespace-nowrap',
             onClick: onOpenFilePicker
           },
           hasPages
@@ -211,7 +211,12 @@ export function renderTopNav(container, onOpenFilePicker) {
                 el('span', { className: 'sm:hidden' }, '+ Add'),
                 el('span', { className: 'hidden sm:inline' }, '+ Add Files')
               )
-            : '+ Open PDF'
+            : el(
+                'span',
+                {},
+                el('span', { className: 'sm:hidden' }, '+ PDF'),
+                el('span', { className: 'hidden sm:inline' }, '+ Open PDF')
+              )
         ),
         hasPages
           ? el(

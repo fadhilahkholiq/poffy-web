@@ -31,6 +31,13 @@ const TOOL_STYLE_BY_SLUG = {
   'cbz-pdf': { ...IOS_SWATCHES.purple, category: 'Convert' },
   'extract-text': { ...IOS_SWATCHES.green, category: 'Extract' },
   'extract-images': { ...IOS_SWATCHES.orange, category: 'Extract' },
+  'pdf-to-markdown': { ...IOS_SWATCHES.purple, category: 'Convert' },
+  'pdf-to-docx': { ...IOS_SWATCHES.blue, category: 'Convert' },
+  'pdf-to-xlsx': { ...IOS_SWATCHES.green, category: 'Convert' },
+  'pdf-to-pptx': { ...IOS_SWATCHES.orange, category: 'Convert' },
+  'docx-to-pdf': { ...IOS_SWATCHES.blue, category: 'Convert' },
+  'xlsx-to-pdf': { ...IOS_SWATCHES.green, category: 'Convert' },
+  'pptx-to-pdf': { ...IOS_SWATCHES.orange, category: 'Convert' },
   'optimize-pdf': { ...IOS_SWATCHES.green, category: 'Output' },
   'metadata-scrubber': { ...IOS_SWATCHES.teal, category: 'Privacy' },
   'flatten-pdf': { ...IOS_SWATCHES.blue, category: 'Inspect' },
@@ -59,7 +66,14 @@ const TOOL_STYLE_BY_TAB_ID = {
   cbz: { ...IOS_SWATCHES.purple, category: 'Convert', slug: 'cbz-pdf' },
   metadata: { ...IOS_SWATCHES.teal, category: 'Privacy', slug: 'metadata-scrubber' },
   forms: { ...IOS_SWATCHES.blue, category: 'Inspect', slug: 'flatten-pdf' },
-  optimize: { ...IOS_SWATCHES.green, category: 'Output', slug: 'optimize-pdf' }
+  optimize: { ...IOS_SWATCHES.green, category: 'Output', slug: 'optimize-pdf' },
+  'pdf-to-markdown': { ...IOS_SWATCHES.purple, category: 'Convert', slug: 'pdf-to-markdown' },
+  'pdf-to-docx': { ...IOS_SWATCHES.blue, category: 'Convert', slug: 'pdf-to-docx' },
+  'pdf-to-xlsx': { ...IOS_SWATCHES.green, category: 'Convert', slug: 'pdf-to-xlsx' },
+  'pdf-to-pptx': { ...IOS_SWATCHES.orange, category: 'Convert', slug: 'pdf-to-pptx' },
+  'docx-to-pdf': { ...IOS_SWATCHES.blue, category: 'Convert', slug: 'docx-to-pdf' },
+  'xlsx-to-pdf': { ...IOS_SWATCHES.green, category: 'Convert', slug: 'xlsx-to-pdf' },
+  'pptx-to-pdf': { ...IOS_SWATCHES.orange, category: 'Convert', slug: 'pptx-to-pdf' }
 };
 
 /**

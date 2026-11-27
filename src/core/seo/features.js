@@ -747,6 +747,237 @@ export const FEATURE_PAGES = [
         a: 'Because WebP, JPEG, and PNG comic images are already compressed, store-mode zipSync creates valid .cbz files near-instantly.'
       }
     ]
+  },
+  {
+    slug: 'pdf-to-markdown',
+    path: '/pdf-to-markdown/',
+    tool: 'pdf-to-markdown',
+    shortName: 'PDF → Markdown',
+    badge: 'Markdown Converter',
+    title: 'PDF to Markdown (.md) Offline — Headings, Lists & Tables | Poffy',
+    description:
+      'Convert PDF documents into clean CommonMark and GitHub-Flavored Markdown (.md) with headings, bold/italic text, lists, and pipe tables 100% locally.',
+    keywords:
+      'pdf to markdown offline, convert pdf to md, pdf to gfm markdown tables, client-side pdf markdown converter',
+    headline: 'Convert PDFs into clean Markdown locally.',
+    subheadline:
+      'Reconstruct headings, lists, emphasis, and aligned tables from any text PDF into portable Markdown without uploading files.',
+    ctaLabel: 'Choose PDF to Convert',
+    accent: '#af52de',
+    accentText: '#ffffff',
+    highlights: [
+      'Detects headings, bold/italic text, lists & GFM pipe tables',
+      'Configurable page separators (---, comments, or continuous flow)',
+      'Zero uploads · runs offline in Web Workers'
+    ],
+    faqs: [
+      {
+        q: 'Does PDF to Markdown preserve tables and headings?',
+        a: 'Yes. Poffy computes document-wide font sizes for # to ### headings and clusters aligned column coordinates into GitHub-Flavored Markdown tables.'
+      },
+      {
+        q: 'Are uploaded files ever sent to an AI or cloud API?',
+        a: 'Never. Layout reconstruction and Markdown encoding run 100% deterministically in your browser memory.'
+      }
+    ]
+  },
+  {
+    slug: 'pdf-to-docx',
+    path: '/pdf-to-docx/',
+    tool: 'pdf-to-docx',
+    shortName: 'PDF → Word',
+    badge: 'Word Document Converter',
+    title: 'PDF to Word (.docx) Offline — Editable Paragraphs & Tables | Poffy',
+    description:
+      'Convert PDF files into editable Microsoft Word (.docx) documents with headings, bold/italic text runs, lists, and tables 100% offline in browser memory.',
+    keywords:
+      'pdf to word offline, pdf to docx converter, convert pdf to docx client side, private pdf to word',
+    headline: 'Turn PDFs into editable Word documents offline.',
+    subheadline:
+      'Reconstruct headings, paragraphs, lists, and structured tables into standard .docx files inside your browser with zero uploads.',
+    ctaLabel: 'Choose PDF for Word',
+    accent: '#007aff',
+    accentText: '#ffffff',
+    highlights: [
+      'Maps headings, bold/italic TextRuns, lists & native Word tables',
+      'Choose Flowing Document or Preserve Line Breaks layout mode',
+      'Optional page breaks between PDF pages · 100% local'
+    ],
+    faqs: [
+      {
+        q: 'Can I edit the exported .docx file in Microsoft Word and Google Docs?',
+        a: 'Yes. Poffy builds standard OpenXML .docx packages using structured headings, paragraphs, lists, and tables.'
+      },
+      {
+        q: 'What happens if my PDF is a scanned image without selectable text?',
+        a: 'Poffy warns you when no text layer is found and lets you export clean page images via PDF to Images or visual slides.'
+      }
+    ]
+  },
+  {
+    slug: 'pdf-to-xlsx',
+    path: '/pdf-to-xlsx/',
+    tool: 'pdf-to-xlsx',
+    shortName: 'PDF → Excel',
+    badge: 'Excel Spreadsheet Converter',
+    title: 'PDF to Excel (.xlsx) Offline — Extract Tables to Spreadsheets | Poffy',
+    description:
+      'Extract tables and column-aligned rows from PDFs into Microsoft Excel (.xlsx) workbooks 100% offline in your browser with zero file uploads.',
+    keywords:
+      'pdf to excel offline, pdf to xlsx converter, extract pdf tables to excel locally, private pdf to spreadsheet',
+    headline: 'Extract PDF tables straight into Excel offline.',
+    subheadline:
+      'Cluster multi-column tables and aligned rows into clean .xlsx worksheets, either one sheet per page or combined in one tab.',
+    ctaLabel: 'Choose PDF for Excel',
+    accent: '#34c759',
+    accentText: '#ffffff',
+    highlights: [
+      'Detects aligned multi-column tables & cell matrices automatically',
+      'Export one worksheet per page or combine into a single sheet',
+      'Choose Detected Tables Only or All Text Rows · zero uploads'
+    ],
+    faqs: [
+      {
+        q: 'Can I extract only detected tables instead of surrounding paragraphs?',
+        a: 'Yes. Switch Extraction Mode to Extract Detected Tables Only to skip narrative paragraphs and populate structured tables cleanly.'
+      },
+      {
+        q: 'Does SheetJS require an internet connection?',
+        a: 'No. Poffy bundles the spreadsheet engine locally inside a lazy Web Worker chunk cached for offline use.'
+      }
+    ]
+  },
+  {
+    slug: 'pdf-to-pptx',
+    path: '/pdf-to-pptx/',
+    tool: 'pdf-to-pptx',
+    shortName: 'PDF → PowerPoint',
+    badge: 'PowerPoint Converter',
+    title: 'PDF to PowerPoint (.pptx) Offline — Visual & Editable Slides | Poffy',
+    description:
+      'Convert PDF pages into PowerPoint (.pptx) decks 100% offline: choose full-bleed high-fidelity visual slides or editable text boxes and tables.',
+    keywords:
+      'pdf to powerpoint offline, pdf to pptx converter, convert pdf slides locally, private pdf to pptx',
+    headline: 'Convert PDFs into PowerPoint presentations offline.',
+    subheadline:
+      'Export matching aspect-ratio slides as high-fidelity visual pages or editable headings, bullets, and tables right inside your browser.',
+    ctaLabel: 'Choose PDF for PowerPoint',
+    accent: '#ff9500',
+    accentText: '#ffffff',
+    highlights: [
+      'High-Fidelity Visual Slides preserve exact layout & scanned decks',
+      'Editable Text Slides map headings, bullets & tables proportionally',
+      'Matching PDF slide aspect ratios · 100% offline Web Workers'
+    ],
+    faqs: [
+      {
+        q: 'Should I choose Visual Slides or Editable Text Slides?',
+        a: 'Use High-Fidelity Visual Slides for design decks, charts, or scanned PDFs where exact layout matters; choose Editable Text Slides to rewrite headings, bullets, and tables in PowerPoint.'
+      },
+      {
+        q: 'Does Poffy preserve widescreen or portrait PDF aspect ratios?',
+        a: 'Yes. Poffy reads the PDF page dimensions and defines a custom PowerPoint slide layout matching your document aspect ratio.'
+      }
+    ]
+  },
+  {
+    slug: 'docx-to-pdf',
+    path: '/docx-to-pdf/',
+    tool: 'docx-to-pdf',
+    shortName: 'Word → PDF',
+    badge: 'Word to PDF Converter',
+    title: 'Word (.docx) to PDF Offline — Vector Typography & Tables | Poffy',
+    description:
+      'Convert Microsoft Word (.docx) documents into crisp vector PDFs locally inside your browser with headings, lists, tables, and embedded PNG/JPEG images.',
+    keywords:
+      'word to pdf offline, docx to pdf converter, client side docx to pdf, private word to pdf, no upload docx converter',
+    headline: 'Convert Word (.docx) documents to PDF locally.',
+    subheadline:
+      'Render headings, styled paragraphs, lists, tables, and inline images into clean vector PDFs straight inside your browser.',
+    ctaLabel: 'Choose Word (.docx) File',
+    accent: '#007aff',
+    accentText: '#ffffff',
+    highlights: [
+      'Preserves headings, bold/italic/underline runs, lists & tables',
+      'Configurable A4/Letter paper size & Normal/Compact margins',
+      'Anti-ZIP-bomb OOXML parser · 100% offline with zero uploads'
+    ],
+    faqs: [
+      {
+        q: 'Does Word to PDF send my .docx document to Microsoft or a server?',
+        a: 'Never. Poffy unpacks your .docx locally with fflate and renders crisp vector PDFs with pdf-lib and @pdf-lib/fontkit inside a Web Worker.'
+      },
+      {
+        q: 'Can I open the converted PDF immediately in Poffy Studio?',
+        a: 'Yes. Dropping a .docx file offers one-click Download PDF or Open in Poffy Studio to merge, watermark, sign, or compress.'
+      }
+    ]
+  },
+  {
+    slug: 'xlsx-to-pdf',
+    path: '/xlsx-to-pdf/',
+    tool: 'xlsx-to-pdf',
+    shortName: 'Excel → PDF',
+    badge: 'Excel to PDF Converter',
+    title: 'Excel (.xlsx, .xls, .csv) to PDF Offline — Paginated Tables | Poffy',
+    description:
+      'Convert Excel workbooks (.xlsx, .xls) and CSV files into clean paginated vector PDF tables with Landscape/Portrait layout 100% offline.',
+    keywords:
+      'excel to pdf offline, xlsx to pdf converter, csv to pdf locally, client side spreadsheet to pdf, no upload excel pdf',
+    headline: 'Turn Excel spreadsheets and CSVs into crisp PDFs.',
+    subheadline:
+      'Auto-fit proportional columns, wrap cell text cleanly, shade headers, and repeat header rows across multi-page PDF exports.',
+    ctaLabel: 'Choose Excel or CSV File',
+    accent: '#34c759',
+    accentText: '#ffffff',
+    highlights: [
+      'Supports .xlsx, .xls & .csv with All Sheets or First Sheet mode',
+      'Landscape default, auto-fitted columns & repeated multi-page headers',
+      '100% offline vector PDF generation · zero uploads'
+    ],
+    faqs: [
+      {
+        q: 'Does Excel to PDF keep wide tables readable on PDF pages?',
+        a: 'Yes. Poffy defaults to Landscape pages, calculates proportional column widths from cell content, wraps long cells cleanly, and repeats header rows across page breaks.'
+      },
+      {
+        q: 'Are .csv and legacy .xls files supported?',
+        a: 'Yes. Both modern .xlsx workbooks, legacy .xls files, and UTF-8 .csv spreadsheets convert locally inside the Web Worker.'
+      }
+    ]
+  },
+  {
+    slug: 'pptx-to-pdf',
+    path: '/pptx-to-pdf/',
+    tool: 'pptx-to-pdf',
+    shortName: 'PowerPoint → PDF',
+    badge: 'PowerPoint to PDF Converter',
+    title: 'PowerPoint (.pptx) to PDF Offline — Exact Slide Aspect Ratio | Poffy',
+    description:
+      'Convert PowerPoint (.pptx) presentations to vector PDF slides locally in browser memory matching exact widescreen 16:9 or 4:3 dimensions.',
+    keywords:
+      'powerpoint to pdf offline, pptx to pdf converter, client side pptx to pdf, private slides to pdf',
+    headline: 'Convert PowerPoint (.pptx) decks to PDF offline.',
+    subheadline:
+      'Preserve exact slide aspect ratios, background fills, positioned text boxes, bullets, and embedded images with zero uploads.',
+    ctaLabel: 'Choose PowerPoint (.pptx) File',
+    accent: '#ff9500',
+    accentText: '#ffffff',
+    highlights: [
+      'Matches exact 16:9 / 4:3 slide dimensions from presentation.xml',
+      'Renders slide backgrounds, positioned text frames, bullets & images',
+      'Safe OOXML parser with entity guard · 100% browser memory'
+    ],
+    faqs: [
+      {
+        q: 'Does PowerPoint to PDF work completely offline?',
+        a: 'Yes. Poffy parses slide XML locally using fflate and fast-xml-parser without external servers or Office installations.'
+      },
+      {
+        q: 'Are complex charts or animations included?',
+        a: 'Poffy uses 100% local vector conversion — complex charts, macros, and animations are simplified while text, layouts, and embedded PNG/JPEG pictures are preserved cleanly.'
+      }
+    ]
   }
 ];
 

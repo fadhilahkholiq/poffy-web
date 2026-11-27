@@ -115,7 +115,7 @@ export function openCommandPalette() {
     el('input', {
       id: 'cmdk-search-input',
       type: 'search',
-      placeholder: hasWorkspacePages ? 'Switch studio tool' : 'Search all 22 offline PDF tools',
+      placeholder: hasWorkspacePages ? 'Switch studio tool' : `Search all ${FEATURE_PAGES.length} offline PDF tools`,
       className: 'w-full h-11 px-3 bg-transparent text-[14px] text-[#1d1d1f] outline-none placeholder:text-[#86868b]',
       onInput: (e) => {
         paletteQuery = /** @type {HTMLInputElement} */ (e.target).value;

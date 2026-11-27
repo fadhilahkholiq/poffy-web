@@ -273,7 +273,7 @@ function buildAboutContent(onOpenFilePicker) {
         el(
           'p',
           { className: 'text-[13.5px] text-[#6e6e73]' },
-          'Open any PDF, image, or CBZ file locally, or jump back to browse all 22 tools.'
+          'Open any PDF, Office file, image, or CBZ locally, or jump back to browse all 29 tools.'
         )
       ),
       el(
@@ -291,7 +291,7 @@ function buildAboutContent(onOpenFilePicker) {
         el(
           'a',
           { href: '/', className: 'btn-secondary whitespace-nowrap no-underline' },
-          'Explore All 22 Tools'
+          'Explore All 29 Tools'
         )
       )
     )

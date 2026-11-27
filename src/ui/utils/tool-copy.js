@@ -109,6 +109,48 @@ export const STUDIO_TOOL_COPY = {
     category: 'convert',
     categoryLabel: 'Convert'
   },
+  'pdf-to-markdown': {
+    title: 'PDF → Markdown',
+    summary: 'Turn headings, lists, and tables into clean Markdown text ready for notes or docs.',
+    category: 'convert',
+    categoryLabel: 'Convert'
+  },
+  'pdf-to-docx': {
+    title: 'PDF → Word',
+    summary: 'Convert PDF paragraphs, headings, and tables into an editable Word document.',
+    category: 'convert',
+    categoryLabel: 'Convert'
+  },
+  'pdf-to-xlsx': {
+    title: 'PDF → Excel',
+    summary: 'Extract aligned PDF tables and structured rows straight into Excel spreadsheets.',
+    category: 'convert',
+    categoryLabel: 'Convert'
+  },
+  'pdf-to-pptx': {
+    title: 'PDF → PowerPoint',
+    summary: 'Export PDF pages as crisp PowerPoint slides or editable text boxes and tables.',
+    category: 'convert',
+    categoryLabel: 'Convert'
+  },
+  'docx-to-pdf': {
+    title: 'Word → PDF',
+    summary: 'Turn Word (.docx) paragraphs, tables, and images into a crisp vector PDF locally.',
+    category: 'convert',
+    categoryLabel: 'Convert'
+  },
+  'xlsx-to-pdf': {
+    title: 'Excel → PDF',
+    summary: 'Convert Excel workbooks and CSV sheets into clean paginated vector PDF tables.',
+    category: 'convert',
+    categoryLabel: 'Convert'
+  },
+  'pptx-to-pdf': {
+    title: 'PowerPoint → PDF',
+    summary: 'Render PowerPoint (.pptx) slides locally at exact presentation aspect ratios.',
+    category: 'convert',
+    categoryLabel: 'Convert'
+  },
   'optimize-pdf': {
     title: 'Compress PDF',
     summary: 'Shrink heavy PDF file sizes for faster sharing while keeping text sharp.',

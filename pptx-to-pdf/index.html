@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="pptx-to-pdf">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>PowerPoint (.pptx) to PDF Offline — Exact Slide Aspect Ratio | Poffy</title>
+    <meta name="description" content="Convert PowerPoint (.pptx) presentations to vector PDF slides locally in browser memory matching exact widescreen 16:9 or 4:3 dimensions." />
+    <meta name="keywords" content="powerpoint to pdf offline, pptx to pdf converter, client side pptx to pdf, private slides to pdf" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
+    <meta property="og:title" content="PowerPoint (.pptx) to PDF Offline — Exact Slide Aspect Ratio | Poffy" />
+    <meta property="og:description" content="Convert PowerPoint (.pptx) presentations to vector PDF slides locally in browser memory matching exact widescreen 16:9 or 4:3 dimensions." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PowerPoint → PDF · Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PowerPoint (.pptx) to PDF Offline — Exact Slide Aspect Ratio | Poffy" />
+    <meta name="twitter:description" content="Convert PowerPoint (.pptx) presentations to vector PDF slides locally in browser memory matching exact widescreen 16:9 or 4:3 dimensions." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="PowerPoint → PDF · Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"PowerPoint (.pptx) to PDF Offline — Exact Slide Aspect Ratio","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Convert PowerPoint (.pptx) presentations to vector PDF slides locally in browser memory matching exact widescreen 16:9 or 4:3 dimensions.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Matches exact 16:9 / 4:3 slide dimensions from presentation.xml","Renders slide backgrounds, positioned text frames, bullets & images","Safe OOXML parser with entity guard · 100% browser memory"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does PowerPoint to PDF work completely offline?","acceptedAnswer":{"@type":"Answer","text":"Yes. Poffy parses slide XML locally using fflate and fast-xml-parser without external servers or Office installations."}},{"@type":"Question","name":"Are complex charts or animations included?","acceptedAnswer":{"@type":"Answer","text":"Poffy uses 100% local vector conversion — complex charts, macros, and animations are simplified while text, layouts, and embedded PNG/JPEG pictures are preserved cleanly."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Convert PowerPoint (.pptx) decks to PDF offline.</h1>
+        <p>Preserve exact slide aspect ratios, background fills, positioned text boxes, bullets, and embedded images with zero uploads.</p>
+        <ul>
+          <li>Matches exact 16:9 / 4:3 slide dimensions from presentation.xml</li>
+          <li>Renders slide backgrounds, positioned text frames, bullets &amp; images</li>
+          <li>Safe OOXML parser with entity guard · 100% browser memory</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use PowerPoint → PDF offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

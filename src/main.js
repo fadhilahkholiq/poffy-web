@@ -64,7 +64,8 @@ function bootstrap() {
       id: 'global-file-input',
       type: 'file',
       multiple: true,
-      accept: 'application/pdf,.pdf,image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp',
+      accept:
+        'application/pdf,.pdf,image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp,.docx,.xlsx,.xls,.csv,.pptx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/vnd.openxmlformats-officedocument.presentationml.presentation',
       className: 'hidden'
     })
   );
@@ -160,7 +161,20 @@ function bootstrap() {
                 },
                 {
                   title: 'Convert & Extract',
-                  slugs: ['images-to-pdf', 'pdf-to-images', 'cbz-pdf', 'extract-text', 'extract-images'],
+                  slugs: [
+                    'images-to-pdf',
+                    'pdf-to-images',
+                    'cbz-pdf',
+                    'docx-to-pdf',
+                    'xlsx-to-pdf',
+                    'pptx-to-pdf',
+                    'pdf-to-markdown',
+                    'pdf-to-docx',
+                    'pdf-to-xlsx',
+                    'pdf-to-pptx',
+                    'extract-text',
+                    'extract-images'
+                  ],
                   includeHome: false
                 },
                 {

@@ -44,12 +44,19 @@ import {
   writeOutlines
 } from '../core/pdf/outlines.js';
 import { cbzToPdf, pdfToCbz, unpackSortedCbzEntries } from '../core/pdf/cbz.js';
+import { convertPdfToMarkdown } from '../core/convert/pdf-to-markdown.js';
+import { convertPdfToDocx } from '../core/convert/pdf-to-docx.js';
+import { convertPdfToXlsx } from '../core/convert/pdf-to-xlsx.js';
+import { convertPdfToPptx } from '../core/convert/pdf-to-pptx.js';
+import { convertDocxToPdf } from '../core/convert/docx-to-pdf.js';
+import { convertXlsxToPdf } from '../core/convert/xlsx-to-pdf.js';
+import { convertPptxToPdf } from '../core/convert/pptx-to-pdf.js';
 import { assertNotAborted, loadPdfSafe } from '../core/pdf/doc-loader.js';
 
 /**
  * @typedef {Object} WorkerRequest
  * @property {string} requestId - Correlation UUID
- * @property {'REGISTER_SOURCE'|'EVICT_SOURCE'|'CLEAR_SOURCES'|'MERGE'|'SPLIT'|'EXPORT_WORKSPACE'|'INSPECT_META'|'INSPECT_PRIVACY_AUDIT'|'APPLY_META'|'INSPECT_FORMS'|'APPLY_FORMS'|'IMAGES_TO_PDF'|'OPTIMIZE'|'AUTO_CROP'|'BATCH_BATES'|'RESIZE_PDF'|'NUP_BOOKLET'|'SPLIT_SPREADS'|'COLOR_FILTERS'|'PREVIEW_COLOR_FILTER'|'FIND_REDACTION_MATCHES'|'REDACT_PDF'|'SIGN_ANNOTATE'|'COMPARE_PDF'|'EXPORT_DIFF_REPORT'|'EXTRACT_TEXT'|'BATCH_EXTRACT_TEXT_ZIP'|'EXTRACT_IMAGES'|'PACKAGE_IMAGES_ZIP'|'INSPECT_ATTACHMENTS'|'UPDATE_ATTACHMENTS'|'PACKAGE_ATTACHMENTS_ZIP'|'READ_OUTLINES'|'WRITE_OUTLINES'|'INSPECT_CBZ'|'CBZ_TO_PDF'|'PDF_TO_CBZ'|'ABORT_JOB'} type
+ * @property {'REGISTER_SOURCE'|'EVICT_SOURCE'|'CLEAR_SOURCES'|'MERGE'|'SPLIT'|'EXPORT_WORKSPACE'|'INSPECT_META'|'INSPECT_PRIVACY_AUDIT'|'APPLY_META'|'INSPECT_FORMS'|'APPLY_FORMS'|'IMAGES_TO_PDF'|'OPTIMIZE'|'AUTO_CROP'|'BATCH_BATES'|'RESIZE_PDF'|'NUP_BOOKLET'|'SPLIT_SPREADS'|'COLOR_FILTERS'|'PREVIEW_COLOR_FILTER'|'FIND_REDACTION_MATCHES'|'REDACT_PDF'|'SIGN_ANNOTATE'|'COMPARE_PDF'|'EXPORT_DIFF_REPORT'|'EXTRACT_TEXT'|'BATCH_EXTRACT_TEXT_ZIP'|'EXTRACT_IMAGES'|'PACKAGE_IMAGES_ZIP'|'INSPECT_ATTACHMENTS'|'UPDATE_ATTACHMENTS'|'PACKAGE_ATTACHMENTS_ZIP'|'READ_OUTLINES'|'WRITE_OUTLINES'|'INSPECT_CBZ'|'CBZ_TO_PDF'|'PDF_TO_CBZ'|'PDF_TO_MARKDOWN'|'PDF_TO_DOCX'|'PDF_TO_XLSX'|'PDF_TO_PPTX'|'DOCX_TO_PDF'|'XLSX_TO_PDF'|'PPTX_TO_PDF'|'ABORT_JOB'} type
  * @property {Object} payload - Operation-specific configuration
  */
 
@@ -949,6 +956,183 @@ self.addEventListener('message', async (event) => {
           fileName: `${base}.cbz`,
           mimeType: 'application/vnd.comicbook+zip',
           data: { pageCount: res.pageCount, entryNames: res.entryNames }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'PDF_TO_MARKDOWN') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await convertPdfToMarkdown(src.buffer, payload.config || {}, src.name, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = res.buffer;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType,
+          data: {
+            warnings: res.warnings,
+            markdownText: res.markdownText,
+            pageCount: res.pageCount,
+            isLikelyScanned: res.isLikelyScanned,
+            tableCount: res.tableCount
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'PDF_TO_DOCX') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await convertPdfToDocx(src.buffer, payload.config || {}, src.name, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = res.buffer;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType,
+          data: {
+            warnings: res.warnings,
+            pageCount: res.pageCount,
+            isLikelyScanned: res.isLikelyScanned,
+            tableCount: res.tableCount
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'PDF_TO_XLSX') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await convertPdfToXlsx(src.buffer, payload.config || {}, src.name, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = res.buffer;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType,
+          data: {
+            warnings: res.warnings,
+            pageCount: res.pageCount,
+            isLikelyScanned: res.isLikelyScanned,
+            sheetCount: res.sheetCount,
+            tableCount: res.tableCount
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'PDF_TO_PPTX') {
+      const src = resolveSource(payload.sourceFileId, payload.inlineSources);
+      const res = await convertPdfToPptx(src.buffer, payload.config || {}, src.name, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = res.buffer;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType,
+          data: {
+            warnings: res.warnings,
+            slideCount: res.slideCount,
+            isLikelyScanned: res.isLikelyScanned,
+            mode: res.mode
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'DOCX_TO_PDF') {
+      const res = await convertDocxToPdf(payload.buffer, payload.config || {}, payload.fileName, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = res.buffer;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType,
+          data: {
+            warnings: res.warnings,
+            pageCount: res.pageCount
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'XLSX_TO_PDF') {
+      const res = await convertXlsxToPdf(payload.buffer, payload.config || {}, payload.fileName, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = res.buffer;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType,
+          data: {
+            warnings: res.warnings,
+            pageCount: res.pageCount,
+            sheetCount: res.sheetCount
+          }
+        },
+        [resultBuffer]
+      );
+      return;
+    }
+
+    if (type === 'PPTX_TO_PDF') {
+      const res = await convertPptxToPdf(payload.buffer, payload.config || {}, payload.fileName, {
+        onProgress: (pct, stage, cur, tot) => postProgress(requestId, pct, stage, cur, tot),
+        abortToken
+      });
+      const resultBuffer = res.buffer;
+      self.postMessage(
+        {
+          requestId,
+          status: 'SUCCESS',
+          resultBuffer,
+          fileName: res.fileName,
+          mimeType: res.mimeType,
+          data: {
+            warnings: res.warnings,
+            pageCount: res.slideCount,
+            slideCount: res.slideCount
+          }
         },
         [resultBuffer]
       );

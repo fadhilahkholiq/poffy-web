@@ -1759,3 +1759,280 @@ export async function runPdfToCbzJob() {
     );
   }
 }
+
+/**
+ * Shared runner for PDF -> Markdown / Word / Excel / PowerPoint local converters.
+ * @param {Object} opts
+ * @param {string} opts.workerType
+ * @param {Object} opts.stateObj
+ * @param {Object} opts.config
+ * @param {string} opts.stageLabel
+ * @param {string} opts.successTitle
+ * @param {(data: any, res: any) => string} opts.buildSummary
+ * @param {(data: any, res: any) => void} [opts.onSuccessData]
+ */
+async function runDocumentConverterJob({
+  workerType,
+  stateObj,
+  config,
+  stageLabel,
+  successTitle,
+  buildSummary,
+  onSuccessData
+}) {
+  const src = stateObj.targetFileId ? workspace.sourceFiles.get(stateObj.targetFileId) : null;
+  if (!src || src.type !== 'pdf') {
+    workspace.showNotice('warning', 'No PDF Selected', 'Upload or select a PDF file to convert.');
+    return;
+  }
+
+  const result = await runWithProgress(stageLabel, (onProgress, onRequestId) =>
+    pdfOpsClient.run(
+      workerType,
+      {
+        sourceFileId: src.id,
+        fileName: src.name,
+        config
+      },
+      { onProgress, onRequestId }
+    )
+  );
+
+  if (!result?.resultBuffer) return;
+
+  const data = result.data || {};
+  stateObj.isLikelyScanned = Boolean(data.isLikelyScanned);
+  stateObj.warnings = Array.isArray(data.warnings) ? data.warnings : [];
+  onSuccessData?.(data, result);
+  workspace.emit('tool');
+
+  triggerDownload(result.resultBuffer, result.fileName, result.mimeType);
+  workspace.showNotice('success', successTitle, buildSummary(data, result));
+}
+
+/**
+ * Converts a selected PDF into CommonMark / GitHub-Flavored Markdown (`.md`).
+ */
+export async function runPdfToMarkdownJob() {
+  const cfg = workspace.tools.pdfToMarkdown;
+  await runDocumentConverterJob({
+    workerType: 'PDF_TO_MARKDOWN',
+    stateObj: cfg,
+    config: {
+      rangeExpression: cfg.rangeExpression,
+      pageBreakSeparator: cfg.pageBreakSeparator,
+      includePageNumbers: cfg.includePageNumbers,
+      detectTables: cfg.detectTables
+    },
+    stageLabel: 'Converting PDF to Markdown...',
+    successTitle: 'Markdown Exported',
+    onSuccessData: (data, res) => {
+      cfg.markdownPreview = data.markdownText || '';
+      cfg.lastFileName = res.fileName || '';
+    },
+    buildSummary: (data, res) =>
+      `Downloaded ${res.fileName} (${data.pageCount || 0} pages, ${formatBytes(res.resultBuffer.byteLength)}).`
+  });
+}
+
+/**
+ * Converts a selected PDF into an editable Microsoft Word (`.docx`) document.
+ */
+export async function runPdfToDocxJob() {
+  const cfg = workspace.tools.pdfToDocx;
+  await runDocumentConverterJob({
+    workerType: 'PDF_TO_DOCX',
+    stateObj: cfg,
+    config: {
+      rangeExpression: cfg.rangeExpression,
+      preservePageBreaks: cfg.preservePageBreaks,
+      layoutMode: cfg.layoutMode,
+      detectTables: cfg.detectTables
+    },
+    stageLabel: 'Converting PDF to Word (.docx)...',
+    successTitle: 'Word Document Exported',
+    buildSummary: (data, res) =>
+      `Downloaded ${res.fileName} (${data.pageCount || 0} pages, ${formatBytes(res.resultBuffer.byteLength)}).`
+  });
+}
+
+/**
+ * Converts a selected PDF into an Excel (`.xlsx`) workbook.
+ */
+export async function runPdfToXlsxJob() {
+  const cfg = workspace.tools.pdfToXlsx;
+  await runDocumentConverterJob({
+    workerType: 'PDF_TO_XLSX',
+    stateObj: cfg,
+    config: {
+      rangeExpression: cfg.rangeExpression,
+      sheetMode: cfg.sheetMode,
+      extractionMode: cfg.extractionMode
+    },
+    stageLabel: 'Converting PDF to Excel (.xlsx)...',
+    successTitle: 'Excel Workbook Exported',
+    buildSummary: (data, res) =>
+      `Downloaded ${res.fileName} (${data.sheetCount || 1} sheet(s), ${formatBytes(res.resultBuffer.byteLength)}).`
+  });
+}
+
+/**
+ * Converts a selected PDF into a PowerPoint (`.pptx`) presentation.
+ */
+export async function runPdfToPptxJob() {
+  const cfg = workspace.tools.pdfToPptx;
+  await runDocumentConverterJob({
+    workerType: 'PDF_TO_PPTX',
+    stateObj: cfg,
+    config: {
+      rangeExpression: cfg.rangeExpression,
+      mode: cfg.mode,
+      imageFormat: cfg.imageFormat,
+      scale: cfg.scale
+    },
+    stageLabel:
+      cfg.mode === 'visual'
+        ? 'Rendering PDF pages to PowerPoint slides...'
+        : 'Converting PDF layout to PowerPoint...',
+    successTitle: 'PowerPoint Exported',
+    buildSummary: (data, res) =>
+      `Downloaded ${res.fileName} (${data.slideCount || 0} slides, ${formatBytes(res.resultBuffer.byteLength)}).`
+  });
+}
+
+/**
+ * Shared helper that converts a local Office file (`File`) to a PDF ArrayBuffer inside `pdf-ops.worker.js`.
+ * @param {File} file
+ * @param {'docx'|'xlsx'|'pptx'} kind
+ * @param {Object} config
+ * @returns {Promise<{ resultBuffer: ArrayBuffer, fileName: string, pageCount: number, warnings: string[] }|null>}
+ */
+async function convertOfficeFileInWorker(file, kind, config = {}) {
+  const buffer = await readFileAsArrayBuffer(file);
+  const transferCopy = buffer.slice(0);
+  const workerType =
+    kind === 'docx' ? 'DOCX_TO_PDF' : kind === 'xlsx' ? 'XLSX_TO_PDF' : 'PPTX_TO_PDF';
+  const stageLabel =
+    kind === 'docx'
+      ? `Converting ${file.name} to PDF...`
+      : kind === 'xlsx'
+        ? `Rendering ${file.name} spreadsheets to PDF...`
+        : `Rendering ${file.name} slides to PDF...`;
+
+  const res = await runWithProgress(stageLabel, (onProgress, onRequestId) =>
+    pdfOpsClient.run(
+      workerType,
+      {
+        buffer: transferCopy,
+        fileName: file.name,
+        config
+      },
+      { transfer: [transferCopy], onProgress, onRequestId }
+    )
+  );
+
+  if (!res?.resultBuffer) return null;
+  return {
+    resultBuffer: res.resultBuffer,
+    fileName: res.fileName,
+    pageCount: res.data?.pageCount || res.data?.slideCount || 1,
+    warnings: Array.isArray(res.data?.warnings) ? res.data.warnings : []
+  };
+}
+
+/**
+ * Auto-converts a dropped `.docx`, `.xlsx`, `.xls`, `.csv`, or `.pptx` file into PDF
+ * and opens the two-action prompt modal (Download PDF directly OR Open in Poffy Studio).
+ * @param {File} file
+ * @param {'docx'|'xlsx'|'pptx'} kind
+ */
+export async function runAutoConvertOfficeDrop(file, kind) {
+  const defaultCfg =
+    kind === 'docx'
+      ? { paperSize: 'a4', margins: 'normal' }
+      : kind === 'xlsx'
+        ? { orientation: 'landscape', sheetSelection: 'all' }
+        : {};
+  const converted = await convertOfficeFileInWorker(file, kind, defaultCfg);
+  if (!converted) return;
+
+  workspace.tools.officeConvert = {
+    openModal: true,
+    convertedBuffer: converted.resultBuffer,
+    convertedFileName: converted.fileName,
+    sourceFileName: file.name,
+    kind,
+    pageCount: converted.pageCount,
+    warnings: converted.warnings
+  };
+  workspace.emit('tool');
+}
+
+/**
+ * Downloads the currently held PDF from the Office-to-PDF drop conversion modal.
+ */
+export function downloadOfficeConvertedPdf() {
+  const oc = workspace.tools.officeConvert;
+  if (!oc.convertedBuffer) return;
+  triggerDownload(oc.convertedBuffer, oc.convertedFileName, 'application/pdf');
+  workspace.showNotice(
+    'success',
+    'PDF Downloaded',
+    `Saved ${oc.convertedFileName} (${oc.pageCount} pages, ${formatBytes(oc.convertedBuffer.byteLength)}).`
+  );
+}
+
+/**
+ * Shared inspector converter runner for `.docx`, `.xlsx`/`.xls`/`.csv`, and `.pptx`.
+ */
+async function runInspectorOfficeToPdfJob(stateObj, kind, config, title) {
+  if (!stateObj.file) {
+    workspace.showNotice('warning', 'No File Selected', `Select a source file to convert to PDF.`);
+    return;
+  }
+  const converted = await convertOfficeFileInWorker(stateObj.file, kind, config);
+  if (!converted) return;
+
+  stateObj.lastBuffer = converted.resultBuffer;
+  stateObj.lastFileName = converted.fileName;
+  stateObj.lastPageCount = converted.pageCount;
+  stateObj.warnings = converted.warnings;
+  workspace.emit('tool');
+
+  triggerDownload(converted.resultBuffer, converted.fileName, 'application/pdf');
+  workspace.showNotice(
+    'success',
+    title,
+    `Downloaded ${converted.fileName} (${converted.pageCount} pages, ${formatBytes(
+      converted.resultBuffer.byteLength
+    )}).`
+  );
+}
+
+/** Converts the selected `.docx` file to PDF with current inspector options. */
+export async function runDocxToPdfJob() {
+  const cfg = workspace.tools.docxToPdf;
+  await runInspectorOfficeToPdfJob(
+    cfg,
+    'docx',
+    { paperSize: cfg.paperSize, margins: cfg.margins },
+    'Word Converted to PDF'
+  );
+}
+
+/** Converts the selected `.xlsx`/`.xls`/`.csv` file to PDF with current inspector options. */
+export async function runXlsxToPdfJob() {
+  const cfg = workspace.tools.xlsxToPdf;
+  await runInspectorOfficeToPdfJob(
+    cfg,
+    'xlsx',
+    { orientation: cfg.orientation, sheetSelection: cfg.sheetSelection },
+    'Spreadsheet Converted to PDF'
+  );
+}
+
+/** Converts the selected `.pptx` file to PDF with current inspector options. */
+export async function runPptxToPdfJob() {
+  const cfg = workspace.tools.pptxToPdf;
+  await runInspectorOfficeToPdfJob(cfg, 'pptx', {}, 'PowerPoint Converted to PDF');
+}

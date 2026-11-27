@@ -107,7 +107,7 @@ function buildDropzoneBar(onOpenFilePicker, opts = {}) {
           className: 'flex items-center justify-center sm:justify-start gap-1.5 sm:pl-2 sm:border-l sm:border-black/[0.08]',
           'aria-label': 'Supported formats'
         },
-        ['PDF', 'PNG', 'JPG', 'WebP'].map((fmt) =>
+        ['PDF', 'DOCX', 'XLSX', 'PPTX', 'PNG', 'JPG'].map((fmt) =>
           el(
             'span',
             {

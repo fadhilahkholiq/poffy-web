@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="pdf-to-docx">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>PDF to Word (.docx) Offline — Editable Paragraphs &amp; Tables | Poffy</title>
+    <meta name="description" content="Convert PDF files into editable Microsoft Word (.docx) documents with headings, bold/italic text runs, lists, and tables 100% offline in browser memory." />
+    <meta name="keywords" content="pdf to word offline, pdf to docx converter, convert pdf to docx client side, private pdf to word" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
+    <meta property="og:title" content="PDF to Word (.docx) Offline — Editable Paragraphs &amp; Tables | Poffy" />
+    <meta property="og:description" content="Convert PDF files into editable Microsoft Word (.docx) documents with headings, bold/italic text runs, lists, and tables 100% offline in browser memory." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PDF → Word · Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PDF to Word (.docx) Offline — Editable Paragraphs &amp; Tables | Poffy" />
+    <meta name="twitter:description" content="Convert PDF files into editable Microsoft Word (.docx) documents with headings, bold/italic text runs, lists, and tables 100% offline in browser memory." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="PDF → Word · Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"PDF to Word (.docx) Offline — Editable Paragraphs & Tables","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Convert PDF files into editable Microsoft Word (.docx) documents with headings, bold/italic text runs, lists, and tables 100% offline in browser memory.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Maps headings, bold/italic TextRuns, lists & native Word tables","Choose Flowing Document or Preserve Line Breaks layout mode","Optional page breaks between PDF pages · 100% local"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can I edit the exported .docx file in Microsoft Word and Google Docs?","acceptedAnswer":{"@type":"Answer","text":"Yes. Poffy builds standard OpenXML .docx packages using structured headings, paragraphs, lists, and tables."}},{"@type":"Question","name":"What happens if my PDF is a scanned image without selectable text?","acceptedAnswer":{"@type":"Answer","text":"Poffy warns you when no text layer is found and lets you export clean page images via PDF to Images or visual slides."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Turn PDFs into editable Word documents offline.</h1>
+        <p>Reconstruct headings, paragraphs, lists, and structured tables into standard .docx files inside your browser with zero uploads.</p>
+        <ul>
+          <li>Maps headings, bold/italic TextRuns, lists &amp; native Word tables</li>
+          <li>Choose Flowing Document or Preserve Line Breaks layout mode</li>
+          <li>Optional page breaks between PDF pages · 100% local</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use PDF → Word offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

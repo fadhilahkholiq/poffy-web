@@ -2,14 +2,15 @@ import { pdfOpsClient } from '../../core/pdf/worker-client.js';
 import { pdfRenderClient } from '../../core/render/pdfjs-client.js';
 import { readFileAsArrayBuffer } from '../../core/utils/file-io.js';
 import { createUuid, workspace } from '../../state/workspace.js';
+import { runAutoConvertOfficeDrop } from '../actions/export-runner.js';
 import { el, svgEl } from '../utils/dom.js';
 
 const SUPPORTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 
 /**
- * Checks whether a File is a supported PDF or raster image.
+ * Checks whether a File is a supported PDF, raster image, or local Office/spreadsheet file.
  * @param {File} file
- * @returns {'pdf'|'image'|null}
+ * @returns {'pdf'|'image'|'docx'|'xlsx'|'pptx'|null}
  */
 function classifyFile(file) {
   const name = file.name.toLowerCase();
@@ -26,12 +27,34 @@ function classifyFile(file) {
   ) {
     return 'image';
   }
+  if (
+    name.endsWith('.docx') ||
+    type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ) {
+    return 'docx';
+  }
+  if (
+    name.endsWith('.xlsx') ||
+    name.endsWith('.xls') ||
+    name.endsWith('.csv') ||
+    type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    type === 'application/vnd.ms-excel' ||
+    type === 'text/csv'
+  ) {
+    return 'xlsx';
+  }
+  if (
+    name.endsWith('.pptx') ||
+    type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ) {
+    return 'pptx';
+  }
   return null;
 }
 
 /**
- * Reads, validates, registers, and adds one or more PDF/image files into the workspace.
- * Catches EncryptedPdfError cleanly so password-protected PDFs never crash the UI.
+ * Reads, validates, registers, and adds one or more PDF/image files into the workspace,
+ * or triggers automatic offline Office-to-PDF conversion for `.docx`, `.xlsx`/`.xls`/`.csv`, and `.pptx`.
  * @param {FileList|File[]} fileList
  * @returns {Promise<void>}
  */
@@ -40,10 +63,12 @@ export async function ingestFiles(fileList) {
   if (files.length === 0) return;
 
   const valid = [];
+  const officeFiles = [];
   const rejected = [];
   for (const f of files) {
     const kind = classifyFile(f);
-    if (kind) valid.push({ file: f, kind });
+    if (kind === 'pdf' || kind === 'image') valid.push({ file: f, kind });
+    else if (kind === 'docx' || kind === 'xlsx' || kind === 'pptx') officeFiles.push({ file: f, kind });
     else rejected.push(f.name);
   }
 
@@ -51,8 +76,14 @@ export async function ingestFiles(fileList) {
     workspace.showNotice(
       'warning',
       'Unsupported file skipped',
-      `Skipped unsupported file(s): ${rejected.join(', ')}. Supported formats: PDF, PNG, JPG, WebP.`
+      `Skipped unsupported file(s): ${rejected.join(', ')}. Supported formats: PDF, DOCX, XLSX, CSV, PPTX, PNG, JPG, WebP.`
     );
+  }
+
+  if (valid.length === 0 && officeFiles.length > 0) {
+    // Auto-convert the dropped Office file locally and offer Download PDF / Open in Poffy Studio
+    await runAutoConvertOfficeDrop(officeFiles[0].file, officeFiles[0].kind);
+    return;
   }
 
   if (valid.length === 0) return;
@@ -250,7 +281,7 @@ export function bindWindowDropOverlay() {
         )
       ),
       el('p', { className: 'text-[18px] font-semibold text-[#1d1d1f] tracking-[-0.015em]' }, 'Drop to open in Poffy'),
-      el('p', { className: 'text-[13.5px] text-[#6e6e73]' }, 'PDF, PNG, JPG, or WebP • 100% offline')
+      el('p', { className: 'text-[13.5px] text-[#6e6e73]' }, 'PDF, DOCX, XLSX, PPTX, or Images • 100% offline')
     )
   );
 

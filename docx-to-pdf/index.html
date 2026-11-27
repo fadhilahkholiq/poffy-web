@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="docx-to-pdf">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>Word (.docx) to PDF Offline — Vector Typography &amp; Tables | Poffy</title>
+    <meta name="description" content="Convert Microsoft Word (.docx) documents into crisp vector PDFs locally inside your browser with headings, lists, tables, and embedded PNG/JPEG images." />
+    <meta name="keywords" content="word to pdf offline, docx to pdf converter, client side docx to pdf, private word to pdf, no upload docx converter" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
+    <meta property="og:title" content="Word (.docx) to PDF Offline — Vector Typography &amp; Tables | Poffy" />
+    <meta property="og:description" content="Convert Microsoft Word (.docx) documents into crisp vector PDFs locally inside your browser with headings, lists, tables, and embedded PNG/JPEG images." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Word → PDF · Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Word (.docx) to PDF Offline — Vector Typography &amp; Tables | Poffy" />
+    <meta name="twitter:description" content="Convert Microsoft Word (.docx) documents into crisp vector PDFs locally inside your browser with headings, lists, tables, and embedded PNG/JPEG images." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Word → PDF · Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Word (.docx) to PDF Offline — Vector Typography & Tables","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Convert Microsoft Word (.docx) documents into crisp vector PDFs locally inside your browser with headings, lists, tables, and embedded PNG/JPEG images.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Preserves headings, bold/italic/underline runs, lists & tables","Configurable A4/Letter paper size & Normal/Compact margins","Anti-ZIP-bomb OOXML parser · 100% offline with zero uploads"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does Word to PDF send my .docx document to Microsoft or a server?","acceptedAnswer":{"@type":"Answer","text":"Never. Poffy unpacks your .docx locally with fflate and renders crisp vector PDFs with pdf-lib and @pdf-lib/fontkit inside a Web Worker."}},{"@type":"Question","name":"Can I open the converted PDF immediately in Poffy Studio?","acceptedAnswer":{"@type":"Answer","text":"Yes. Dropping a .docx file offers one-click Download PDF or Open in Poffy Studio to merge, watermark, sign, or compress."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Convert Word (.docx) documents to PDF locally.</h1>
+        <p>Render headings, styled paragraphs, lists, tables, and inline images into clean vector PDFs straight inside your browser.</p>
+        <ul>
+          <li>Preserves headings, bold/italic/underline runs, lists &amp; tables</li>
+          <li>Configurable A4/Letter paper size &amp; Normal/Compact margins</li>
+          <li>Anti-ZIP-bomb OOXML parser · 100% offline with zero uploads</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use Word → PDF offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

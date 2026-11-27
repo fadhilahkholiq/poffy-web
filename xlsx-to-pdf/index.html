@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="xlsx-to-pdf">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>Excel (.xlsx, .xls, .csv) to PDF Offline — Paginated Tables | Poffy</title>
+    <meta name="description" content="Convert Excel workbooks (.xlsx, .xls) and CSV files into clean paginated vector PDF tables with Landscape/Portrait layout 100% offline." />
+    <meta name="keywords" content="excel to pdf offline, xlsx to pdf converter, csv to pdf locally, client side spreadsheet to pdf, no upload excel pdf" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
+    <meta property="og:title" content="Excel (.xlsx, .xls, .csv) to PDF Offline — Paginated Tables | Poffy" />
+    <meta property="og:description" content="Convert Excel workbooks (.xlsx, .xls) and CSV files into clean paginated vector PDF tables with Landscape/Portrait layout 100% offline." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Excel → PDF · Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Excel (.xlsx, .xls, .csv) to PDF Offline — Paginated Tables | Poffy" />
+    <meta name="twitter:description" content="Convert Excel workbooks (.xlsx, .xls) and CSV files into clean paginated vector PDF tables with Landscape/Portrait layout 100% offline." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="Excel → PDF · Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Excel (.xlsx, .xls, .csv) to PDF Offline — Paginated Tables","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Convert Excel workbooks (.xlsx, .xls) and CSV files into clean paginated vector PDF tables with Landscape/Portrait layout 100% offline.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Supports .xlsx, .xls & .csv with All Sheets or First Sheet mode","Landscape default, auto-fitted columns & repeated multi-page headers","100% offline vector PDF generation · zero uploads"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does Excel to PDF keep wide tables readable on PDF pages?","acceptedAnswer":{"@type":"Answer","text":"Yes. Poffy defaults to Landscape pages, calculates proportional column widths from cell content, wraps long cells cleanly, and repeats header rows across page breaks."}},{"@type":"Question","name":"Are .csv and legacy .xls files supported?","acceptedAnswer":{"@type":"Answer","text":"Yes. Both modern .xlsx workbooks, legacy .xls files, and UTF-8 .csv spreadsheets convert locally inside the Web Worker."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Turn Excel spreadsheets and CSVs into crisp PDFs.</h1>
+        <p>Auto-fit proportional columns, wrap cell text cleanly, shade headers, and repeat header rows across multi-page PDF exports.</p>
+        <ul>
+          <li>Supports .xlsx, .xls &amp; .csv with All Sheets or First Sheet mode</li>
+          <li>Landscape default, auto-fitted columns &amp; repeated multi-page headers</li>
+          <li>100% offline vector PDF generation · zero uploads</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use Excel → PDF offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

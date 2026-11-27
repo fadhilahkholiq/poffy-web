@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-feature="pdf-to-xlsx">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self';"
+    />
+    <title>PDF to Excel (.xlsx) Offline — Extract Tables to Spreadsheets | Poffy</title>
+    <meta name="description" content="Extract tables and column-aligned rows from PDFs into Microsoft Excel (.xlsx) workbooks 100% offline in your browser with zero file uploads." />
+    <meta name="keywords" content="pdf to excel offline, pdf to xlsx converter, extract pdf tables to excel locally, private pdf to spreadsheet" />
+    <meta name="author" content="Poffy" />
+    <meta name="application-name" content="Poffy" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Poffy" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Poffy · Offline PDF Studio" />
+    <meta property="og:title" content="PDF to Excel (.xlsx) Offline — Extract Tables to Spreadsheets | Poffy" />
+    <meta property="og:description" content="Extract tables and column-aligned rows from PDFs into Microsoft Excel (.xlsx) workbooks 100% offline in your browser with zero file uploads." />
+    <meta property="og:image" content="/icons/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PDF → Excel · Poffy Offline PDF Studio" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PDF to Excel (.xlsx) Offline — Extract Tables to Spreadsheets | Poffy" />
+    <meta name="twitter:description" content="Extract tables and column-aligned rows from PDFs into Microsoft Excel (.xlsx) workbooks 100% offline in your browser with zero file uploads." />
+    <meta name="twitter:image" content="/icons/og-card.png" />
+    <meta name="twitter:image:alt" content="PDF → Excel · Poffy Offline PDF Studio" />
+
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"PDF to Excel (.xlsx) Offline — Extract Tables to Spreadsheets","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","browserRequirements":"Requires modern browser with WebAssembly and Web Workers","description":"Extract tables and column-aligned rows from PDFs into Microsoft Excel (.xlsx) workbooks 100% offline in your browser with zero file uploads.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["Detects aligned multi-column tables & cell matrices automatically","Export one worksheet per page or combine into a single sheet","Choose Detected Tables Only or All Text Rows · zero uploads"]},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can I extract only detected tables instead of surrounding paragraphs?","acceptedAnswer":{"@type":"Answer","text":"Yes. Switch Extraction Mode to Extract Detected Tables Only to skip narrative paragraphs and populate structured tables cleanly."}},{"@type":"Question","name":"Does SheetJS require an internet connection?","acceptedAnswer":{"@type":"Answer","text":"No. Poffy bundles the spreadsheet engine locally inside a lazy Web Worker chunk cached for offline use."}}]}]}</script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      <main style="max-width: 720px; margin: 48px auto; padding: 24px; font-family: system-ui, sans-serif;">
+        <h1>Extract PDF tables straight into Excel offline.</h1>
+        <p>Cluster multi-column tables and aligned rows into clean .xlsx worksheets, either one sheet per page or combined in one tab.</p>
+        <ul>
+          <li>Detects aligned multi-column tables &amp; cell matrices automatically</li>
+          <li>Export one worksheet per page or combine into a single sheet</li>
+          <li>Choose Detected Tables Only or All Text Rows · zero uploads</li>
+        </ul>
+        <p>Enable JavaScript and WebAssembly to use PDF → Excel offline in Poffy.</p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

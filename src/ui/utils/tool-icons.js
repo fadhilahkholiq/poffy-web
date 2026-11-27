@@ -197,6 +197,70 @@ export function getToolIcon(slug, size = 18) {
         svgEl('path', { d: 'M13 9h5' }),
         svgEl('path', { d: 'M13 13h4' })
       );
+    case 'pdf-to-markdown':
+      return svgEl(
+        'svg',
+        base,
+        svgEl('rect', { x: 3, y: 5, width: 18, height: 14, rx: 2 }),
+        svgEl('path', { d: 'M7 15V9l2.5 3L12 9v6' }),
+        svgEl('path', { d: 'M16.5 9v6' }),
+        svgEl('path', { d: 'm14.5 13 2 2 2-2' })
+      );
+    case 'pdf-to-docx':
+      return svgEl(
+        'svg',
+        base,
+        svgEl('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z' }),
+        svgEl('path', { d: 'M14 2v6h6' }),
+        svgEl('path', { d: 'M8 13h8' }),
+        svgEl('path', { d: 'M8 17h6' })
+      );
+    case 'pdf-to-xlsx':
+      return svgEl(
+        'svg',
+        base,
+        svgEl('rect', { x: 3, y: 4, width: 18, height: 16, rx: 2 }),
+        svgEl('path', { d: 'M3 10h18' }),
+        svgEl('path', { d: 'M3 15h18' }),
+        svgEl('path', { d: 'M10 4v16' })
+      );
+    case 'pdf-to-pptx':
+      return svgEl(
+        'svg',
+        base,
+        svgEl('rect', { x: 3, y: 4, width: 18, height: 13, rx: 2 }),
+        svgEl('path', { d: 'M12 17v4' }),
+        svgEl('path', { d: 'M8 21h8' }),
+        svgEl('path', { d: 'M7.5 10h4.5' }),
+        svgEl('path', { d: 'M7.5 13h3' })
+      );
+    case 'docx-to-pdf':
+      return svgEl(
+        'svg',
+        base,
+        svgEl('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z' }),
+        svgEl('path', { d: 'M14 2v6h6' }),
+        svgEl('path', { d: 'M8 13l1.5 4 1.5-3 1.5 3L14 13' })
+      );
+    case 'xlsx-to-pdf':
+      return svgEl(
+        'svg',
+        base,
+        svgEl('rect', { x: 3, y: 4, width: 18, height: 16, rx: 2 }),
+        svgEl('path', { d: 'M3 10h18' }),
+        svgEl('path', { d: 'M9.5 10v10' }),
+        svgEl('path', { d: 'm13 13 4 4' }),
+        svgEl('path', { d: 'm17 13-4 4' })
+      );
+    case 'pptx-to-pdf':
+      return svgEl(
+        'svg',
+        base,
+        svgEl('rect', { x: 3, y: 4, width: 18, height: 13, rx: 2 }),
+        svgEl('path', { d: 'M12 17v4' }),
+        svgEl('path', { d: 'M8 21h8' }),
+        svgEl('path', { d: 'm10 8.5 5 2.5-5 2.5v-5Z' })
+      );
     default:
       return svgEl(
         'svg',

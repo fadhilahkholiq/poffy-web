@@ -39,7 +39,7 @@ export const INFO_PAGES = [
       },
       {
         q: 'Can Poffy work completely offline or in airplane mode?',
-        a: 'Yes. Workbox precaches all 22 tool routes, info pages, JavaScript bundles, Web Workers, WASM binaries, CMaps, and Inter fonts locally for instant offline execution.'
+        a: 'Yes. Workbox precaches all 29 tool routes, info pages, JavaScript bundles, Web Workers, WASM binaries, CMaps, and Inter fonts locally for instant offline execution.'
       },
       {
         q: 'What makes Poffy feel fast when reordering or rotating large PDFs?',
@@ -95,7 +95,7 @@ export const ABOUT_HIGHLIGHTS = [
     description: 'Files stay inside volatile browser ArrayBuffers from open to export.'
   },
   {
-    badge: '22 Tools',
+    badge: '29 Tools',
     title: 'Unified 3-Pane Studio',
     description: 'Merge, split, sign, redact, impose, convert, extract, and inspect in one workspace.'
   },

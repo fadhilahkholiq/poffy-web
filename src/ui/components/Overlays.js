@@ -1,6 +1,11 @@
 import { formatBytes } from '../../core/utils/file-io.js';
 import { workspace } from '../../state/workspace.js';
-import { cancelActiveJob, runAutoCropJob } from '../actions/export-runner.js';
+import {
+  cancelActiveJob,
+  downloadOfficeConvertedPdf,
+  runAutoCropJob
+} from '../actions/export-runner.js';
+import { ingestFiles } from '../interactions/file-ingestion.js';
 import {
   renderCompareStudioModal,
   renderRedactStudioModal,
@@ -395,6 +400,111 @@ export function renderOverlays(container) {
       )
     : null;
 
+  const oc = workspace.tools.officeConvert;
+  const officeConvertModal =
+    oc?.openModal && oc.convertedBuffer
+      ? el(
+          'div',
+          {
+            id: 'office-convert-backdrop',
+            className:
+              'fixed inset-0 z-50 bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4',
+            role: 'dialog',
+            'aria-modal': 'true',
+            'aria-label': 'Office Document Converted to PDF',
+            onClick: (e) => {
+              if (e.target === e.currentTarget) {
+                oc.openModal = false;
+                oc.convertedBuffer = null;
+                workspace.emit('tool');
+              }
+            }
+          },
+          el(
+            'div',
+            {
+              className:
+                'w-full max-w-md rounded-[24px] bg-white border border-black/[0.08] p-6 shadow-2xl space-y-4'
+            },
+            el(
+              'div',
+              { className: 'flex items-start justify-between gap-3' },
+              el(
+                'div',
+                { className: 'space-y-1 min-w-0' },
+                el('span', { className: 'badge-pill bg-[#e8f8ed] text-[#248a3d] text-[11px] font-semibold' }, 'Converted Offline to PDF'),
+                el('h3', { className: 'type-title-md text-[#1d1d1f] truncate' }, oc.convertedFileName)
+              ),
+              el(
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn-compact !h-8 shrink-0',
+                  onClick: () => {
+                    oc.openModal = false;
+                    oc.convertedBuffer = null;
+                    workspace.emit('tool');
+                  }
+                },
+                'Close'
+              )
+            ),
+            el(
+              'div',
+              { className: 'flex flex-wrap gap-2 text-[12px] text-[#424245]' },
+              el('span', { className: 'px-2.5 py-1 rounded-full bg-[#f5f5f7] font-medium' }, `${oc.pageCount} page${oc.pageCount === 1 ? '' : 's'}`),
+              el('span', { className: 'px-2.5 py-1 rounded-full bg-[#f5f5f7] font-medium' }, formatBytes(oc.convertedBuffer.byteLength))
+            ),
+            el(
+              'p',
+              { className: 'text-[12px] leading-[1.45] text-[#6e6e73] bg-[#f5f5f7] rounded-[12px] px-3 py-2.5 border border-black/[0.04]' },
+              '100% local vector conversion — complex charts, macros, and animations are simplified.'
+            ),
+            oc.warnings?.length
+              ? el(
+                  'ul',
+                  { className: 'space-y-1 text-[11.5px] text-[#92400e] bg-[#fffbeb] border border-[#ff9500]/30 rounded-[12px] px-3 py-2 list-none m-0' },
+                  oc.warnings.slice(0, 3).map((w) => el('li', {}, `• ${w}`))
+                )
+              : null,
+            el(
+              'div',
+              { className: 'grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1' },
+              el(
+                'button',
+                {
+                  type: 'button',
+                  id: 'office-download-pdf-btn',
+                  className: 'btn-secondary !h-10',
+                  onClick: downloadOfficeConvertedPdf
+                },
+                'Download PDF'
+              ),
+              el(
+                'button',
+                {
+                  type: 'button',
+                  id: 'office-open-studio-btn',
+                  className: 'btn-primary !h-10',
+                  onClick: async () => {
+                    const buf = oc.convertedBuffer;
+                    const name = oc.convertedFileName || 'converted.pdf';
+                    oc.openModal = false;
+                    oc.convertedBuffer = null;
+                    workspace.emit('tool');
+                    if (buf) {
+                      const pdfFile = new File([buf], name, { type: 'application/pdf' });
+                      await ingestFiles([pdfFile]);
+                    }
+                  }
+                },
+                'Open in Poffy Studio'
+              )
+            )
+          )
+        )
+      : null;
+
   mount(
     container,
     memoryBanner,
@@ -402,6 +512,7 @@ export function renderOverlays(container) {
     jobDialog,
     previewModal,
     autoCropModal,
+    officeConvertModal,
     renderRedactStudioModal(),
     renderSignStudioModal(),
     renderCompareStudioModal(),

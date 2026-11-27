@@ -23,7 +23,7 @@ import { globalUrlTracker } from '../core/utils/file-io.js';
  */
 
 /**
- * @typedef {'organize'|'split'|'watermark'|'numbering'|'convert'|'resize'|'nup'|'spreads'|'filters'|'redact'|'sign'|'compare'|'extract-text'|'extract-images'|'attachments'|'bookmarks'|'cbz'|'metadata'|'forms'|'optimize'} ToolTabId
+ * @typedef {'organize'|'split'|'watermark'|'numbering'|'convert'|'resize'|'nup'|'spreads'|'filters'|'redact'|'sign'|'compare'|'extract-text'|'extract-images'|'attachments'|'bookmarks'|'cbz'|'metadata'|'forms'|'optimize'|'pdf-to-markdown'|'pdf-to-docx'|'pdf-to-xlsx'|'pdf-to-pptx'|'docx-to-pdf'|'xlsx-to-pdf'|'pptx-to-pdf'} ToolTabId
  */
 
 const DESKTOP_MEMORY_WARN_BYTES = 250 * 1024 * 1024;
@@ -313,6 +313,80 @@ function createDefaultToolConfig() {
       imageFormat: 'webp',
       quality: 0.88,
       modalOpen: false
+    },
+    pdfToMarkdown: {
+      targetFileId: '',
+      rangeExpression: 'all',
+      pageBreakSeparator: 'hr',
+      includePageNumbers: true,
+      detectTables: true,
+      isLikelyScanned: false,
+      warnings: [],
+      markdownPreview: '',
+      lastFileName: ''
+    },
+    pdfToDocx: {
+      targetFileId: '',
+      rangeExpression: 'all',
+      preservePageBreaks: true,
+      layoutMode: 'flowing',
+      detectTables: true,
+      isLikelyScanned: false,
+      warnings: []
+    },
+    pdfToXlsx: {
+      targetFileId: '',
+      rangeExpression: 'all',
+      sheetMode: 'per-page',
+      extractionMode: 'all-rows',
+      isLikelyScanned: false,
+      warnings: []
+    },
+    pdfToPptx: {
+      targetFileId: '',
+      rangeExpression: 'all',
+      mode: 'visual',
+      imageFormat: 'jpeg',
+      scale: 2,
+      isLikelyScanned: false,
+      warnings: []
+    },
+    docxToPdf: {
+      file: null,
+      fileName: '',
+      paperSize: 'a4',
+      margins: 'normal',
+      warnings: [],
+      lastBuffer: null,
+      lastFileName: '',
+      lastPageCount: 0
+    },
+    xlsxToPdf: {
+      file: null,
+      fileName: '',
+      orientation: 'landscape',
+      sheetSelection: 'all',
+      warnings: [],
+      lastBuffer: null,
+      lastFileName: '',
+      lastPageCount: 0
+    },
+    pptxToPdf: {
+      file: null,
+      fileName: '',
+      warnings: [],
+      lastBuffer: null,
+      lastFileName: '',
+      lastPageCount: 0
+    },
+    officeConvert: {
+      openModal: false,
+      convertedBuffer: null,
+      convertedFileName: '',
+      sourceFileName: '',
+      kind: '',
+      pageCount: 0,
+      warnings: []
     }
   };
 }
@@ -516,6 +590,18 @@ class WorkspaceStore {
       if (!this.tools.cbz.targetFileId) {
         this.tools.cbz.targetFileId = entry.id;
       }
+      if (!this.tools.pdfToMarkdown.targetFileId) {
+        this.tools.pdfToMarkdown.targetFileId = entry.id;
+      }
+      if (!this.tools.pdfToDocx.targetFileId) {
+        this.tools.pdfToDocx.targetFileId = entry.id;
+      }
+      if (!this.tools.pdfToXlsx.targetFileId) {
+        this.tools.pdfToXlsx.targetFileId = entry.id;
+      }
+      if (!this.tools.pdfToPptx.targetFileId) {
+        this.tools.pdfToPptx.targetFileId = entry.id;
+      }
       if (!this.tools.numbering.batesQueue.includes(entry.id)) {
         this.tools.numbering.batesQueue.push(entry.id);
       }
@@ -611,6 +697,27 @@ class WorkspaceStore {
     }
     if (this.tools.cbz.targetFileId === sourceFileId) {
       this.tools.cbz.targetFileId = nextPdfId;
+    }
+    if (this.tools.pdfToMarkdown.targetFileId === sourceFileId) {
+      this.tools.pdfToMarkdown.targetFileId = nextPdfId;
+      this.tools.pdfToMarkdown.markdownPreview = '';
+      this.tools.pdfToMarkdown.isLikelyScanned = false;
+      this.tools.pdfToMarkdown.warnings = [];
+    }
+    if (this.tools.pdfToDocx.targetFileId === sourceFileId) {
+      this.tools.pdfToDocx.targetFileId = nextPdfId;
+      this.tools.pdfToDocx.isLikelyScanned = false;
+      this.tools.pdfToDocx.warnings = [];
+    }
+    if (this.tools.pdfToXlsx.targetFileId === sourceFileId) {
+      this.tools.pdfToXlsx.targetFileId = nextPdfId;
+      this.tools.pdfToXlsx.isLikelyScanned = false;
+      this.tools.pdfToXlsx.warnings = [];
+    }
+    if (this.tools.pdfToPptx.targetFileId === sourceFileId) {
+      this.tools.pdfToPptx.targetFileId = nextPdfId;
+      this.tools.pdfToPptx.isLikelyScanned = false;
+      this.tools.pdfToPptx.warnings = [];
     }
 
     this.emit('files');
