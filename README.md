@@ -1,6 +1,19 @@
-# Poffy — Offline PDF Studio
+# Poffy · Offline PDF Studio
 
-**Poffy** is a 100% client-side, privacy-first, offline-capable PDF studio built with modern JavaScript, WebAssembly, and Web Workers. Every document stays strictly inside your browser's memory—zero files, filenames, or telemetry are ever uploaded to an external server.
+**Poffy** is a 100% client-side, privacy-first, offline-capable PDF studio built with modern JavaScript, WebAssembly, and Web Workers. Every document stays strictly inside your browser's memory — zero files, filenames, or telemetry are ever uploaded to an external server.
+
+---
+
+## Screenshots
+
+### Home
+![](docs/screenshots/home.png)
+
+### Merge PDF
+![](docs/screenshots/tool-merge.png)
+
+### Workspace
+![](docs/screenshots/workspace.png)
 
 ---
 
@@ -125,7 +138,7 @@ poffy/
 ├── <feature-slug>/index.html     # Dedicated static entry pages per PDF feature
 └── src/
     ├── main.js                   # App bootstrap, feature routing & footer
-    ├── styles/main.css           # Tailwind CSS, Clay tokens & custom controls
+    ├── styles/main.css           # Tailwind CSS, design tokens & custom controls
     ├── state/workspace.js        # Virtual Page Graph & memory monitor
     ├── core/
     │   ├── pdf/                  # Pure DOM-free pdf-lib/canvas PDF operations
