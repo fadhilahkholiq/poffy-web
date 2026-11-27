@@ -1,4 +1,4 @@
-# Poffy · Offline PDF Studio
+# Poffy — Offline PDF Studio
 
 **Poffy** is a 100% client-side, privacy-first, offline-capable PDF studio built with modern JavaScript, WebAssembly, and Web Workers. Every document stays strictly inside your browser's memory — zero files, filenames, or telemetry are ever uploaded to an external server.
 
@@ -7,13 +7,19 @@
 ## Screenshots
 
 ### Home
-![](docs/screenshots/home.png)
+<kbd>
+  <img src="docs/screenshots/home.png" alt="Poffy Home" />
+</kbd>
 
 ### Merge PDF
-![](docs/screenshots/tool-merge.png)
+<kbd>
+  <img src="docs/screenshots/tool-merge.png" alt="Poffy Merge PDF" />
+</kbd>
 
 ### Workspace
-![](docs/screenshots/workspace.png)
+<kbd>
+  <img src="docs/screenshots/workspace.png" alt="Poffy Workspace" />
+</kbd>
 
 ---
 
