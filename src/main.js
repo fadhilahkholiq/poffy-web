@@ -44,6 +44,22 @@ function initOfflineServiceWorker() {
 }
 
 /**
+ * Convert a 6-digit hex color to an rgba() string for ambient canvas tinting.
+ * @param {string} hex
+ * @param {number} alpha
+ * @returns {string}
+ */
+function hexToRgba(hex, alpha) {
+  const clean = String(hex || '').replace('#', '');
+  if (clean.length !== 6) return `rgba(0, 113, 227, ${alpha})`;
+  const r = Number.parseInt(clean.slice(0, 2), 16);
+  const g = Number.parseInt(clean.slice(2, 4), 16);
+  const b = Number.parseInt(clean.slice(4, 6), 16);
+  if ([r, g, b].some(Number.isNaN)) return `rgba(0, 113, 227, ${alpha})`;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
  * Bootstraps the Poffy application shell, reactive subscriptions, and global error boundary.
  */
 function bootstrap() {
@@ -55,10 +71,14 @@ function bootstrap() {
   if (activeFeature) {
     workspace.setActiveTool(activeFeature.tool);
   }
+  const activeTint = activeFeature
+    ? hexToRgba(getToolStyleBySlug(activeFeature.slug).fg, 0.07)
+    : 'rgba(0, 113, 227, 0.06)';
 
   const navSlot = el('div', { id: 'nav-slot', className: 'sticky top-0 z-30' });
   const overlaysSlot = el('div', { id: 'overlays-slot' });
-  const workspaceSlot = el('div', { id: 'workspace-slot', className: 'flex-1' });
+  const workspaceSlot = el('div', { id: 'workspace-slot', className: 'flex-1 studio-canvas' });
+  workspaceSlot.style.setProperty('--ambient-tint', activeTint);
   const fileInput = /** @type {HTMLInputElement} */ (
     el('input', {
       id: 'global-file-input',
@@ -74,11 +94,11 @@ function bootstrap() {
     'section',
     {
       'aria-label': 'Poffy Offline PDF Studio overview',
-      className: 'border-t border-black/[0.08] bg-white'
+      className: 'border-t border-black/[0.06] bg-white'
     },
     el(
       'div',
-      { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 py-10 sm:py-12 text-center space-y-4' },
+      { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 py-7 sm:py-8 text-center space-y-3' },
       el(
         'div',
         { className: 'flex flex-wrap items-center justify-center gap-2.5' },
@@ -140,10 +160,10 @@ function bootstrap() {
 
   const footerEl = el(
     'footer',
-    { className: 'border-t border-black/[0.08] bg-white' },
+    { className: 'border-t border-black/[0.06] bg-white' },
     el(
       'div',
-      { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 py-10 space-y-8' },
+      { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 py-7 space-y-6' },
       el(
         'nav',
         { 'aria-label': 'All Offline PDF Tools' },
@@ -265,14 +285,14 @@ function bootstrap() {
           'div',
           {
             className:
-              'pt-6 border-t border-black/[0.08] flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left text-[13px] text-[#86868b]'
+              'pt-5 border-t border-black/[0.06] flex flex-col lg:flex-row items-center justify-between gap-4 text-center lg:text-left text-[12.5px] text-[#6e6e73]'
           },
           el(
             'div',
-            { className: 'flex flex-col sm:flex-row flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2.5' },
+            { className: 'flex flex-col sm:flex-row flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2.5' },
             el(
               'div',
-              { className: 'flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1' },
+              { className: 'flex flex-wrap items-center justify-center lg:justify-start gap-x-2 gap-y-1' },
               el('span', { className: 'font-semibold text-[#1d1d1f]' }, 'Poffy'),
               el('span', { 'aria-hidden': 'true' }, '•'),
               el('span', {}, 'Created by Kholiq Fadhilah')
@@ -287,7 +307,7 @@ function bootstrap() {
                   {
                     href: p.path,
                     'aria-current': isActive ? 'page' : undefined,
-                    className: `px-2.5 py-1 rounded-full text-[12px] font-medium no-underline transition-colors ${
+                    className: `px-2.5 py-0.5 rounded-full text-[11.5px] font-medium no-underline transition-colors ${
                       isActive
                         ? 'bg-[#0071e3] text-white font-semibold'
                         : 'bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#424245] border border-black/[0.05]'
@@ -300,13 +320,7 @@ function bootstrap() {
           ),
           el(
             'div',
-            { className: 'flex flex-col sm:flex-row items-center gap-x-5 gap-y-3' },
-            el(
-              'div',
-              { className: 'flex flex-col items-center md:items-end leading-snug' },
-              el('span', { className: 'font-medium text-[#424245]' }, '100% Client-Side & Zero Telemetry'),
-              el('span', { className: 'text-[12px] text-[#86868b]' }, 'Built with pdf-lib, pdfjs-dist & fflate')
-            ),
+            { className: 'flex flex-wrap items-center justify-center lg:justify-end gap-2' },
             el(
               'a',
               {
@@ -314,13 +328,13 @@ function bootstrap() {
                 target: '_blank',
                 rel: 'noopener noreferrer',
                 className:
-                  'inline-flex items-center gap-1.5 self-center sm:self-auto w-fit px-3 py-1.5 rounded-full bg-[#f2f2f7] border border-black/[0.06] text-[#1d1d1f] font-medium no-underline hover:bg-[#e5e5ea] transition-colors'
+                  'inline-flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full bg-[#f2f2f7] border border-black/[0.06] text-[12px] text-[#1d1d1f] font-medium no-underline hover:bg-[#e5e5ea] transition-colors'
               },
               svgEl(
                 'svg',
                 {
-                  width: 14,
-                  height: 14,
+                  width: 13,
+                  height: 13,
                   viewBox: '0 0 24 24',
                   fill: 'currentColor',
                   'aria-hidden': 'true'
@@ -399,7 +413,9 @@ function bootstrap() {
       railSlot = null;
       gridSlot = null;
       inspectorSlot = null;
-      footerEl.className = 'border-t border-black/[0.08] bg-white';
+      workspaceSlot.className = 'flex-1 studio-canvas';
+      workspaceSlot.style.setProperty('--ambient-tint', activeTint);
+      footerEl.className = 'border-t border-black/[0.06] bg-white';
       if (activeInfoPage) {
         renderInfoPage(workspaceSlot, activeInfoPage, openFilePicker);
         cleanupHero = () => {};
@@ -413,7 +429,9 @@ function bootstrap() {
     if (lastHasPages !== true) {
       cleanupHero();
       cleanupHero = () => {};
-      footerEl.className = 'border-t border-black/[0.08] bg-white';
+      workspaceSlot.className = 'flex-1';
+      workspaceSlot.style.removeProperty('--ambient-tint');
+      footerEl.className = 'border-t border-black/[0.06] bg-white';
       railSlot = el('section', {
         id: 'tool-rail-slot',
         className: 'studio-pane-left',

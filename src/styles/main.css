@@ -55,8 +55,19 @@
   --radius-xl: 24px;
   --radius-pill: 9999px;
 
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-card-hover: 0 10px 26px -6px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-card:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 4px 16px -6px rgba(0, 0, 0, 0.05),
+    0 1px 3px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 16px 32px -12px rgba(0, 0, 0, 0.09),
+    0 4px 10px -2px rgba(0, 0, 0, 0.04);
+  --shadow-studio-card:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 12px 32px -12px rgba(0, 0, 0, 0.07),
+    0 2px 6px rgba(0, 0, 0, 0.03);
+  --ambient-tint: rgba(0, 113, 227, 0.06);
 }
 
 @layer base {
@@ -76,6 +87,19 @@
   * {
     box-sizing: border-box;
     border-color: var(--color-hairline);
+  }
+
+  /* Prevent accidental focus caret or text-cursor drag selection on static UI headings */
+  h1,
+  h2,
+  h3,
+  .type-display-md,
+  .type-display-sm,
+  .type-title-lg,
+  .type-title-md,
+  .type-title-sm {
+    user-select: none;
+    outline: none;
   }
 }
 
@@ -157,15 +181,20 @@
   font-size: var(--text-button);
   font-weight: 500;
   line-height: 1;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 3px rgba(0, 113, 227, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 2px 8px rgba(0, 113, 227, 0.28);
   cursor: pointer;
-  transition: background-color 140ms ease, transform 120ms ease, box-shadow 140ms ease;
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--color-primary-hover);
-  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.28);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 6px 16px rgba(0, 113, 227, 0.34);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -476,9 +505,40 @@ select.input-clay {
   font-weight: 500;
 }
 
+/* Architectural #f5f5f7 Studio Backdrop with whisper-quiet 20px micro-dot grid & top contextual wash */
+.studio-canvas {
+  position: relative;
+  background-color: #f5f5f7;
+  isolation: isolate;
+}
+
+.studio-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.032) 1px, transparent 1px);
+  background-size: 20px 20px;
+  -webkit-mask-image: radial-gradient(ellipse 88% 72% at 50% 24%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 88% 72% at 50% 24%, #000 35%, transparent 100%);
+}
+
+.studio-canvas::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 520px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 65% 40% at 50% -5%, var(--ambient-tint), transparent);
+}
+
 .clay-card {
   background-color: var(--color-surface);
-  border: 1px solid var(--color-hairline-subtle);
+  border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
 }
@@ -490,14 +550,17 @@ select.input-clay {
   color: var(--color-ink);
   border-radius: var(--radius-lg);
   padding: 20px;
-  border: 1px solid var(--color-hairline-subtle);
+  border: 1px solid rgba(0, 0, 0, 0.07);
   box-shadow: var(--shadow-card);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease;
 }
 
 .clay-bento-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(0, 0, 0, 0.14);
+  border-color: rgba(0, 0, 0, 0.12);
   box-shadow: var(--shadow-card-hover);
 }
 
@@ -505,19 +568,82 @@ select.input-clay {
   transform: translateY(0);
 }
 
+/* Elevated Studio Dropzone Card + Tactile Recessed Well */
+.studio-drop-card {
+  position: relative;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 24px;
+  padding: 12px;
+  box-shadow: var(--shadow-studio-card);
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease;
+}
+
+.studio-drop-card:hover {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.studio-drop-well {
+  background-color: #fbfbfd;
+  border: 1.5px dashed rgba(0, 113, 227, 0.24);
+  border-radius: 16px;
+  padding: 32px 24px;
+  transition:
+    border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.studio-drop-card:hover .studio-drop-well,
+.studio-drop-card.is-dragover .studio-drop-well {
+  border-color: #0071e3;
+  background-color: rgba(0, 113, 227, 0.03);
+}
+
+.studio-well-graphic {
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.studio-drop-card:hover .studio-well-graphic,
+.studio-drop-card.is-dragover .studio-well-graphic {
+  transform: translateY(-3px);
+}
+
+.studio-highlight-card {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.065);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease;
+}
+
+.studio-highlight-card:hover {
+  transform: translateY(-1.5px);
+  border-color: rgba(0, 0, 0, 0.11);
+  box-shadow: var(--shadow-card-hover);
+}
+
 /* Centered Dropzone Card */
 .clay-dropzone {
   position: relative;
   overflow: hidden;
   background-color: var(--color-surface);
-  border: 1px solid var(--color-hairline-subtle);
+  border: 1px solid rgba(0, 0, 0, 0.07);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
-  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  box-shadow: var(--shadow-studio-card);
+  transition:
+    border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .clay-dropzone:hover {
-  border-color: rgba(0, 0, 0, 0.14);
+  border-color: rgba(0, 0, 0, 0.12);
   box-shadow: var(--shadow-card-hover);
 }
 

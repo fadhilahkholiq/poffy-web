@@ -330,11 +330,26 @@ export function bindWindowDropOverlay() {
     }
   };
 
+  function onPaste(e) {
+    const target = e.target;
+    if (
+      target instanceof HTMLElement &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+    ) {
+      return;
+    }
+    const files = e.clipboardData?.files;
+    if (!files || !files.length) return;
+    e.preventDefault();
+    void ingestFiles(files);
+  }
+
   window.addEventListener('dragenter', onDragEnter);
   window.addEventListener('dragover', onDragOver);
   window.addEventListener('dragleave', onDragLeave);
   window.addEventListener('drop', onDrop);
   window.addEventListener('blur', hideOverlay);
+  window.addEventListener('paste', onPaste);
 
   return () => {
     window.removeEventListener('dragenter', onDragEnter);
@@ -342,6 +357,7 @@ export function bindWindowDropOverlay() {
     window.removeEventListener('dragleave', onDragLeave);
     window.removeEventListener('drop', onDrop);
     window.removeEventListener('blur', hideOverlay);
+    window.removeEventListener('paste', onPaste);
     overlay.remove();
   };
 }

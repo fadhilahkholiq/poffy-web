@@ -317,21 +317,164 @@ function buildWatermarkPrivacyPreview() {
  * @param {string} slug
  * @returns {HTMLElement}
  */
-function buildToolPagePreview(slug) {
-  let inner;
-  if (slug === 'merge-pdf') inner = buildMergePreview();
-  else if (slug === 'split-pdf') inner = buildSplitPreview();
-  else if (slug === 'optimize-pdf') inner = buildCompressPreview();
-  else if (slug === 'watermark-pdf') inner = buildWatermarkPrivacyPreview();
-  else inner = buildToolSnippet(slug);
+/**
+ * Contextual accepted file badges per tool route.
+ * @param {string} slug
+ * @returns {string[]}
+ */
+function getAcceptedFormatPills(slug) {
+  if (slug === 'docx-to-pdf') return ['.DOCX'];
+  if (slug === 'xlsx-to-pdf') return ['.XLSX', '.XLS', '.CSV'];
+  if (slug === 'pptx-to-pdf') return ['.PPTX'];
+  if (slug === 'images-to-pdf') return ['PNG', 'JPG', 'WebP'];
+  if (slug === 'cbz-pdf') return ['.CBZ', '.PDF'];
+  if (slug === 'merge-pdf' || slug === 'organize-pdf') return ['.PDF', 'PNG', 'JPG', 'WebP'];
+  return ['.PDF'];
+}
 
+/**
+ * Resolve source -> target badge spec for a miniature conversion graphic.
+ * @param {string} slug
+ * @returns {{ from: string, fromColor: string, to: string, toColor: string } | null}
+ */
+function getConversionDiagramSpec(slug) {
+  const map = {
+    'docx-to-pdf': { from: '.DOCX', fromColor: '#0071e3', to: '.PDF', toColor: '#d93025' },
+    'xlsx-to-pdf': { from: '.XLSX', fromColor: '#248a3d', to: '.PDF', toColor: '#d93025' },
+    'pptx-to-pdf': { from: '.PPTX', fromColor: '#c93400', to: '.PDF', toColor: '#d93025' },
+    'pdf-to-markdown': { from: '.PDF', fromColor: '#d93025', to: '.MD', toColor: '#1d1d1f' },
+    'pdf-to-docx': { from: '.PDF', fromColor: '#d93025', to: '.DOCX', toColor: '#0071e3' },
+    'pdf-to-xlsx': { from: '.PDF', fromColor: '#d93025', to: '.XLSX', toColor: '#248a3d' },
+    'pdf-to-pptx': { from: '.PDF', fromColor: '#d93025', to: '.PPTX', toColor: '#c93400' },
+    'images-to-pdf': { from: 'IMG', fromColor: '#00839b', to: '.PDF', toColor: '#d93025' },
+    'pdf-to-images': { from: '.PDF', fromColor: '#d93025', to: 'PNG', toColor: '#00839b' },
+    'cbz-pdf': { from: '.CBZ', fromColor: '#bf4800', to: '.PDF', toColor: '#d93025' }
+  };
+  return map[slug] || null;
+}
+
+/**
+ * Build a 48px miniature document sheet with crisp placeholder lines and badge tag.
+ * @param {string} label
+ * @param {string} accentColor
+ * @param {string} [extraClass]
+ * @returns {HTMLElement}
+ */
+function buildMiniDocSheet(label, accentColor, extraClass = '') {
   return el(
     'div',
     {
       className:
-        'max-w-[360px] mx-auto rounded-[18px] bg-white border border-black/[0.08] shadow-[var(--shadow-card)] p-2.5'
+        `w-[38px] h-[48px] rounded-[8px] bg-white border border-black/[0.1] shadow-[0_3px_10px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] flex flex-col justify-between p-1.5 relative ${extraClass}`.trim()
     },
-    inner
+    el(
+      'div',
+      { className: 'space-y-1' },
+      el('div', { className: 'h-[2.5px] w-4 rounded-full bg-black/[0.14]' }),
+      el('div', { className: 'h-[2px] w-5 rounded-full bg-black/[0.08]' }),
+      el('div', { className: 'h-[2px] w-3.5 rounded-full bg-black/[0.08]' })
+    ),
+    el(
+      'span',
+      {
+        className:
+          'inline-block self-start px-1 py-[1px] rounded-[4px] text-[7.5px] font-bold leading-tight tracking-tight text-white',
+        style: { backgroundColor: accentColor }
+      },
+      label
+    )
+  );
+}
+
+/**
+ * Build the 48px miniature layered document graphic inside the recessed drop well.
+ * @param {string} slug
+ * @param {{ bg: string, fg: string }} style
+ * @returns {HTMLElement}
+ */
+function buildToolWellGraphic(slug, style) {
+  const conv = getConversionDiagramSpec(slug);
+  if (conv) {
+    return el(
+      'div',
+      {
+        className: 'studio-well-graphic inline-flex items-center gap-2.5 select-none',
+        'aria-hidden': 'true'
+      },
+      buildMiniDocSheet(conv.from, conv.fromColor, '-rotate-2'),
+      el(
+        'span',
+        {
+          className:
+            'w-6 h-6 rounded-full bg-white border border-black/[0.08] shadow-[0_1px_3px_rgba(0,0,0,0.05)] flex items-center justify-center text-[11px] font-semibold text-[#6e6e73]'
+        },
+        '→'
+      ),
+      buildMiniDocSheet(conv.to, conv.toColor, 'rotate-2')
+    );
+  }
+
+  return el(
+    'div',
+    {
+      className: 'studio-well-graphic relative inline-flex items-center justify-center h-[50px] w-[76px] select-none',
+      'aria-hidden': 'true'
+    },
+    el('div', {
+      className:
+        'absolute left-1.5 top-1 w-[36px] h-[44px] rounded-[8px] bg-white/90 border border-black/[0.08] shadow-[0_2px_6px_rgba(0,0,0,0.04)] -rotate-6'
+    }),
+    buildMiniDocSheet('.PDF', '#d93025', 'relative z-10 rotate-2'),
+    el(
+      'span',
+      {
+        className:
+          'absolute -right-0.5 -bottom-0.5 z-20 w-6 h-6 rounded-[7px] border border-white shadow-[0_2px_6px_rgba(0,0,0,0.12)] flex items-center justify-center',
+        style: { backgroundColor: style.bg, color: style.fg }
+      },
+      getToolIcon(slug, 13)
+    )
+  );
+}
+
+/**
+ * Build a 24x24 tinted squircle mini-icon for tool highlight cards.
+ * @param {{ bg: string, fg: string }} style
+ * @param {number} index
+ * @returns {HTMLElement}
+ */
+function buildHighlightSquircle(style, index) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('width', '13');
+  svg.setAttribute('height', '13');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2.4');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const iconPaths = [
+    ['M20 6 9 17l-5-5'],
+    ['M13 2 3 14h9l-1 8 10-12h-9l1-8z'],
+    ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z']
+  ];
+  for (const d of iconPaths[index % iconPaths.length]) {
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+  }
+
+  return el(
+    'span',
+    {
+      className: 'w-6 h-6 rounded-[7px] shrink-0 flex items-center justify-center mt-0.5',
+      style: { backgroundColor: style.bg, color: style.fg },
+      'aria-hidden': 'true'
+    },
+    svg
   );
 }
 
@@ -355,8 +498,9 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
             {
               type: 'button',
               id: 'hero-compare-studio-btn',
-              className: 'btn-secondary w-full sm:w-auto',
-              onClick: () => {
+              className: 'btn-secondary text-[13px] px-4 py-2.5 shrink-0',
+              onClick: (e) => {
+                e.stopPropagation();
                 workspace.tools.compare.modalOpen = true;
                 workspace.emit('tool');
               }
@@ -369,8 +513,9 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
               {
                 type: 'button',
                 id: 'hero-cbz-studio-btn',
-                className: 'btn-secondary w-full sm:w-auto',
-                onClick: () => {
+                className: 'btn-secondary text-[13px] px-4 py-2.5 shrink-0',
+                onClick: (e) => {
+                  e.stopPropagation();
                   workspace.tools.cbz.modalOpen = true;
                   workspace.emit('tool');
                 }
@@ -379,16 +524,88 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
             )
           : null;
 
-    const dropzone = buildDropzoneBar(onOpenFilePicker, {
-      headline: activeFeature.ctaLabel,
-      subtitle: 'Drop files here or choose from your device. Runs offline in your browser.',
-      primaryCta: activeFeature.ctaLabel,
-      secondaryAction
-    });
+    const formatPills = getAcceptedFormatPills(activeFeature.slug);
+    const ctaBtn = el(
+      'button',
+      {
+        type: 'button',
+        className: 'btn-primary text-[13.5px] px-5 py-2.5 shrink-0',
+        onClick: (e) => {
+          e.stopPropagation();
+          onOpenFilePicker();
+        }
+      },
+      activeFeature.ctaLabel
+    );
+
+    const dropCard = el(
+      'div',
+      {
+        id: 'hero-dropzone',
+        role: 'region',
+        'aria-label': `${copy.title} file dropzone`,
+        tabIndex: 0,
+        className: 'studio-drop-card max-w-[760px] w-full mx-auto p-3 sm:p-4 cursor-pointer',
+        onClick: () => onOpenFilePicker(),
+        onKeyDown: (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOpenFilePicker();
+          }
+        }
+      },
+      el(
+        'div',
+        { className: 'studio-drop-well flex flex-col items-center text-center gap-4' },
+        buildToolWellGraphic(activeFeature.slug, style),
+        el(
+          'div',
+          { className: 'space-y-1.5' },
+          el(
+            'h2',
+            { className: 'text-[17px] sm:text-[19px] font-semibold tracking-[-0.015em] text-[#1d1d1f]' },
+            activeFeature.ctaLabel
+          ),
+          el(
+            'p',
+            { className: 'text-[13.5px] leading-[1.45] text-[#6e6e73] max-w-[44ch] mx-auto' },
+            'Runs offline in your browser. Zero uploads, zero file limits.'
+          )
+        ),
+        el(
+          'div',
+          { className: 'flex flex-wrap items-center justify-center gap-2.5 pt-0.5' },
+          ctaBtn,
+          secondaryAction
+        ),
+        el(
+          'div',
+          {
+            className: 'flex flex-wrap items-center justify-center gap-2 pt-1 text-[11.5px] text-[#86868b]',
+            'aria-label': 'Supported formats'
+          },
+          el(
+            'div',
+            { className: 'flex items-center gap-1.5' },
+            formatPills.map((fmt) =>
+              el(
+                'span',
+                {
+                  className:
+                    'inline-flex items-center px-2 py-0.5 rounded-md bg-white border border-black/[0.08] text-[10.5px] font-semibold tracking-wider text-[#424245] shadow-[0_1px_2px_rgba(0,0,0,0.03)]'
+                },
+                fmt
+              )
+            )
+          ),
+          el('span', { className: 'font-medium text-[#86868b]' }, 'or drop anywhere · ⌘V')
+        )
+      )
+    );
 
     const toolMain = el(
       'main',
-      { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 pt-8 pb-14 space-y-7' },
+      { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 pt-8 pb-10 space-y-6' },
       el(
         'header',
         { className: 'text-center space-y-3' },
@@ -400,7 +617,7 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
             {
               href: '/',
               className:
-                'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e8e8ed]/85 hover:bg-[#e8e8ed] text-[12.5px] font-medium text-[#424245] no-underline transition-colors'
+                'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/85 hover:bg-white border border-black/[0.07] shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-[12.5px] font-medium text-[#424245] no-underline transition-colors'
             },
             '← All Tools'
           )
@@ -411,7 +628,8 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
           el(
             'span',
             {
-              className: 'w-11 h-11 rounded-[12px] flex items-center justify-center',
+              className:
+                'w-11 h-11 rounded-[12px] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.65)]',
               style: { backgroundColor: style.bg, color: style.fg }
             },
             getToolIcon(activeFeature.slug, 21)
@@ -424,30 +642,28 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
           copy.summary
         )
       ),
-      buildToolPagePreview(activeFeature.slug),
-      dropzone,
+      dropCard,
       el(
         'ul',
         {
           className:
-            'grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[12.5px] leading-[1.45] text-[#424245] list-none p-0 m-0'
+            'max-w-[760px] mx-auto w-full grid grid-cols-1 sm:grid-cols-3 gap-3 text-[12.5px] leading-[1.45] text-[#424245] list-none p-0 m-0'
         },
-        activeFeature.highlights.slice(0, 3).map((item) =>
+        activeFeature.highlights.slice(0, 3).map((item, idx) =>
           el(
             'li',
             {
-              className:
-                'flex items-start gap-2 px-3.5 py-2.5 rounded-[12px] bg-[#f5f5f7] border border-black/[0.04] text-left'
+              className: 'studio-highlight-card flex items-start gap-2.5 px-3.5 py-3 text-left'
             },
-            el('span', { className: 'w-1.5 h-1.5 rounded-full bg-[#34c759] mt-[6px] shrink-0', 'aria-hidden': 'true' }),
-            el('span', { className: 'min-w-0' }, item)
+            buildHighlightSquircle(style, idx),
+            el('span', { className: 'min-w-0 font-medium text-[#424245]' }, item)
           )
         )
       )
     );
 
     mount(container, toolMain);
-    return bindFileDropzone(dropzone);
+    return bindFileDropzone(dropCard);
   }
 
   const dropzone = buildDropzoneBar(onOpenFilePicker);
@@ -667,7 +883,7 @@ export function renderHeroDropzone(container, onOpenFilePicker, activeFeature = 
 
   const mainEl = el(
     'main',
-    { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-14 space-y-9' },
+    { className: 'max-w-[1120px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-10 space-y-9' },
     el('section', { 'aria-label': 'Immediate file dropzone' }, dropzone),
     featuredSection,
     el(
