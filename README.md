@@ -8,17 +8,17 @@
 
 ### Home
 <kbd>
-  <img src="docs/screenshots/home.png" alt="Poffy Home" />
+  <img src="docs/screenshots/home.jpg" alt="Poffy home with the file dropzone and featured workflows" />
 </kbd>
 
-### Merge PDF
+### Merge & Reorder
 <kbd>
-  <img src="docs/screenshots/tool-merge.png" alt="Poffy Merge PDF" />
+  <img src="docs/screenshots/tool-merge.jpg" alt="Merge &amp; Reorder tool with its PDF file picker" />
 </kbd>
 
 ### Workspace
 <kbd>
-  <img src="docs/screenshots/workspace.png" alt="Poffy Workspace" />
+  <img src="docs/screenshots/workspace.jpg" alt="Poffy workspace editing a ten-page sample PDF" />
 </kbd>
 
 ---
