@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --studio-tool-rail-width: 244px;
+
   /* Colors: Apple / iOS Light Studio tokens from DESIGN.md */
   --color-primary: #0071e3;
   --color-primary-hover: #0077ed;
@@ -661,6 +663,10 @@ select.input-clay {
 }
 
 @media (min-width: 1024px) {
+  .studio-nav-layout {
+    grid-template-columns: var(--studio-tool-rail-width) minmax(0, 1fr) auto;
+  }
+
   .studio-3pane {
     flex-direction: row;
     align-items: stretch;
@@ -674,7 +680,7 @@ select.input-clay {
 
 @media (min-width: 1024px) {
   .studio-pane-left {
-    width: 244px;
+    width: var(--studio-tool-rail-width);
     flex-shrink: 0;
     border-bottom: none;
     border-right: 1px solid var(--color-hairline);

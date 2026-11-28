@@ -34,7 +34,7 @@ export function renderTopNav(container, onOpenFilePicker) {
   );
 
   const navContainerClass = hasPages
-    ? 'w-full h-full px-3.5 sm:px-5 flex items-center justify-between gap-2 sm:gap-3'
+    ? 'studio-nav-layout w-full h-full pl-3.5 pr-3.5 sm:pl-5 sm:pr-5 lg:pl-0 flex lg:grid items-center justify-between gap-2 sm:gap-3 lg:gap-0'
     : 'max-w-[1120px] mx-auto h-full px-4 sm:px-6 flex items-center justify-between gap-3';
 
   const header = el(
@@ -45,12 +45,12 @@ export function renderTopNav(container, onOpenFilePicker) {
       { className: navContainerClass },
       el(
         'div',
-        { className: 'flex items-center gap-2 sm:gap-3 min-w-0' },
+        { className: `flex items-center gap-2 sm:gap-3 min-w-0${hasPages ? ' lg:contents' : ''}` },
         el(
           'a',
           {
             href: '/',
-            className: 'flex items-center gap-2.5 min-w-0 shrink-0 no-underline text-[#1d1d1f]',
+            className: `flex items-center gap-2.5 min-w-0 shrink-0 no-underline text-[#1d1d1f]${hasPages ? ' lg:ml-5 lg:justify-self-start' : ''}`,
             'aria-label': 'Poffy Home'
           },
           el(
@@ -87,7 +87,7 @@ export function renderTopNav(container, onOpenFilePicker) {
         hasPages
           ? el(
               'div',
-              { className: 'hidden sm:flex items-center gap-2 min-w-0' },
+              { className: 'studio-nav-pills hidden sm:flex items-center gap-2 min-w-0' },
               el(
                 'span',
                 {
