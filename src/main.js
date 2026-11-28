@@ -320,7 +320,13 @@ function bootstrap() {
           ),
           el(
             'div',
-            { className: 'flex flex-wrap items-center justify-center lg:justify-end gap-2' },
+            { className: 'flex flex-col lg:flex-row items-center gap-2 lg:gap-4' },
+            el(
+              'div',
+              { className: 'text-center lg:text-right' },
+              el('strong', { className: 'block font-semibold text-[#1d1d1f]' }, '100% Client-Side & Zero Telemetry'),
+              el('span', { className: 'block' }, 'Built with pdf-lib, pdfjs-dist & fflate')
+            ),
             el(
               'a',
               {
